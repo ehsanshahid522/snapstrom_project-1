@@ -1,13 +1,8 @@
 {
-  "buildCommand": "npm install && npm run build",
-  "outputDirectory": "dist",
+  "buildCommand": "cd client && npm install && npm run build",
+  "outputDirectory": "client/dist",
   "framework": "vite",
-  "installCommand": "npm install",
-  "functions": {
-    "app/api/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
+  "installCommand": "cd client && npm install",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -38,5 +33,5 @@
       ]
     }
   ],
-  "_comment": "Updated configuration for Vercel deployment - commit 37a181e"
+  "_comment": "Root-level Vercel configuration - directs build to client directory"
 }
