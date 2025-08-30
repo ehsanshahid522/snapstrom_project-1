@@ -16,8 +16,8 @@ export function getUsername() {
   return localStorage.getItem('username');
 }
 
-// Base URL for the backend API
-const API_BASE_URL = 'http://localhost:3000';
+// Base URL for the backend API - use environment variable or fallback to localhost
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 async function parseJsonSafe(res) {
   try {
