@@ -139,6 +139,11 @@ async function connectDB() {
       return false;
     }
 
+    console.log('🔗 Attempting to connect to MongoDB...');
+    console.log('📝 MongoDB URI length:', mongoURI.length);
+    console.log('🔍 MongoDB URI contains @:', mongoURI.includes('@'));
+    console.log('🔍 MongoDB URI contains %40:', mongoURI.includes('%40'));
+    
     // Auto-fix URL encoding for @ symbol in password
     if (mongoURI.includes('@') && !mongoURI.includes('%40')) {
       console.log('🔧 Auto-fixing URL encoding for @ symbol in password...');
@@ -149,24 +154,31 @@ async function connectDB() {
       console.log('✅ URL encoding fixed');
     }
 
-    console.log('🔗 Attempting to connect to MongoDB...');
-    
     const options = {
-      maxPoolSize: 5,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 30000,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
       family: 4,
       retryWrites: true,
       w: 'majority',
       bufferCommands: false,
-      bufferMaxEntries: 0
+      bufferMaxEntries: 0,
+      connectTimeoutMS: 10000,
+      heartbeatFrequencyMS: 30000
     };
 
     await mongoose.connect(mongoURI, options);
     console.log('✅ MongoDB connected successfully');
+    
+    // Test the connection
+    const admin = mongoose.connection.db.admin();
+    await admin.ping();
+    console.log('✅ MongoDB ping successful');
+    
     return true;
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
+    console.error('❌ Error details:', error);
     return false;
   }
 }
@@ -345,21 +357,38 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
     
+    console.log('📝 Registration attempt:', { username, email, hasPassword: !!password });
+    
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
     
     if (!process.env.MONGO_URI) {
+      console.error('❌ MONGO_URI not set');
       return res.status(500).json({ message: 'Database not configured' });
     }
     
+    // Ensure database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.log('🔄 Database not connected, attempting to connect...');
+      const connected = await connectDB();
+      if (!connected) {
+        console.error('❌ Failed to connect to database');
+        return res.status(500).json({ message: 'Database connection failed' });
+      }
+    }
+    
+    console.log('🔍 Checking for existing user...');
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
+      console.log('❌ User already exists:', existingUser.email);
       return res.status(400).json({ message: 'Username or email already exists' });
     }
     
+    console.log('🔐 Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 10);
     
+    console.log('👤 Creating new user...');
     const user = new User({
       username,
       email,
@@ -367,9 +396,11 @@ app.post('/api/auth/register', async (req, res) => {
     });
     
     await user.save();
+    console.log('✅ User registered successfully:', user.username);
     res.status(201).json({ message: 'Registration successful.' });
   } catch (err) {
-    console.error('Registration error:', err);
+    console.error('❌ Registration error:', err);
+    console.error('❌ Error stack:', err.stack);
     res.status(500).json({ message: 'Registration error', error: err.message });
   }
 });
@@ -378,33 +409,53 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    console.log('🔐 Login attempt:', { email, hasPassword: !!password });
+    
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
     
     if (!process.env.MONGO_URI) {
+      console.error('❌ MONGO_URI not set');
       return res.status(500).json({ message: 'Database not configured' });
     }
     
+    // Ensure database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.log('🔄 Database not connected, attempting to connect...');
+      const connected = await connectDB();
+      if (!connected) {
+        console.error('❌ Failed to connect to database');
+        return res.status(500).json({ message: 'Database connection failed' });
+      }
+    }
+    
+    console.log('🔍 Finding user...');
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('❌ User not found:', email);
       return res.status(404).json({ message: 'User not found' });
     }
     
+    console.log('🔐 Verifying password...');
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('❌ Invalid password for user:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
     
+    console.log('🎫 Generating JWT token...');
     const token = jwt.sign(
       { id: user._id, username: user.username }, 
       process.env.JWT_SECRET, 
       { expiresIn: '7d' }
     );
     
+    console.log('✅ Login successful:', user.username);
     res.json({ token, username: user.username });
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('❌ Login error:', err);
+    console.error('❌ Error stack:', err.stack);
     res.status(500).json({ message: 'Login error', error: err.message });
   }
 });
