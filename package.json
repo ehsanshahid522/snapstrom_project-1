@@ -1,17 +1,32 @@
 {
-  "name": "photo-feed-app",
+  "name": "snapstream-platform",
   "version": "1.0.0",
+  "description": "A modern, full-stack photo sharing and social media platform",
   "type": "module",
-  "main": "server/server.js",
+  "main": "backend/server/server.js",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "nodemon server/server.js",
-    "client": "cd client && npm run dev",
-    "server": "nodemon server/server.js",
+    "start": "node backend/server/server.js",
+    "dev": "nodemon backend/server/server.js",
+    "client": "cd frontend/client && npm run dev",
+    "server": "nodemon backend/server/server.js",
     "dev:full": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "cd client && npm run build",
-    "vercel-build": "cd client && npm install && npm run build"
+    "build": "cd frontend/client && npm run build",
+    "vercel-build": "cd frontend/client && npm install && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
+  "keywords": [
+    "photo-sharing",
+    "social-media",
+    "full-stack",
+    "nodejs",
+    "express",
+    "mongodb",
+    "react"
+  ],
+  "author": "Ehsan Shahid",
+  "license": "MIT",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
@@ -25,5 +40,9 @@
   "devDependencies": {
     "concurrently": "^9.2.1",
     "nodemon": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
   }
 }

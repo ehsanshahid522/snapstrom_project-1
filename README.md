@@ -1,256 +1,195 @@
-# 📸 SnapStream - Photo Feed Web App
+# Snapstream - Photo Sharing Platform
 
-A modern, full-stack photo sharing application built with Node.js, Express, MongoDB, and vanilla JavaScript. Share your moments with friends and family through a beautiful, responsive interface.
-
-## ✨ Features
-
-### 🔐 Authentication
-- User registration and login with JWT tokens
-- Secure password hashing with bcryptjs
-- Protected routes and middleware
-- User profile management
-
-### 📤 Upload & Sharing
-- Drag-and-drop image uploads
-- Real-time upload progress tracking
-- Support for multiple image formats (JPEG, PNG, GIF)
-- File size validation (5MB limit)
-- Private/public post settings
-- Caption support for posts
-
-### 🏠 Feed & Discovery
-- Real-time photo feed with newest posts first
-- Like and comment functionality
-- User profile pages with post grids
-- Search functionality for users
-- Responsive design for all devices
-
-### 💬 Social Features
-- Like/unlike posts
-- Add and delete comments
-- Share posts with unique URLs
-- User following system (prepared)
-- Private account settings
-
-### 🎨 Modern UI/UX
-- Beautiful gradient design
-- Mobile-responsive interface
-- Smooth animations and transitions
-- Progress bars for uploads
-- Error handling with user feedback
-
-## 🛠️ Tech Stack
-
-### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **MongoDB** - Database
-- **Mongoose** - ODM for MongoDB
-- **JWT** - Authentication
-- **Multer** - File upload handling
-- **bcryptjs** - Password hashing
-- **CORS** - Cross-origin resource sharing
-
-### Frontend
-- **Vanilla JavaScript** - No framework dependencies
-- **HTML5** - Semantic markup
-- **CSS3** - Modern styling with gradients
-- **Font Awesome** - Icons
-- **Google Fonts** - Typography
+A modern, full-stack photo sharing and social media platform built with React, Node.js, Express, and MongoDB.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB (local or Atlas)
-- npm or yarn
 
-### Installation
+- Node.js 18+ 
+- MongoDB Atlas account
+- Vercel account (for deployment)
 
-1. **Clone the repository**
+### Local Development
+
+1. **Clone the repository**:
    ```bash
-   git clone <repository-url>
-   cd photo-feed-app
+   git clone <your-repo-url>
+   cd snapstream
    ```
 
-2. **Install dependencies**
+2. **Set up environment variables**:
    ```bash
+   cp env.example .env
+   # Edit .env with your MongoDB URI and JWT secret
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   # Install backend dependencies
+   cd backend
+   npm install
+   
+   # Install frontend dependencies
+   cd ../frontend/client
    npm install
    ```
 
-3. **Set up environment variables**
+4. **Start the development servers**:
    ```bash
-   cp env.example .env
-   ```
+   # Start backend (from backend directory)
+   npm run dev
    
-   Edit `.env` file:
-   ```env
-   MONGO_URI=mongodb://localhost:27017/photo-feed-app
-   JWT_SECRET=your-super-secret-jwt-key-here
-   PORT=3000
-   NODE_ENV=development
+   # Start frontend (from frontend/client directory)
+   npm run dev
    ```
 
-4. **Start MongoDB** (if using local)
-   ```bash
-   mongod
-   ```
+5. **Test the application**:
+   - Backend: http://localhost:3000
+   - Frontend: http://localhost:5173
 
-5. **Start the server**
-   ```bash
-   npm start
-   ```
+## 🛠️ Features
 
-6. **Open your browser**
-   Navigate to `http://localhost:3000`
+- **User Authentication**: Register, login, and JWT-based authentication
+- **Photo Upload**: Upload images with captions and privacy settings
+- **Social Feed**: View and interact with photos from other users
+- **Like & Comment**: Engage with posts through likes and comments
+- **User Profiles**: View user profiles and follow/unfollow users
+- **Privacy Controls**: Make posts private or public
+- **Responsive Design**: Works on desktop and mobile devices
 
 ## 📁 Project Structure
 
 ```
-project/
-├── server/
-│   ├── middleware/
-│   │   ├── auth.js          # JWT authentication
-│   │   └── errorHandler.js  # Centralized error handling
-│   ├── models/
-│   │   ├── User.js          # User schema
-│   │   └── File.js          # Post/File schema
-│   ├── routes/
-│   │   ├── auth.js          # Authentication routes
-│   │   ├── upload.js        # File upload routes
-│   │   ├── feed.js          # Feed routes
-│   │   ├── profile.js       # Profile routes
-│   │   ├── interactions.js  # Likes/comments routes
-│   │   └── share.js         # Share routes
-│   └── server.js            # Main server file
-├── public/
-│   ├── js/
-│   │   ├── index.js         # Main feed page
-│   │   ├── login.js         # Login functionality
-│   │   ├── register.js      # Registration
-│   │   ├── upload.js        # Upload with progress
-│   │   ├── profile.js       # Profile management
-│   │   ├── settings.js      # Settings page
-│   │   ├── share.js         # Shared post view
-│   │   └── user-profile.js  # User profile view
-│   ├── index.html           # Main feed page
-│   ├── login.html           # Login page
-│   ├── register.html        # Registration page
-│   ├── upload.html          # Upload page
-│   ├── profile.html         # Profile page
-│   ├── settings.html        # Settings page
-│   ├── share.html           # Shared post page
-│   ├── user-profile.html    # User profile page
-│   └── style.css            # Main stylesheet
-├── uploads/                 # Uploaded images
-├── package.json
-├── Procfile                 # For deployment
+snapstream/
+├── backend/                 # Backend API
+│   ├── server/
+│   │   ├── middleware/     # Authentication & error handling
+│   │   ├── models/         # MongoDB schemas
+│   │   ├── routes/         # API endpoints
+│   │   └── server.js       # Main server file
+│   ├── package.json
+│   └── vercel.json
+├── frontend/               # Frontend React app
+│   ├── client/
+│   │   ├── src/
+│   │   │   ├── components/ # React components
+│   │   │   ├── pages/      # Page components
+│   │   │   ├── lib/        # API utilities
+│   │   │   └── main.jsx    # App entry point
+│   │   ├── package.json
+│   │   └── vite.config.js
+│   └── vercel.json
+├── docs/                   # Documentation
+├── DEPLOYMENT.md          # Deployment guide
 └── README.md
 ```
 
-## 🔧 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user
-
-### Upload
-- `POST /api/upload` - Upload image with caption
-
-### Feed
-- `GET /api/feed` - Get user's feed
-- `GET /api/feed/my-posts` - Get user's own posts
-- `GET /api/feed/user/:username` - Get specific user's posts
-- `DELETE /api/feed/:id` - Delete post
-
-### Profile
-- `GET /api/profile/:username` - Get user profile
-- `PUT /api/profile/update` - Update profile
-- `GET /api/profile/me` - Get current user profile
-
-### Interactions
-- `POST /api/interactions/like/:postId` - Like/unlike post
-- `POST /api/interactions/comment/:postId` - Add comment
-- `GET /api/interactions/comments/:postId` - Get comments
-- `DELETE /api/interactions/comment/:postId/:commentId` - Delete comment
-
-### Share
-- `GET /api/share/:id` - Get shared post data
-
-## 🎨 Features in Detail
-
-### Upload System
-- **Drag & Drop**: Simply drag images onto the upload area
-- **Progress Tracking**: Real-time upload progress with visual feedback
-- **Validation**: File type and size validation with user feedback
-- **Privacy**: Choose between public and private posts
-- **Captions**: Add descriptive text to your photos
-
-### Feed System
-- **Real-time**: Posts appear immediately after upload
-- **Responsive**: Optimized for desktop, tablet, and mobile
-- **Interactive**: Like, comment, and share posts
-- **Privacy-aware**: Only shows appropriate posts based on privacy settings
-
-### User Profiles
-- **Personal Pages**: Each user has a dedicated profile page
-- **Post Grids**: View all posts by a specific user
-- **Stats**: See follower counts and post statistics
-- **Privacy Settings**: Control who can see your posts
-
-## 🔒 Security Features
-
-- **JWT Authentication**: Secure token-based authentication
-- **Password Hashing**: Bcryptjs for secure password storage
-- **File Validation**: Strict file type and size validation
-- **CORS Protection**: Cross-origin request handling
-- **Error Handling**: Comprehensive error management
-- **Input Validation**: Server-side validation for all inputs
-
-## 📱 Mobile Responsiveness
-
-The app is fully responsive and optimized for:
-- **Desktop**: Full-featured experience with hover effects
-- **Tablet**: Touch-optimized interface
-- **Mobile**: Streamlined mobile experience with touch gestures
-
 ## 🚀 Deployment
 
-### Local Development
-```bash
-npm start
+### Option 1: Deploy to Vercel (Recommended)
+
+Follow the detailed deployment guide in [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+### Option 2: Manual Deployment
+
+1. **Deploy Backend**:
+   - Set up MongoDB Atlas
+   - Deploy to your preferred hosting (Heroku, Railway, etc.)
+   - Set environment variables
+
+2. **Deploy Frontend**:
+   - Build the React app: `npm run build`
+   - Deploy to Vercel, Netlify, or any static hosting
+   - Set `VITE_API_URL` environment variable
+
+## 🔧 Environment Variables
+
+### Backend (.env)
+```env
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/snapstream
+JWT_SECRET=your-super-secret-jwt-key-here
+NODE_ENV=production
+PORT=3000
 ```
 
-### Production Deployment
-
-1. **Environment Setup**
-   ```bash
-   NODE_ENV=production
-   MONGO_URI=your-mongodb-atlas-uri
-   JWT_SECRET=your-secure-jwt-secret
-   PORT=3000
-   ```
-
-2. **Platforms Supported**
-   - **Render**: Use the provided `Procfile`
-   - **Railway**: Automatic deployment from GitHub
-   - **Heroku**: Add buildpack for Node.js
-   - **Vercel**: Deploy as Node.js function
-
-3. **Database Setup**
-   - Use MongoDB Atlas for cloud database
-   - Configure connection string in environment variables
-   - Ensure proper network access
+### Frontend (.env)
+```env
+VITE_API_URL=https://your-backend-url.vercel.app
+```
 
 ## 🧪 Testing
 
-Run the comprehensive test checklist:
+### Database Connection Test
 ```bash
-# See TEST_CHECKLIST.md for detailed testing steps
-npm start
-# Then follow the manual testing steps
+cd backend
+node test-db.js
 ```
+
+### API Health Check
+```bash
+curl https://your-backend-url.vercel.app/health
+```
+
+## 🔒 Security Features
+
+- JWT-based authentication
+- Password hashing with bcrypt
+- CORS protection
+- Input validation
+- File upload restrictions
+- Rate limiting (can be added)
+
+## 📊 Database Schema
+
+### Users Collection
+```javascript
+{
+  username: String (unique),
+  email: String (unique),
+  password: String (hashed),
+  profilePicture: String,
+  bio: String,
+  followers: [ObjectId],
+  following: [ObjectId]
+}
+```
+
+### Files Collection
+```javascript
+{
+  filename: String,
+  originalName: String,
+  contentType: String,
+  size: Number,
+  caption: String,
+  tags: [String],
+  isPrivate: Boolean,
+  uploader: ObjectId (ref: User),
+  uploaderUsername: String,
+  likes: [ObjectId],
+  comments: [{
+    user: ObjectId,
+    username: String,
+    text: String,
+    createdAt: Date
+  }],
+  uploadTime: Date
+}
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **CORS Errors**: Check CORS settings in `backend/server/server.js`
+2. **MongoDB Connection**: Verify your MongoDB URI and network access
+3. **File Uploads**: Check file size limits and storage permissions
+4. **Environment Variables**: Ensure all required variables are set
+
+### Debug Mode
+
+Enable debug logging by setting `NODE_ENV=development` in your environment variables.
 
 ## 🤝 Contributing
 
@@ -260,26 +199,26 @@ npm start
 4. Test thoroughly
 5. Submit a pull request
 
-## 📝 License
+## 📄 License
 
 This project is licensed under the MIT License.
 
-## 🙏 Acknowledgments
+## 🆘 Support
 
-- **Font Awesome** for icons
-- **Google Fonts** for typography
-- **MongoDB** for database
-- **Express.js** community for the framework
+If you need help:
 
-## 📞 Support
+1. Check the [DEPLOYMENT.md](./DEPLOYMENT.md) guide
+2. Review the troubleshooting section
+3. Check the Vercel deployment logs
+4. Verify your environment variables
 
-If you encounter any issues:
-1. Check the [TEST_CHECKLIST.md](./TEST_CHECKLIST.md)
-2. Verify your environment variables
-3. Ensure MongoDB is running
-4. Check the browser console for errors
+## 🚀 Future Enhancements
 
----
-
-**Built with ❤️ using Node.js, Express, and MongoDB** #   s n a p s t r o m _ p r o j e c t - 1  
- 
+- [ ] Real-time notifications
+- [ ] Image filters and editing
+- [ ] Stories feature
+- [ ] Direct messaging
+- [ ] Advanced search
+- [ ] Analytics dashboard
+- [ ] Mobile app
+- [ ] Cloud storage integration

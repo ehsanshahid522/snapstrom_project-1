@@ -1,13 +1,9 @@
 {
-  "buildCommand": "npm run vercel-build",
-  "outputDirectory": "frontend/client/dist",
+  "buildCommand": "cd client && npm install && npm run build",
+  "outputDirectory": "client/dist",
   "framework": "vite",
-  "installCommand": "npm install",
+  "installCommand": "cd client && npm install",
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/backend/server/server.js"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
@@ -36,10 +32,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "backend/server/server.js": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  ]
 }
