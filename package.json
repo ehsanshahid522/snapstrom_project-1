@@ -11,7 +11,7 @@
     "server": "nodemon backend/server/server.js",
     "dev:full": "concurrently \"npm run server\" \"npm run client\"",
     "build": "cd frontend/client && npm run build",
-    "vercel-build": "cd frontend/client && npm install && npm run build && echo 'Frontend build complete'",
+    "vercel-build": "cd frontend/client && npm install && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

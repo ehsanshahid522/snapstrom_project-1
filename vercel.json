@@ -1,16 +1,34 @@
 {
-  "buildCommand": "npm run vercel-build",
-  "outputDirectory": "frontend/client/dist",
-  "framework": "vite",
-  "installCommand": "npm install",
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/api/(.*)",
-      "destination": "/backend/server/server.js"
+      "src": "frontend/client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "backend/server/server.js",
+      "use": "@vercel/node@18"
     }
-  ]
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/server/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/client/dist/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "backend/server/server.js": {
+      "maxDuration": 30
+    }
+  }
 }
