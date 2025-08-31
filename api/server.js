@@ -110,6 +110,10 @@ const FileSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  fileData: {
+    type: String, // Base64 encoded file data
+    required: true
+  },
   likes: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -414,6 +418,64 @@ app.get('/api/test/db', async (req, res) => {
   }
 });
 
+// Serve uploaded images
+app.get('/api/images/:fileId', async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    
+    if (!fileId) {
+      return res.status(400).json({ message: 'File ID is required' });
+    }
+    
+    const file = await File.findById(fileId);
+    if (!file) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+    
+    // Convert base64 back to buffer
+    const buffer = Buffer.from(file.fileData, 'base64');
+    
+    // Set appropriate headers
+    res.setHeader('Content-Type', file.contentType);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    
+    // Send the image
+    res.send(buffer);
+    
+  } catch (error) {
+    console.error('Error serving image:', error);
+    res.status(500).json({ message: 'Error serving image', error: error.message });
+  }
+});
+
+// Get feed posts
+app.get('/api/feed', async (req, res) => {
+  try {
+    const files = await File.find({ isPrivate: false })
+      .populate('uploadedBy', 'username profilePicture')
+      .sort({ createdAt: -1 })
+      .limit(20);
+    
+    const posts = files.map(file => ({
+      id: file._id,
+      filename: file.filename,
+      caption: file.caption,
+      tags: file.tags,
+      uploadedBy: file.uploadedBy,
+      likes: file.likes,
+      comments: file.comments,
+      createdAt: file.createdAt,
+      imageUrl: `/api/images/${file._id}`
+    }));
+    
+    res.json(posts);
+  } catch (error) {
+    console.error('Error getting feed:', error);
+    res.status(500).json({ message: 'Error getting feed', error: error.message });
+  }
+});
+
 // Simple auth routes (without database dependency)
 app.post('/auth/register', async (req, res) => {
   try {
@@ -697,29 +759,17 @@ app.post('/upload', async (req, res) => {
   }
 });
 
-// API prefixed upload route
+// API prefixed upload route with memory storage for Vercel
 app.post('/api/upload', async (req, res) => {
   try {
     if (!process.env.MONGO_URI) {
       return res.status(500).json({ message: 'Database not configured' });
     }
     
-
-    
-    // Configure multer
-    const storage = multer.diskStorage({
-      destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-      },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'image-' + uniqueSuffix + path.extname(file.originalname));
-      }
-    });
-    
+    // Use memory storage instead of disk storage for Vercel
     const upload = multer({
-      storage: storage,
-      limits: { fileSize: 10 * 1024 * 1024 },
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
       fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
           cb(null, true);
@@ -732,6 +782,7 @@ app.post('/api/upload', async (req, res) => {
     // Handle single file upload
     upload.single('image')(req, res, async (err) => {
       if (err) {
+        console.error('Upload error:', err);
         return res.status(400).json({ message: err.message });
       }
       
@@ -741,24 +792,35 @@ app.post('/api/upload', async (req, res) => {
       
       const { isPrivate = false, caption = '', tags = '' } = req.body;
       
+      // Generate a unique filename
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const filename = 'image-' + uniqueSuffix + path.extname(req.file.originalname);
+      
+      // For now, store the file data as base64 in the database
+      // In production, you'd want to use a cloud storage service like AWS S3, Cloudinary, etc.
+      const fileData = req.file.buffer.toString('base64');
+      
       // Create file document
       const file = new File({
-        filename: req.file.filename,
+        filename: filename,
         originalName: req.file.originalname,
         contentType: req.file.mimetype,
         size: req.file.size,
         caption: caption.trim(),
         tags: tags ? tags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0) : [],
         isPrivate: isPrivate === 'true',
-        uploadedBy: req.user?.id || 'unknown'
+        uploadedBy: req.user?.id || 'unknown',
+        // Store file data as base64 (temporary solution)
+        fileData: fileData
       });
       
       await file.save();
       
       res.json({
         message: 'Upload successful',
-        filename: req.file.filename,
-        fileId: file._id
+        filename: filename,
+        fileId: file._id,
+        size: req.file.size
       });
     });
   } catch (err) {
