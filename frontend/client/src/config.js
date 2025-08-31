@@ -2,7 +2,7 @@
 export const config = {
   // API Configuration
   API_BASE_URL: import.meta.env.VITE_API_URL || 
-    (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : 'https://snapstream-backend.vercel.app/api'),
+    (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api'),
   
   // Environment
   NODE_ENV: import.meta.env.NODE_ENV || 'development',
