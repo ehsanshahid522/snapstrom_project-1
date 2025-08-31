@@ -28,7 +28,7 @@ export default function Register() {
     
     setLoading(true)
     try {
-      await api('/api/auth/register', { method:'POST', auth:false, body:{ username, email, password } })
+      await api('/auth/register', { method:'POST', auth:false, body:{ username, email, password } })
       setMsg('Registration successful! Redirecting to login...')
       setTimeout(() => nav('/login'), 2000)
     } catch (err) {

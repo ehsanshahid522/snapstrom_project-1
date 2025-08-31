@@ -15,7 +15,7 @@ export default function Login() {
     setMsg('')
     setLoading(true)
     try {
-      const data = await api('/api/auth/login', { method:'POST', auth:false, body:{ email, password } })
+      const data = await api('/auth/login', { method:'POST', auth:false, body:{ email, password } })
       setAuth({ token: data.token, username: data.username })
       nav('/')
     } catch (err) {

@@ -17,9 +17,9 @@ export default function Explore() {
       setLoading(true)
       // We'll implement these API endpoints in the backend
       const [postsData, usersData, categoriesData] = await Promise.all([
-        api('/api/explore/trending', { method: 'GET' }),
-        api('/api/explore/popular-users', { method: 'GET' }),
-        api('/api/explore/categories', { method: 'GET' })
+        api('/explore/trending', { method: 'GET' }),
+        api('/explore/popular-users', { method: 'GET' }),
+        api('/explore/categories', { method: 'GET' })
       ])
       
       setTrendingPosts(postsData.posts || [])

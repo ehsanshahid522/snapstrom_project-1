@@ -33,7 +33,7 @@ export default function Upload() {
     
     setLoading(true)
     try {
-      await api('/api/upload', { method:'POST', body: form })
+              await api('/upload', { method:'POST', body: form })
       setMsg('Uploaded successfully!')
       setCaption('')
       setIsPrivate(false)

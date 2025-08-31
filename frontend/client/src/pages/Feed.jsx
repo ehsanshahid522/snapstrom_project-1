@@ -20,8 +20,8 @@ export default function Feed() {
 
         // Fetch both feeds
         const [allPostsData, followingPostsData] = await Promise.all([
-          api('/api/feed'),
-          api('/api/feed/following').catch(() => []) // Fallback to empty array if endpoint doesn't exist
+          api('/feed'),
+          api('/feed/following').catch(() => []) // Fallback to empty array if endpoint doesn't exist
         ])
         
         console.log('Feed data received:', allPostsData) // Debug log

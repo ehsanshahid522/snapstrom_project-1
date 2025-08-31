@@ -13,7 +13,7 @@ export default function useAuth() {
     const checkAuth = async () => {
       if (token) {
         try {
-          const userData = await api('/api/auth/me');
+          const userData = await api('/auth/me');
           setUser(userData);
         } catch (error) {
           console.error('Auth check failed:', error);
@@ -28,7 +28,7 @@ export default function useAuth() {
 
   const login = async (email, password) => {
     try {
-      const response = await api('/api/auth/login', {
+      const response = await api('/auth/login', {
         method: 'POST',
         body: { email, password },
         auth: false
@@ -47,7 +47,7 @@ export default function useAuth() {
 
   const register = async (username, email, password) => {
     try {
-      const response = await api('/api/auth/register', {
+      const response = await api('/auth/register', {
         method: 'POST',
         body: { username, email, password },
         auth: false
@@ -72,7 +72,7 @@ export default function useAuth() {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await api('/api/profile/update', {
+      const response = await api('/profile/update', {
         method: 'PUT',
         body: profileData
       });

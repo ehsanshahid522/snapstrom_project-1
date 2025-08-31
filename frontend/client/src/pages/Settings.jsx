@@ -16,7 +16,7 @@ export default function Settings() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await api('/api/profile/me')
+        const data = await api('/profile/me')
         setIsPrivate(data.isPrivateAccount || false)
         setBio(data.bio || '')
         setProfilePicture(data.profilePicture)
@@ -39,7 +39,7 @@ export default function Settings() {
     setLoading(true)
     setMsg('')
     try {
-      await api('/api/auth/account-settings', { 
+              await api('/auth/account-settings', { 
         method: 'PUT', 
         body: { isPrivateAccount: isPrivate, bio } 
       })
@@ -64,7 +64,7 @@ export default function Settings() {
     setLoading(true)
     setMsg('')
     try {
-      await api('/api/auth/change-password', { 
+              await api('/auth/change-password', { 
         method: 'POST', 
         body: { currentPassword, newPassword } 
       })
@@ -100,7 +100,7 @@ export default function Settings() {
     form.append('profilePicture', file)
     
     try {
-      const data = await api('/api/auth/profile-picture', { 
+              const data = await api('/auth/profile-picture', { 
         method: 'POST', 
         body: form 
       })
