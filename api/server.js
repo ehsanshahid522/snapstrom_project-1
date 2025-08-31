@@ -117,6 +117,42 @@ app.get('/test/db', async (req, res) => {
   }
 });
 
+// Also handle /api prefixed routes
+app.get('/api/test/ping', (req, res) => {
+  res.json({
+    message: 'API is working!',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+app.get('/api/test/env', (req, res) => {
+  res.json({
+    nodeEnv: process.env.NODE_ENV,
+    hasMongoUri: !!process.env.MONGO_URI,
+    hasJwtSecret: !!process.env.JWT_SECRET,
+    port: process.env.PORT,
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/test/db', async (req, res) => {
+  try {
+    const connected = mongoose.connection.readyState === 1;
+    res.json({
+      connected,
+      readyState: connected ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      connected: false,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Simple auth routes (without database dependency)
 app.post('/auth/register', async (req, res) => {
   try {
@@ -195,8 +231,162 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
+// API prefixed auth routes
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+    
+    if (!process.env.MONGO_URI) {
+      return res.status(500).json({ message: 'Database not configured' });
+    }
+    
+    // Import User model dynamically
+    const User = (await import('../backend/server/models/User.js')).default;
+    
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Username or email already exists' });
+    }
+    
+    const bcrypt = await import('bcrypt');
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const user = new User({
+      username,
+      email,
+      password: hashedPassword
+    });
+    
+    await user.save();
+    res.status(201).json({ message: 'Registration successful.' });
+  } catch (err) {
+    console.error('Registration error:', err);
+    res.status(500).json({ message: 'Registration error', error: err.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+    
+    if (!process.env.MONGO_URI) {
+      return res.status(500).json({ message: 'Database not configured' });
+    }
+    
+    // Import User model and jwt dynamically
+    const User = (await import('../backend/server/models/User.js')).default;
+    const jwt = await import('jsonwebtoken');
+    const bcrypt = await import('bcrypt');
+    
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+    
+    const token = jwt.sign(
+      { id: user._id, username: user.username }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '7d' }
+    );
+    
+    res.json({ token, username: user.username });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'Login error', error: err.message });
+  }
+});
+
 // Simple upload route (without database dependency)
 app.post('/upload', async (req, res) => {
+  try {
+    if (!process.env.MONGO_URI) {
+      return res.status(500).json({ message: 'Database not configured' });
+    }
+    
+    // Import multer and File model dynamically
+    const multer = await import('multer');
+    const File = (await import('../backend/server/models/File.js')).default;
+    const User = (await import('../backend/server/models/User.js')).default;
+    
+    // Configure multer
+    const storage = multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'image-' + uniqueSuffix + path.extname(file.originalname));
+      }
+    });
+    
+    const upload = multer({
+      storage: storage,
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only image files are allowed'));
+        }
+      }
+    });
+    
+    // Handle single file upload
+    upload.single('image')(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ message: err.message });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: 'No image file provided' });
+      }
+      
+      const { isPrivate = false, caption = '', tags = '' } = req.body;
+      
+      // Create file document
+      const file = new File({
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        contentType: req.file.mimetype,
+        size: req.file.size,
+        caption: caption.trim(),
+        tags: tags ? tags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0) : [],
+        isPrivate: isPrivate === 'true',
+        uploader: req.user?.id || 'unknown',
+        uploaderUsername: req.user?.username || 'unknown',
+        uploadTime: new Date(),
+        processed: false
+      });
+      
+      await file.save();
+      
+      res.json({
+        message: 'Upload successful',
+        filename: req.file.filename,
+        fileId: file._id
+      });
+    });
+  } catch (err) {
+    console.error('Upload error:', err);
+    res.status(500).json({ message: 'Upload error', error: err.message });
+  }
+});
+
+// API prefixed upload route
+app.post('/api/upload', async (req, res) => {
   try {
     if (!process.env.MONGO_URI) {
       return res.status(500).json({ message: 'Database not configured' });

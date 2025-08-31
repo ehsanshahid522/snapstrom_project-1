@@ -18,7 +18,7 @@ export function getUsername() {
 
 // Base URL for the backend API
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api');
+  (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '');
 
 async function parseJsonSafe(res) {
   try {
