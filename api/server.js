@@ -168,7 +168,6 @@ async function connectDB() {
           retryWrites: true,
           w: 'majority',
           bufferCommands: false,
-          bufferMaxEntries: 0,
           connectTimeoutMS: 30000,
           heartbeatFrequencyMS: 10000,
           maxIdleTimeMS: 30000,
@@ -188,7 +187,6 @@ async function connectDB() {
           retryWrites: false,
           w: 1,
           bufferCommands: false,
-          bufferMaxEntries: 0,
           connectTimeoutMS: 15000
         }
       },
@@ -202,7 +200,6 @@ async function connectDB() {
           retryWrites: false,
           w: 1,
           bufferCommands: false,
-          bufferMaxEntries: 0,
           connectTimeoutMS: 10000
         }
       }
