@@ -27,11 +27,21 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Database connection function
 async function connectDB() {
   try {
-    const mongoURI = process.env.MONGO_URI;
+    let mongoURI = process.env.MONGO_URI;
     
     if (!mongoURI) {
       console.error('❌ MONGO_URI environment variable is not set');
       return false;
+    }
+
+    // Auto-fix URL encoding for @ symbol in password
+    if (mongoURI.includes('@') && !mongoURI.includes('%40')) {
+      console.log('🔧 Auto-fixing URL encoding for @ symbol in password...');
+      mongoURI = mongoURI.replace(/mongodb\+srv:\/\/([^:]+):([^@]+)@/, (match, username, password) => {
+        const encodedPassword = password.replace(/@/g, '%40');
+        return `mongodb+srv://${username}:${encodedPassword}@`;
+      });
+      console.log('✅ URL encoding fixed');
     }
 
     console.log('🔗 Attempting to connect to MongoDB...');
@@ -132,6 +142,9 @@ app.get('/api/test/env', (req, res) => {
     hasMongoUri: !!process.env.MONGO_URI,
     hasJwtSecret: !!process.env.JWT_SECRET,
     port: process.env.PORT,
+    mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0,
+    hasAtSymbol: process.env.MONGO_URI ? process.env.MONGO_URI.includes('@') : false,
+    hasPercent40: process.env.MONGO_URI ? process.env.MONGO_URI.includes('%40') : false,
     timestamp: new Date().toISOString()
   });
 });
