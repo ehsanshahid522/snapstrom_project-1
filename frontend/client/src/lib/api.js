@@ -35,6 +35,14 @@ export async function api(path, { method = 'GET', headers = {}, body, auth = tru
   
   const fullUrl = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
   
+  // Debug logging
+  console.log('🔍 API Request:', {
+    path,
+    API_BASE_URL,
+    fullUrl,
+    method
+  });
+  
   try {
     const res = await fetch(fullUrl, {
       method,

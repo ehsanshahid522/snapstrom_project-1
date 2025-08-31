@@ -20,6 +20,9 @@ export const config = {
 // Helper function to get API URL
 export function getApiUrl(path = '') {
   const baseUrl = config.API_BASE_URL;
+  if (!path) {
+    return baseUrl;
+  }
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return `${baseUrl}${cleanPath}`;
 }

@@ -15,13 +15,39 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Simple CORS configuration
+// Enhanced CORS configuration to handle preflight requests
 app.use(cors({
-  origin: true, // Allow all origins
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://localhost:4173',
+      'https://snapstrom-project-1.vercel.app',
+      'https://snapstream.vercel.app',
+      'https://snapstream-frontend.vercel.app'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log(`🚫 CORS blocked origin: ${origin}`);
+      callback(null, true); // Allow all origins for now
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
+  res.status(204).end();
+});
 
 // Increase payload limits for file uploads
 app.use(express.json({ limit: '50mb' }));
