@@ -1,197 +1,152 @@
-# Snapstream - Photo Sharing Platform
+# 📸 SnapStream - Photo Sharing Platform
 
 A modern, full-stack photo sharing and social media platform built with React, Node.js, Express, and MongoDB.
 
-## 🚀 Quick Start
+## 🚀 **Quick Start**
 
-### Prerequisites
-
+### **Prerequisites**
 - Node.js 18+ 
 - MongoDB Atlas account
 - Vercel account (for deployment)
 
-### Local Development
+### **Local Development**
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd snapstream
 
-1. **Clone the repository**:
-   ```bash
-   git clone <your-repo-url>
-   cd snapstream
-   ```
+# Install dependencies
+npm install
+cd frontend/client && npm install && cd ../..
 
-2. **Set up environment variables**:
-   ```bash
-   cp env.example .env
-   # Edit .env with your MongoDB URI and JWT secret
-   ```
+# Set up environment variables
+cp env.example .env
+# Edit .env with your MongoDB connection string and JWT secret
 
-3. **Install dependencies**:
-   ```bash
-   # Install backend dependencies
-   cd backend
-   npm install
-   
-   # Install frontend dependencies
-   cd ../frontend/client
-   npm install
-   ```
+# Start development servers
+npm run dev:full
+```
 
-4. **Start the development servers**:
-   ```bash
-   # Start backend (from backend directory)
-   npm run dev
-   
-   # Start frontend (from frontend/client directory)
-   npm run dev
-   ```
+### **Deployment**
+```bash
+# Run the deployment script
+./deploy.sh
 
-5. **Test the application**:
-   - Backend: http://localhost:3000
-   - Frontend: http://localhost:5173
+# Or manually:
+git add .
+git commit -m "Deploy SnapStream"
+git push origin main
+```
 
-## 🛠️ Features
+## 🔧 **Recent Fixes (v1.0.0)**
 
-- **User Authentication**: Register, login, and JWT-based authentication
-- **Photo Upload**: Upload images with captions and privacy settings
-- **Social Feed**: View and interact with photos from other users
-- **Like & Comment**: Engage with posts through likes and comments
-- **User Profiles**: View user profiles and follow/unfollow users
-- **Privacy Controls**: Make posts private or public
-- **Responsive Design**: Works on desktop and mobile devices
+### **Fixed Issues:**
+- ✅ **500 Error on Login**: Resolved import path issues in API server
+- ✅ **API Communication**: Fixed frontend-backend communication
+- ✅ **Database Connection**: Enhanced MongoDB connection handling
+- ✅ **Environment Configuration**: Centralized configuration management
 
-## 📁 Project Structure
+### **Key Changes:**
+1. **Inline Schemas**: User and File schemas now defined inline to avoid import issues
+2. **Smart API URLs**: Frontend automatically detects environment and sets correct API URL
+3. **Enhanced Error Handling**: Better error messages and logging throughout
+4. **Improved CORS**: Configured for better cross-origin request handling
+
+## 📁 **Project Structure**
 
 ```
 snapstream/
-├── backend/                 # Backend API
-│   ├── server/
-│   │   ├── middleware/     # Authentication & error handling
-│   │   ├── models/         # MongoDB schemas
-│   │   ├── routes/         # API endpoints
-│   │   └── server.js       # Main server file
-│   ├── package.json
-│   └── vercel.json
-├── frontend/               # Frontend React app
-│   ├── client/
-│   │   ├── src/
-│   │   │   ├── components/ # React components
-│   │   │   ├── pages/      # Page components
-│   │   │   ├── lib/        # API utilities
-│   │   │   └── main.jsx    # App entry point
-│   │   ├── package.json
-│   │   └── vite.config.js
-│   └── vercel.json
-├── docs/                   # Documentation
-├── DEPLOYMENT.md          # Deployment guide
-└── README.md
+├── api/                    # Vercel API functions
+│   └── server.js         # Main API server
+├── backend/               # Backend server (local development)
+│   └── server/
+├── frontend/              # Frontend application
+│   └── client/
+├── docs/                  # Documentation
+├── tests/                 # Test files
+└── deploy.sh             # Deployment script
 ```
 
-## 🚀 Deployment
+## 🛠️ **Technology Stack**
 
-### Option 1: Deploy to Vercel (Recommended)
+### **Frontend**
+- React 18
+- Vite
+- Tailwind CSS
+- React Router
 
-Follow the detailed deployment guide in [DEPLOYMENT.md](./DEPLOYMENT.md)
+### **Backend**
+- Node.js
+- Express.js
+- MongoDB (Mongoose)
+- JWT Authentication
+- Multer (file uploads)
 
-### Option 2: Manual Deployment
+### **Deployment**
+- Vercel (Frontend & Backend)
+- MongoDB Atlas
 
-1. **Deploy Backend**:
-   - Set up MongoDB Atlas
-   - Deploy to your preferred hosting (Heroku, Railway, etc.)
-   - Set environment variables
+## 🔐 **Environment Variables**
 
-2. **Deploy Frontend**:
-   - Build the React app: `npm run build`
-   - Deploy to Vercel, Netlify, or any static hosting
-   - Set `VITE_API_URL` environment variable
-
-## 🔧 Environment Variables
-
-### Backend (.env)
-```env
+### **Backend (Vercel)**
+```bash
 MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/snapstream
-JWT_SECRET=your-super-secret-jwt-key-here
+JWT_SECRET=your-super-secret-jwt-key
 NODE_ENV=production
-PORT=3000
 ```
 
-### Frontend (.env)
-```env
-VITE_API_URL=https://your-backend-url.vercel.app
-```
-
-## 🧪 Testing
-
-### Database Connection Test
+### **Frontend (Vercel)**
 ```bash
-cd backend
-node test-db.js
+VITE_API_URL=https://snapstream-backend.vercel.app
+NODE_ENV=production
 ```
 
-### API Health Check
+## 🧪 **Testing**
+
 ```bash
-curl https://your-backend-url.vercel.app/health
+# Test backend endpoints
+node test-simple.js
+
+# Test deployment
+./deploy.sh test
 ```
 
-## 🔒 Security Features
+## 📊 **API Endpoints**
 
-- JWT-based authentication
-- Password hashing with bcrypt
-- CORS protection
-- Input validation
-- File upload restrictions
-- Rate limiting (can be added)
+### **Authentication**
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/reset-password` - Password reset
 
-## 📊 Database Schema
+### **Files**
+- `POST /api/upload` - Upload files
+- `GET /api/feed` - Get feed
+- `GET /api/explore` - Explore files
 
-### Users Collection
-```javascript
-{
-  username: String (unique),
-  email: String (unique),
-  password: String (hashed),
-  profilePicture: String,
-  bio: String,
-  followers: [ObjectId],
-  following: [ObjectId]
-}
-```
+### **Health & Testing**
+- `GET /health` - Health check
+- `GET /api/test/ping` - API ping
+- `GET /api/test/env` - Environment check
+- `GET /api/test/db` - Database connection
 
-### Files Collection
-```javascript
-{
-  filename: String,
-  originalName: String,
-  contentType: String,
-  size: Number,
-  caption: String,
-  tags: [String],
-  isPrivate: Boolean,
-  uploader: ObjectId (ref: User),
-  uploaderUsername: String,
-  likes: [ObjectId],
-  comments: [{
-    user: ObjectId,
-    username: String,
-    text: String,
-    createdAt: Date
-  }],
-  uploadTime: Date
-}
-```
+## 🚀 **Deployment Status**
 
-## 🐛 Troubleshooting
+- ✅ **Backend**: Ready for deployment
+- ✅ **Frontend**: Ready for deployment
+- ✅ **Database**: MongoDB Atlas configured
+- ✅ **Environment**: Variables documented
 
-### Common Issues
+## 📝 **Recent Updates**
 
-1. **CORS Errors**: Check CORS settings in `backend/server/server.js`
-2. **MongoDB Connection**: Verify your MongoDB URI and network access
-3. **File Uploads**: Check file size limits and storage permissions
-4. **Environment Variables**: Ensure all required variables are set
+### **v1.0.0** (Latest)
+- Fixed 500 error on login
+- Added inline schemas to avoid import issues
+- Created centralized configuration
+- Enhanced error handling
+- Added comprehensive testing scripts
+- Created deployment automation
 
-### Debug Mode
-
-Enable debug logging by setting `NODE_ENV=development` in your environment variables.
-
-## 🤝 Contributing
+## 🤝 **Contributing**
 
 1. Fork the repository
 2. Create a feature branch
@@ -199,26 +154,21 @@ Enable debug logging by setting `NODE_ENV=development` in your environment varia
 4. Test thoroughly
 5. Submit a pull request
 
-## 📄 License
+## 📄 **License**
 
-This project is licensed under the MIT License.
+MIT License - see LICENSE file for details
 
-## 🆘 Support
+## 🆘 **Support**
 
-If you need help:
+If you encounter issues:
 
-1. Check the [DEPLOYMENT.md](./DEPLOYMENT.md) guide
-2. Review the troubleshooting section
-3. Check the Vercel deployment logs
-4. Verify your environment variables
+1. Check the [DEBUG_AND_DEPLOYMENT_GUIDE.md](DEBUG_AND_DEPLOYMENT_GUIDE.md)
+2. Review the [FINAL_FIX_SUMMARY.md](FINAL_FIX_SUMMARY.md)
+3. Run the test scripts: `node test-simple.js`
+4. Check Vercel function logs
 
-## 🚀 Future Enhancements
+---
 
-- [ ] Real-time notifications
-- [ ] Image filters and editing
-- [ ] Stories feature
-- [ ] Direct messaging
-- [ ] Advanced search
-- [ ] Analytics dashboard
-- [ ] Mobile app
-- [ ] Cloud storage integration
+**Status**: ✅ Ready for Production  
+**Version**: 1.0.0  
+**Last Updated**: 2024-01-01

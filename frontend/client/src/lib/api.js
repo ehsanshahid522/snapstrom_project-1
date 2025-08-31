@@ -1,3 +1,5 @@
+import { getApiUrl } from '../config.js';
+
 export function getToken() {
   return localStorage.getItem('token');
 }
@@ -17,8 +19,7 @@ export function getUsername() {
 }
 
 // Base URL for the backend API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '');
+const API_BASE_URL = getApiUrl();
 
 async function parseJsonSafe(res) {
   try {

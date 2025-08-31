@@ -4,6 +4,9 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import multer from 'multer';
 
 dotenv.config();
 
@@ -23,6 +26,101 @@ app.use(cors({
 // Increase payload limits for file uploads
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// User Schema definition (inline to avoid import issues)
+const UserSchema = new mongoose.Schema({
+  username: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    index: true
+  },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true 
+  },
+  password: { 
+    type: String, 
+    required: true 
+  },
+  profilePicture: {
+    type: String,
+    default: null
+  },
+  isPrivateAccount: {
+    type: Boolean,
+    default: false
+  },
+  bio: {
+    type: String,
+    default: ''
+  },
+  followers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  following: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }]
+}, { timestamps: true });
+
+UserSchema.index({ username: 'text' });
+const User = mongoose.model('User', UserSchema);
+
+// File Schema definition (inline to avoid import issues)
+const FileSchema = new mongoose.Schema({
+  filename: {
+    type: String,
+    required: true
+  },
+  originalName: {
+    type: String,
+    required: true
+  },
+  contentType: {
+    type: String,
+    required: true
+  },
+  size: {
+    type: Number,
+    required: true
+  },
+  caption: {
+    type: String,
+    default: ''
+  },
+  tags: [{
+    type: String
+  }],
+  isPrivate: {
+    type: Boolean,
+    default: false
+  },
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  comments: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    text: String,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
+}, { timestamps: true });
+
+const File = mongoose.model('File', FileSchema);
 
 // Database connection function
 async function connectDB() {
@@ -102,26 +200,26 @@ app.get('/test/ping', (req, res) => {
 
 app.get('/test/env', (req, res) => {
   res.json({
-    nodeEnv: process.env.NODE_ENV,
+    nodeEnv: process.env.NODE_ENV || 'development',
     hasMongoUri: !!process.env.MONGO_URI,
     hasJwtSecret: !!process.env.JWT_SECRET,
-    port: process.env.PORT,
+    port: process.env.PORT || '3000',
     timestamp: new Date().toISOString()
   });
 });
 
 app.get('/test/db', async (req, res) => {
   try {
-    const connected = mongoose.connection.readyState === 1;
+    const isConnected = mongoose.connection.readyState === 1;
     res.json({
-      connected,
-      readyState: connected ? 'connected' : 'disconnected',
+      connected: isConnected,
+      readyState: mongoose.connection.readyState,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
     res.status(500).json({
-      error: error.message,
       connected: false,
+      error: error.message,
       timestamp: new Date().toISOString()
     });
   }
@@ -179,15 +277,11 @@ app.post('/auth/register', async (req, res) => {
       return res.status(500).json({ message: 'Database not configured' });
     }
     
-    // Import User model dynamically
-    const User = (await import('../backend/server/models/User.js')).default;
-    
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ message: 'Username or email already exists' });
     }
     
-    const bcrypt = await import('bcrypt');
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const user = new User({
@@ -215,11 +309,6 @@ app.post('/auth/login', async (req, res) => {
     if (!process.env.MONGO_URI) {
       return res.status(500).json({ message: 'Database not configured' });
     }
-    
-    // Import User model and jwt dynamically
-    const User = (await import('../backend/server/models/User.js')).default;
-    const jwt = await import('jsonwebtoken');
-    const bcrypt = await import('bcrypt');
     
     const user = await User.findOne({ email });
     if (!user) {
@@ -257,15 +346,11 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(500).json({ message: 'Database not configured' });
     }
     
-    // Import User model dynamically
-    const User = (await import('../backend/server/models/User.js')).default;
-    
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ message: 'Username or email already exists' });
     }
     
-    const bcrypt = await import('bcrypt');
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const user = new User({
@@ -293,11 +378,6 @@ app.post('/api/auth/login', async (req, res) => {
     if (!process.env.MONGO_URI) {
       return res.status(500).json({ message: 'Database not configured' });
     }
-    
-    // Import User model and jwt dynamically
-    const User = (await import('../backend/server/models/User.js')).default;
-    const jwt = await import('jsonwebtoken');
-    const bcrypt = await import('bcrypt');
     
     const user = await User.findOne({ email });
     if (!user) {
@@ -329,11 +409,6 @@ app.post('/upload', async (req, res) => {
       return res.status(500).json({ message: 'Database not configured' });
     }
     
-    // Import multer and File model dynamically
-    const multer = await import('multer');
-    const File = (await import('../backend/server/models/File.js')).default;
-    const User = (await import('../backend/server/models/User.js')).default;
-    
     // Configure multer
     const storage = multer.diskStorage({
       destination: (req, file, cb) => {
@@ -378,10 +453,7 @@ app.post('/upload', async (req, res) => {
         caption: caption.trim(),
         tags: tags ? tags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0) : [],
         isPrivate: isPrivate === 'true',
-        uploader: req.user?.id || 'unknown',
-        uploaderUsername: req.user?.username || 'unknown',
-        uploadTime: new Date(),
-        processed: false
+        uploadedBy: req.user?.id || 'unknown'
       });
       
       await file.save();
@@ -405,10 +477,7 @@ app.post('/api/upload', async (req, res) => {
       return res.status(500).json({ message: 'Database not configured' });
     }
     
-    // Import multer and File model dynamically
-    const multer = await import('multer');
-    const File = (await import('../backend/server/models/File.js')).default;
-    const User = (await import('../backend/server/models/User.js')).default;
+
     
     // Configure multer
     const storage = multer.diskStorage({
@@ -454,10 +523,7 @@ app.post('/api/upload', async (req, res) => {
         caption: caption.trim(),
         tags: tags ? tags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0) : [],
         isPrivate: isPrivate === 'true',
-        uploader: req.user?.id || 'unknown',
-        uploaderUsername: req.user?.username || 'unknown',
-        uploadTime: new Date(),
-        processed: false
+        uploadedBy: req.user?.id || 'unknown'
       });
       
       await file.save();
