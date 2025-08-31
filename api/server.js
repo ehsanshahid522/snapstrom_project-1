@@ -129,7 +129,7 @@ const FileSchema = new mongoose.Schema({
 
 const File = mongoose.model('File', FileSchema);
 
-// Database connection function
+// Database connection function with detailed debugging
 async function connectDB() {
   try {
     let mongoURI = process.env.MONGO_URI;
@@ -143,6 +143,8 @@ async function connectDB() {
     console.log('📝 MongoDB URI length:', mongoURI.length);
     console.log('🔍 MongoDB URI contains @:', mongoURI.includes('@'));
     console.log('🔍 MongoDB URI contains %40:', mongoURI.includes('%40'));
+    console.log('🔍 MongoDB URI starts with mongodb+srv:', mongoURI.startsWith('mongodb+srv://'));
+    console.log('🔍 MongoDB URI contains .mongodb.net:', mongoURI.includes('.mongodb.net'));
     
     // Auto-fix URL encoding for @ symbol in password
     if (mongoURI.includes('@') && !mongoURI.includes('%40')) {
@@ -154,86 +156,111 @@ async function connectDB() {
       console.log('✅ URL encoding fixed');
     }
 
-    // Enhanced connection options for better reliability
-    const options = {
-      maxPoolSize: 5,
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 60000,
-      family: 4,
-      retryWrites: true,
-      w: 'majority',
-      bufferCommands: false,
-      bufferMaxEntries: 0,
-      connectTimeoutMS: 30000,
-      heartbeatFrequencyMS: 10000,
-      maxIdleTimeMS: 30000,
-      minPoolSize: 1,
-      maxConnecting: 2,
-      compressors: ['zlib'],
-      zlibCompressionLevel: 6
-    };
+    // Try multiple connection strategies
+    const connectionStrategies = [
+      {
+        name: 'Standard Connection',
+        options: {
+          maxPoolSize: 5,
+          serverSelectionTimeoutMS: 30000,
+          socketTimeoutMS: 60000,
+          family: 4,
+          retryWrites: true,
+          w: 'majority',
+          bufferCommands: false,
+          bufferMaxEntries: 0,
+          connectTimeoutMS: 30000,
+          heartbeatFrequencyMS: 10000,
+          maxIdleTimeMS: 30000,
+          minPoolSize: 1,
+          maxConnecting: 2,
+          compressors: ['zlib'],
+          zlibCompressionLevel: 6
+        }
+      },
+      {
+        name: 'Simple Connection',
+        options: {
+          maxPoolSize: 1,
+          serverSelectionTimeoutMS: 15000,
+          socketTimeoutMS: 30000,
+          family: 4,
+          retryWrites: false,
+          w: 1,
+          bufferCommands: false,
+          bufferMaxEntries: 0,
+          connectTimeoutMS: 15000
+        }
+      },
+      {
+        name: 'Minimal Connection',
+        options: {
+          maxPoolSize: 1,
+          serverSelectionTimeoutMS: 10000,
+          socketTimeoutMS: 20000,
+          family: 4,
+          retryWrites: false,
+          w: 1,
+          bufferCommands: false,
+          bufferMaxEntries: 0,
+          connectTimeoutMS: 10000
+        }
+      }
+    ];
 
-    console.log('🔧 Using enhanced connection options...');
-    
     // Close existing connection if any
     if (mongoose.connection.readyState !== 0) {
       console.log('🔄 Closing existing connection...');
       await mongoose.disconnect();
     }
 
-    await mongoose.connect(mongoURI, options);
-    console.log('✅ MongoDB connected successfully');
-    
-    // Test the connection with retry
-    let pingSuccess = false;
-    for (let i = 0; i < 3; i++) {
+    // Try each connection strategy
+    for (let strategyIndex = 0; strategyIndex < connectionStrategies.length; strategyIndex++) {
+      const strategy = connectionStrategies[strategyIndex];
+      console.log(`🔄 Trying ${strategy.name} (attempt ${strategyIndex + 1}/${connectionStrategies.length})...`);
+      
       try {
-        console.log(`🔍 Testing connection (attempt ${i + 1}/3)...`);
-        const admin = mongoose.connection.db.admin();
-        await admin.ping();
-        pingSuccess = true;
-        console.log('✅ MongoDB ping successful');
-        break;
-      } catch (pingError) {
-        console.log(`❌ Ping attempt ${i + 1} failed:`, pingError.message);
-        if (i < 2) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+        await mongoose.connect(mongoURI, strategy.options);
+        console.log(`✅ ${strategy.name} successful`);
+        
+        // Test the connection
+        try {
+          console.log('🔍 Testing connection with ping...');
+          const admin = mongoose.connection.db.admin();
+          await admin.ping();
+          console.log('✅ MongoDB ping successful');
+          return true;
+        } catch (pingError) {
+          console.log(`❌ Ping failed for ${strategy.name}:`, pingError.message);
+          // Continue to next strategy
+        }
+      } catch (connectError) {
+        console.log(`❌ ${strategy.name} failed:`, connectError.message);
+        console.log(`❌ Error type:`, connectError.name);
+        console.log(`❌ Error code:`, connectError.code);
+        
+        // If it's a network error, try next strategy
+        if (connectError.name === 'MongoNetworkError' || connectError.name === 'MongoTimeoutError') {
+          continue;
+        }
+        
+        // If it's an authentication error, stop trying
+        if (connectError.name === 'MongoServerSelectionError' && connectError.message.includes('Authentication failed')) {
+          console.error('❌ Authentication failed - check username and password');
+          return false;
         }
       }
     }
     
-    if (!pingSuccess) {
-      console.error('❌ All ping attempts failed');
-      return false;
-    }
+    console.error('❌ All connection strategies failed');
+    return false;
     
-    return true;
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error code:', error.code);
     console.error('❌ Error details:', error);
-    
-    // Try alternative connection approach
-    try {
-      console.log('🔄 Attempting alternative connection method...');
-      const alternativeOptions = {
-        maxPoolSize: 1,
-        serverSelectionTimeoutMS: 15000,
-        socketTimeoutMS: 30000,
-        family: 4,
-        retryWrites: false,
-        w: 1,
-        bufferCommands: false,
-        bufferMaxEntries: 0,
-        connectTimeoutMS: 15000
-      };
-      
-      await mongoose.connect(mongoURI, alternativeOptions);
-      console.log('✅ Alternative connection successful');
-      return true;
-    } catch (altError) {
-      console.error('❌ Alternative connection also failed:', altError.message);
-      return false;
-    }
+    return false;
   }
 }
 
@@ -308,14 +335,19 @@ app.get('/api/test/ping', (req, res) => {
 });
 
 app.get('/api/test/env', (req, res) => {
+  const mongoURI = process.env.MONGO_URI;
   res.json({
     nodeEnv: process.env.NODE_ENV,
-    hasMongoUri: !!process.env.MONGO_URI,
+    hasMongoUri: !!mongoURI,
     hasJwtSecret: !!process.env.JWT_SECRET,
     port: process.env.PORT,
-    mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0,
-    hasAtSymbol: process.env.MONGO_URI ? process.env.MONGO_URI.includes('@') : false,
-    hasPercent40: process.env.MONGO_URI ? process.env.MONGO_URI.includes('%40') : false,
+    mongoUriLength: mongoURI ? mongoURI.length : 0,
+    hasAtSymbol: mongoURI ? mongoURI.includes('@') : false,
+    hasPercent40: mongoURI ? mongoURI.includes('%40') : false,
+    mongoUriStartsWithSrv: mongoURI ? mongoURI.startsWith('mongodb+srv://') : false,
+    mongoUriContainsNet: mongoURI ? mongoURI.includes('.mongodb.net') : false,
+    mongoUriHasUsername: mongoURI ? mongoURI.includes('://') && mongoURI.includes('@') : false,
+    mongoUriHasDatabase: mongoURI ? mongoURI.includes('/?') || mongoURI.includes('/snapstream') : false,
     timestamp: new Date().toISOString()
   });
 });
@@ -334,7 +366,12 @@ app.get('/api/test/db', async (req, res) => {
         connectionAttempted: true,
         timestamp: new Date().toISOString(),
         hasMongoUri: !!process.env.MONGO_URI,
-        mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0
+        mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0,
+        mongoUriStartsWithSrv: process.env.MONGO_URI ? process.env.MONGO_URI.startsWith('mongodb+srv://') : false,
+        mongoUriContainsNet: process.env.MONGO_URI ? process.env.MONGO_URI.includes('.mongodb.net') : false,
+        mongoUriHasAtSymbol: process.env.MONGO_URI ? process.env.MONGO_URI.includes('@') : false,
+        mongoUriHasPercent40: process.env.MONGO_URI ? process.env.MONGO_URI.includes('%40') : false,
+        environment: process.env.NODE_ENV || 'development'
       });
     } else {
       res.json({
@@ -343,7 +380,12 @@ app.get('/api/test/db', async (req, res) => {
         connectionAttempted: false,
         timestamp: new Date().toISOString(),
         hasMongoUri: !!process.env.MONGO_URI,
-        mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0
+        mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0,
+        mongoUriStartsWithSrv: process.env.MONGO_URI ? process.env.MONGO_URI.startsWith('mongodb+srv://') : false,
+        mongoUriContainsNet: process.env.MONGO_URI ? process.env.MONGO_URI.includes('.mongodb.net') : false,
+        mongoUriHasAtSymbol: process.env.MONGO_URI ? process.env.MONGO_URI.includes('@') : false,
+        mongoUriHasPercent40: process.env.MONGO_URI ? process.env.MONGO_URI.includes('%40') : false,
+        environment: process.env.NODE_ENV || 'development'
       });
     }
   } catch (error) {
@@ -353,7 +395,12 @@ app.get('/api/test/db', async (req, res) => {
       connectionAttempted: true,
       timestamp: new Date().toISOString(),
       hasMongoUri: !!process.env.MONGO_URI,
-      mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0
+      mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0,
+      mongoUriStartsWithSrv: process.env.MONGO_URI ? process.env.MONGO_URI.startsWith('mongodb+srv://') : false,
+      mongoUriContainsNet: process.env.MONGO_URI ? process.env.MONGO_URI.includes('.mongodb.net') : false,
+      mongoUriHasAtSymbol: process.env.MONGO_URI ? process.env.MONGO_URI.includes('@') : false,
+      mongoUriHasPercent40: process.env.MONGO_URI ? process.env.MONGO_URI.includes('%40') : false,
+      environment: process.env.NODE_ENV || 'development'
     });
   }
 });
