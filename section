@@ -1,0 +1,5 @@
+[33m88ba718[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix Vercel runtime configuration - use @vercel/node@18 format
+[33m99f9e25[m Update package.json files and vercel.json configuration for deployment
+[33ma25e868[m 🚀 Complete Project Restructure & Enhancement
+[33m3b88035[m FINAL FIX: Add vercel-build script and update vercel.json for reliable deployment
+[33m80032d7[m CRITICAL FIX: Add root-level vercel.json to properly direct build from client directory
