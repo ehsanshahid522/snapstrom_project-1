@@ -12,10 +12,5 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "functions": {
-    "backend/server/server.js": {
-      "runtime": "@vercel/node@18"
-    }
-  }
+  ]
 }
