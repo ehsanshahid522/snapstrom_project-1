@@ -154,32 +154,86 @@ async function connectDB() {
       console.log('✅ URL encoding fixed');
     }
 
+    // Enhanced connection options for better reliability
     const options = {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
+      maxPoolSize: 5,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 60000,
       family: 4,
       retryWrites: true,
       w: 'majority',
       bufferCommands: false,
       bufferMaxEntries: 0,
-      connectTimeoutMS: 10000,
-      heartbeatFrequencyMS: 30000
+      connectTimeoutMS: 30000,
+      heartbeatFrequencyMS: 10000,
+      maxIdleTimeMS: 30000,
+      minPoolSize: 1,
+      maxConnecting: 2,
+      compressors: ['zlib'],
+      zlibCompressionLevel: 6
     };
+
+    console.log('🔧 Using enhanced connection options...');
+    
+    // Close existing connection if any
+    if (mongoose.connection.readyState !== 0) {
+      console.log('🔄 Closing existing connection...');
+      await mongoose.disconnect();
+    }
 
     await mongoose.connect(mongoURI, options);
     console.log('✅ MongoDB connected successfully');
     
-    // Test the connection
-    const admin = mongoose.connection.db.admin();
-    await admin.ping();
-    console.log('✅ MongoDB ping successful');
+    // Test the connection with retry
+    let pingSuccess = false;
+    for (let i = 0; i < 3; i++) {
+      try {
+        console.log(`🔍 Testing connection (attempt ${i + 1}/3)...`);
+        const admin = mongoose.connection.db.admin();
+        await admin.ping();
+        pingSuccess = true;
+        console.log('✅ MongoDB ping successful');
+        break;
+      } catch (pingError) {
+        console.log(`❌ Ping attempt ${i + 1} failed:`, pingError.message);
+        if (i < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+    
+    if (!pingSuccess) {
+      console.error('❌ All ping attempts failed');
+      return false;
+    }
     
     return true;
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
     console.error('❌ Error details:', error);
-    return false;
+    
+    // Try alternative connection approach
+    try {
+      console.log('🔄 Attempting alternative connection method...');
+      const alternativeOptions = {
+        maxPoolSize: 1,
+        serverSelectionTimeoutMS: 15000,
+        socketTimeoutMS: 30000,
+        family: 4,
+        retryWrites: false,
+        w: 1,
+        bufferCommands: false,
+        bufferMaxEntries: 0,
+        connectTimeoutMS: 15000
+      };
+      
+      await mongoose.connect(mongoURI, alternativeOptions);
+      console.log('✅ Alternative connection successful');
+      return true;
+    } catch (altError) {
+      console.error('❌ Alternative connection also failed:', altError.message);
+      return false;
+    }
   }
 }
 
@@ -269,16 +323,37 @@ app.get('/api/test/env', (req, res) => {
 app.get('/api/test/db', async (req, res) => {
   try {
     const connected = mongoose.connection.readyState === 1;
-    res.json({
-      connected,
-      readyState: connected ? 'connected' : 'disconnected',
-      timestamp: new Date().toISOString()
-    });
+    
+    // Try to connect if not connected
+    if (!connected) {
+      console.log('🔄 Health check: Attempting to connect to database...');
+      const connectionResult = await connectDB();
+      res.json({
+        connected: connectionResult,
+        readyState: connectionResult ? 'connected' : 'disconnected',
+        connectionAttempted: true,
+        timestamp: new Date().toISOString(),
+        hasMongoUri: !!process.env.MONGO_URI,
+        mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0
+      });
+    } else {
+      res.json({
+        connected: true,
+        readyState: 'connected',
+        connectionAttempted: false,
+        timestamp: new Date().toISOString(),
+        hasMongoUri: !!process.env.MONGO_URI,
+        mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0
+      });
+    }
   } catch (error) {
     res.status(500).json({
       error: error.message,
       connected: false,
-      timestamp: new Date().toISOString()
+      connectionAttempted: true,
+      timestamp: new Date().toISOString(),
+      hasMongoUri: !!process.env.MONGO_URI,
+      mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0
     });
   }
 });
@@ -368,13 +443,34 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(500).json({ message: 'Database not configured' });
     }
     
-    // Ensure database connection
-    if (mongoose.connection.readyState !== 1) {
+    // Enhanced database connection with multiple attempts
+    let dbConnected = mongoose.connection.readyState === 1;
+    if (!dbConnected) {
       console.log('🔄 Database not connected, attempting to connect...');
-      const connected = await connectDB();
-      if (!connected) {
-        console.error('❌ Failed to connect to database');
-        return res.status(500).json({ message: 'Database connection failed' });
+      
+      // Try multiple connection attempts
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        console.log(`🔄 Connection attempt ${attempt}/3...`);
+        const connected = await connectDB();
+        if (connected) {
+          dbConnected = true;
+          console.log('✅ Database connection successful');
+          break;
+        } else {
+          console.log(`❌ Connection attempt ${attempt} failed`);
+          if (attempt < 3) {
+            console.log('⏳ Waiting 2 seconds before next attempt...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
+      
+      if (!dbConnected) {
+        console.error('❌ All database connection attempts failed');
+        return res.status(500).json({ 
+          message: 'Database connection failed. Please try again in a few moments.',
+          error: 'Database unavailable'
+        });
       }
     }
     
@@ -401,7 +497,24 @@ app.post('/api/auth/register', async (req, res) => {
   } catch (err) {
     console.error('❌ Registration error:', err);
     console.error('❌ Error stack:', err.stack);
-    res.status(500).json({ message: 'Registration error', error: err.message });
+    
+    // Provide more specific error messages
+    if (err.name === 'MongoNetworkError' || err.name === 'MongoTimeoutError') {
+      return res.status(500).json({ 
+        message: 'Database connection issue. Please try again.',
+        error: 'Network timeout'
+      });
+    } else if (err.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Invalid data provided.',
+        error: err.message
+      });
+    } else {
+      return res.status(500).json({ 
+        message: 'Registration failed. Please try again.',
+        error: err.message
+      });
+    }
   }
 });
 
