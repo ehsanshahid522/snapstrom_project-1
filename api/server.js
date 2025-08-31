@@ -234,22 +234,32 @@ async function connectDB() {
           console.log(`❌ Ping failed for ${strategy.name}:`, pingError.message);
           // Continue to next strategy
         }
-      } catch (connectError) {
-        console.log(`❌ ${strategy.name} failed:`, connectError.message);
-        console.log(`❌ Error type:`, connectError.name);
-        console.log(`❌ Error code:`, connectError.code);
-        
-        // If it's a network error, try next strategy
-        if (connectError.name === 'MongoNetworkError' || connectError.name === 'MongoTimeoutError') {
-          continue;
-        }
-        
-        // If it's an authentication error, stop trying
-        if (connectError.name === 'MongoServerSelectionError' && connectError.message.includes('Authentication failed')) {
-          console.error('❌ Authentication failed - check username and password');
-          return false;
-        }
-      }
+             } catch (connectError) {
+         console.log(`❌ ${strategy.name} failed:`, connectError.message);
+         console.log(`❌ Error type:`, connectError.name);
+         console.log(`❌ Error code:`, connectError.code);
+         console.log(`❌ Full error:`, connectError);
+         
+         // If it's a network error, try next strategy
+         if (connectError.name === 'MongoNetworkError' || connectError.name === 'MongoTimeoutError') {
+           continue;
+         }
+         
+         // If it's an authentication error, stop trying
+         if (connectError.name === 'MongoServerSelectionError' && connectError.message.includes('Authentication failed')) {
+           console.error('❌ Authentication failed - check username and password');
+           return false;
+         }
+         
+         // If it's a server selection error, log more details
+         if (connectError.name === 'MongoServerSelectionError') {
+           console.error('❌ Server selection failed - possible causes:');
+           console.error('   - Network access not configured');
+           console.error('   - Cluster is paused or inactive');
+           console.error('   - Wrong cluster URL');
+           console.error('   - Firewall blocking connection');
+         }
+       }
     }
     
     console.error('❌ All connection strategies failed');
@@ -391,6 +401,8 @@ app.get('/api/test/db', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: error.message,
+      errorName: error.name,
+      errorCode: error.code,
       connected: false,
       connectionAttempted: true,
       timestamp: new Date().toISOString(),
