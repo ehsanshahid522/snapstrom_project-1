@@ -423,6 +423,35 @@ app.get('/api/test/db', async (req, res) => {
   }
 });
 
+// Test feed endpoint
+app.get('/api/test/feed', async (req, res) => {
+  try {
+    console.log('🧪 Testing feed endpoint...');
+    
+    // Check DB connection
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    
+    // Count total files
+    const totalFiles = await File.countDocuments();
+    const publicFiles = await File.countDocuments({ isPrivate: false });
+    
+    res.json({
+      status: 'ok',
+      dbStatus,
+      totalFiles,
+      publicFiles,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Feed test error:', error);
+    res.status(500).json({
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Serve uploaded images
 app.get('/api/images/:fileId', async (req, res) => {
   try {
@@ -458,10 +487,28 @@ app.get('/api/images/:fileId', async (req, res) => {
 // Get feed posts
 app.get('/api/feed', async (req, res) => {
   try {
+    // Ensure DB connection with retry logic
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        console.log(`🔄 Feed: Connection attempt ${attempt}/2...`);
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable, try again' });
+      }
+    }
+
+    console.log('📱 Loading feed posts...');
+    
     const files = await File.find({ isPrivate: false })
       .populate('uploadedBy', 'username profilePicture')
       .sort({ createdAt: -1 })
       .limit(20);
+    
+    console.log(`✅ Found ${files.length} posts for feed`);
     
     const posts = files.map(file => ({
       id: file._id,
@@ -469,16 +516,20 @@ app.get('/api/feed', async (req, res) => {
       caption: file.caption,
       tags: file.tags,
       uploadedBy: file.uploadedBy,
-      likes: file.likes,
-      comments: file.comments,
+      likes: file.likes || [],
+      comments: file.comments || [],
       createdAt: file.createdAt,
       imageUrl: `/api/images/${file._id}`
     }));
     
     res.json(posts);
   } catch (error) {
-    console.error('Error getting feed:', error);
-    res.status(500).json({ message: 'Error getting feed', error: error.message });
+    console.error('❌ Error getting feed:', error);
+    res.status(500).json({ 
+      message: 'Error getting feed', 
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
