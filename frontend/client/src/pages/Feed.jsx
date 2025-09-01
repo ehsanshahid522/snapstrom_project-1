@@ -81,8 +81,8 @@ export default function Feed() {
         const followStatus = {};
         for (const userId of allUsers) {
           try {
-            const response = await api(`/api/auth/follow-status/${userId}`).catch(() => ({ isFollowing: false }));
-            followStatus[userId] = response.isFollowing || false;
+            // Note: We don't have a follow-status endpoint, so we'll skip this for now
+            followStatus[userId] = false;
           } catch (error) {
             followStatus[userId] = false;
           }
@@ -100,7 +100,7 @@ export default function Feed() {
 
   const like = async (id) => {
     try {
-      await api(`/api/interactions/like/${id}`, { method: 'POST' })
+      await api(`/api/like/${id}`, { method: 'POST' })
       // Update both feeds
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
         ...p,
@@ -115,7 +115,7 @@ export default function Feed() {
 
   const comment = async (id, text) => {
     try {
-      await api(`/api/interactions/comment/${id}`, { 
+      await api(`/api/comment/${id}`, { 
         method: 'POST', 
         body: { text } 
       })
@@ -132,7 +132,7 @@ export default function Feed() {
 
   const toggleFollow = async (userId, username) => {
     try {
-      const response = await api(`/api/auth/follow/${userId}`, { method: 'POST' })
+      const response = await api(`/api/follow/${userId}`, { method: 'POST' })
       
       // Update following status
       setFollowingStatus(prev => ({
@@ -355,7 +355,7 @@ export default function Feed() {
               {/* Post Image */}
               <div className="relative">
                 <img 
-                  src={`/api/upload/${p._id}`} 
+                  src={`/api/images/${p._id}`} 
                   alt={p.originalName || ''} 
                   className="w-full h-auto object-cover"
                 />

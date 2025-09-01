@@ -2,7 +2,7 @@
 export const config = {
   // API Configuration
   API_BASE_URL: import.meta.env.VITE_API_URL || 
-    (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api'),
+    (window.location.hostname === 'localhost' ? 'http://localhost:3000' : ''),
   
   // Environment
   NODE_ENV: import.meta.env.NODE_ENV || 'development',
@@ -21,10 +21,10 @@ export const config = {
 export function getApiUrl(path = '') {
   const baseUrl = config.API_BASE_URL;
   if (!path) {
-    return baseUrl;
+    return `${baseUrl}/api`;
   }
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${baseUrl}${cleanPath}`;
+  return `${baseUrl}/api${cleanPath}`;
 }
 
 // Helper function to check if running locally

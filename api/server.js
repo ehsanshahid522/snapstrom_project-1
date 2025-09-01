@@ -1528,6 +1528,52 @@ connectDB().then(success => {
   console.error('❌ Database connection error on startup:', error.message);
 });
 
+// Search users
+app.get('/api/search/users', async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.trim().length === 0) {
+      return res.json({ users: [] });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const searchQuery = q.trim();
+    const users = await User.find({
+      $or: [
+        { username: { $regex: searchQuery, $options: 'i' } },
+        { email: { $regex: searchQuery, $options: 'i' } }
+      ]
+    })
+    .select('username profilePicture bio')
+    .limit(10);
+
+    res.json({
+      users: users.map(user => ({
+        id: user._id,
+        username: user.username,
+        profilePicture: user.profilePicture,
+        bio: user.bio
+      }))
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ message: 'Error searching users', error: error.message });
+  }
+});
+
 // Debug endpoint to check database content
 app.get('/api/debug/data', async (req, res) => {
   try {

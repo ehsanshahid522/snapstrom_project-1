@@ -282,7 +282,7 @@ export default function Profile() {
                 >
                   {/* Post Image */}
                   <img 
-                    src={`/api/upload/${post._id}`} 
+                    src={`/api/images/${post._id}`} 
                     alt={post.originalName || ''} 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />

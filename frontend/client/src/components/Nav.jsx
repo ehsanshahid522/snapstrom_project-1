@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { clearAuth, getUsername } from '../lib/api.js'
+import { clearAuth, getUsername, api } from '../lib/api.js'
 
 export default function Nav() {
   const username = getUsername()
@@ -22,18 +22,8 @@ export default function Nav() {
 
     try {
       setSearchLoading(true)
-      const response = await fetch(`/api/explore/search?q=${encodeURIComponent(searchQuery)}&type=users`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setSearchResults(data.users || [])
-      } else {
-        setSearchResults([])
-      }
+      const data = await api(`/api/search/users?q=${encodeURIComponent(searchQuery)}`)
+      setSearchResults(data.users || [])
     } catch (error) {
       console.error('Search error:', error)
       setSearchResults([])

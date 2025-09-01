@@ -94,7 +94,7 @@ export default function Share() {
             {/* Post Image */}
             <div className="relative">
               <img 
-                src={`/api/upload/${post._id}`} 
+                src={`/api/images/${post._id}`} 
                 alt={post.originalName || ''} 
                 className="w-full h-auto object-cover"
               />
