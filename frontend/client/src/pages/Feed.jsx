@@ -56,7 +56,7 @@ export default function Feed() {
             uploader: {
               username: username,
               profilePicture: uploader.profilePicture,
-              _id: uploader.id || uploader._id
+              _id: uploader.id || uploader._id || null // Fix: use 'id' from backend
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
             __likesCount: p.likes?.length || 0
@@ -79,13 +79,17 @@ export default function Feed() {
           .filter(id => id && id !== 'undefined') // Remove duplicates and undefined values
           .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
         
+        console.log('All users for follow status:', allUsers); // Debug log
+        
         // Check follow status for each user
         const followStatus = {};
         for (const userId of allUsers) {
           try {
+            console.log('Checking follow status for user:', userId); // Debug log
             const response = await api(`/api/auth/follow-status/${userId}`).catch(() => ({ isFollowing: false }));
             followStatus[userId] = response.isFollowing || false;
           } catch (error) {
+            console.error('Error checking follow status for user:', userId, error); // Debug log
             followStatus[userId] = false;
           }
         }
@@ -134,6 +138,13 @@ export default function Feed() {
 
   const toggleFollow = async (userId, username) => {
     try {
+      console.log('Toggling follow for user:', { userId, username }); // Debug log
+      
+      if (!userId || userId === 'undefined') {
+        console.error('Invalid userId:', userId);
+        return;
+      }
+      
       const response = await api(`/api/follow/${userId}`, { method: 'POST' })
       
       // Update following status
