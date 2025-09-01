@@ -1,0 +1,5 @@
+[33m57c704a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Clean up project: remove debug console.log statements and extra text
+[33m39cf26d[m Fix feed page issues: username display, time formatting, and follow functionality
+[33m416ca0a[m[33m ([m[1;31morigin/main[m[33m)[m debug: add detailed logging to diagnose URL construction issue
+[33m7140049[m fix: resolve double /api/ URL construction issue\n\n- Fixed getApiUrl function to prevent double /api/ prefixes\n- Updated api.js to use getApiUrl for proper URL construction\n- Added logic to detect when path already starts with /api/\n- Prevents /api/api/feed URLs from being created\n- All API calls now use correct single /api/ prefix
+[33ma42fa01[m fix: resolve Feed component API issues and add follow-status endpoint\n\n- Fixed Feed component to use correct /api/feed endpoint\n- Added /api/auth/follow-status/:userId endpoint\n- Fixed data mapping to handle uploadedBy vs uploader fields\n- Added proper error handling for undefined user IDs\n- Fixed post ID mapping (id vs _id)\n- Improved user ID extraction and validation

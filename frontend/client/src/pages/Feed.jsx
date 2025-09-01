@@ -18,12 +18,6 @@ export default function Feed() {
           setCurrentUser({ username })
         }
 
-        // Fetch both feeds
-        const [allPostsData, followingPostsData] = await Promise.all([
-          api('/api/feed'),
-          api('/api/feed').catch(() => []) // For now, use same endpoint for both
-        ])
-        
         // Get current user ID from token
         const currentUserId = (() => {
           try {
@@ -35,6 +29,16 @@ export default function Feed() {
             return null
           }
         })()
+
+        // Fetch both feeds
+        const [allPostsData, followingPostsData] = await Promise.all([
+          api('/api/feed'),
+          api('/api/feed').catch(() => []) // For now, use same endpoint for both
+        ])
+        
+        // Debug: Log the data to see what we're getting
+        console.log('Current User ID:', currentUserId)
+        console.log('Feed Data:', allPostsData)
         
         // Map the data to match expected structure
         const mapPosts = (data) => data.map(p => {
@@ -319,7 +323,7 @@ export default function Feed() {
                   </div>
                   
                   {/* Follow Button - Right Corner */}
-                  {p.uploader?._id && p.uploader._id !== currentUserId && (
+                  {p.uploader?._id && (
                     <button
                       onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
                       className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
