@@ -431,13 +431,31 @@ app.get('/api/test/feed', async (req, res) => {
     // Check DB connection
     const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
     
+    // Ensure DB connection before counting documents
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        console.log(`🔄 Feed test: Connection attempt ${attempt}/2...`);
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({
+          status: 'error',
+          error: 'Database connection failed',
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+    
     // Count total files
     const totalFiles = await File.countDocuments();
     const publicFiles = await File.countDocuments({ isPrivate: false });
     
     res.json({
       status: 'ok',
-      dbStatus,
+      dbStatus: 'connected',
       totalFiles,
       publicFiles,
       timestamp: new Date().toISOString()
