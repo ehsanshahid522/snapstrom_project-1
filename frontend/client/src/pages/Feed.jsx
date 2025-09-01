@@ -39,6 +39,7 @@ export default function Feed() {
         // Debug: Log the data to see what we're getting
         console.log('Current User ID:', currentUserId)
         console.log('Feed Data:', allPostsData)
+        console.log('Sample Post:', allPostsData[0])
         
         // Map the data to match expected structure
         const mapPosts = (data) => data.map(p => {
@@ -46,18 +47,21 @@ export default function Feed() {
           const uploader = p.uploadedBy || p.uploader || {};
           const username = uploader.username || 'Unknown User';
           
-          return {
+          const mappedPost = {
             ...p,
             _id: p.id || p._id,
-            uploadTime: p.createdAt || p.uploadTime, // Fix: use createdAt from backend
+            uploadTime: p.createdAt || p.uploadTime,
             uploader: {
               username: username,
               profilePicture: uploader.profilePicture,
-              _id: uploader.id || uploader._id || null // Fix: use 'id' from backend
+              _id: uploader.id || uploader._id || null // Backend returns 'id', we need '_id'
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
             __likesCount: p.likes?.length || 0
           };
+          
+          console.log('Mapped Post:', mappedPost)
+          return mappedPost;
         });
         
         // Filter out own posts from "For You" feed (all posts)
@@ -131,11 +135,15 @@ export default function Feed() {
 
   const toggleFollow = async (userId, username) => {
     try {
+      console.log('Toggling follow for:', { userId, username })
+      
       if (!userId || userId === 'undefined' || userId === null) {
-        return;
+        console.error('Invalid userId:', userId)
+        return
       }
       
       const response = await api(`/api/follow/${userId}`, { method: 'POST' })
+      console.log('Follow response:', response)
       
       // Update following status
       setFollowingStatus(prev => ({
@@ -143,7 +151,12 @@ export default function Feed() {
         [userId]: response.isFollowing
       }))
       
+      // Show success message
+      const action = response.isFollowing ? 'followed' : 'unfollowed'
+      console.log(`Successfully ${action} ${username}`)
+      
     } catch (error) {
+      console.error('Error toggling follow:', error)
       // Show error message to user
       alert(`Failed to ${followingStatus[userId] ? 'unfollow' : 'follow'} ${username}. Please try again.`)
     }
@@ -320,12 +333,19 @@ export default function Feed() {
                         year: 'numeric'
                       }) : 'Unknown date'}
                     </div>
+                    {/* Debug info */}
+                    <div className="text-xs text-gray-400">
+                      Debug: User ID: {p.uploader?._id || 'null'} | Username: {p.uploader?.username || 'null'}
+                    </div>
                   </div>
                   
                   {/* Follow Button - Right Corner */}
                   {p.uploader?._id && (
                     <button
-                      onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
+                      onClick={() => {
+                        console.log('Follow button clicked for:', { userId: p.uploader._id, username: p.uploader.username })
+                        toggleFollow(p.uploader._id, p.uploader.username)
+                      }}
                       className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
                         followingStatus[p.uploader._id]
                           ? 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-600'
