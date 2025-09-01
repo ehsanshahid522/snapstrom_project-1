@@ -521,8 +521,11 @@ app.get('/api/feed', async (req, res) => {
 
     console.log('📱 Loading feed posts...');
     
-    const files = await File.find({ isPrivate: false })
-      .populate('uploadedBy', 'username profilePicture')
+    // Get all posts (both public and private) for now to debug
+    const files = await File.find({})
+      .populate('uploadedBy', 'username profilePicture bio')
+      .populate('likes', 'username')
+      .populate('comments.user', 'username profilePicture')
       .sort({ createdAt: -1 })
       .limit(20);
     
@@ -532,13 +535,22 @@ app.get('/api/feed', async (req, res) => {
       id: file._id,
       filename: file.filename,
       caption: file.caption,
-      tags: file.tags,
-      uploadedBy: file.uploadedBy,
+      tags: file.tags || [],
+      uploadedBy: file.uploadedBy ? {
+        id: file.uploadedBy._id,
+        username: file.uploadedBy.username,
+        profilePicture: file.uploadedBy.profilePicture,
+        bio: file.uploadedBy.bio
+      } : null,
       likes: file.likes || [],
       comments: file.comments || [],
+      isPrivate: file.isPrivate,
       createdAt: file.createdAt,
       imageUrl: `/api/images/${file._id}`
     }));
+    
+    console.log('📊 Feed posts processed:', posts.length);
+    console.log('👥 Sample post uploadedBy:', posts[0]?.uploadedBy);
     
     res.json(posts);
   } catch (error) {
@@ -957,15 +969,24 @@ app.get('/api/profile/:username', async (req, res) => {
       }
     }
 
+    console.log('🔍 Looking for user:', username);
     const user = await User.findOne({ username }).select('-password');
     if (!user) {
+      console.log('❌ User not found:', username);
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Get user's posts
-    const userPosts = await File.find({ uploadedBy: user._id, isPrivate: false })
+    console.log('✅ User found:', user.username);
+    console.log('📸 User posts count:', user.posts?.length || 0);
+
+    // Get user's posts (both public and private for now)
+    const userPosts = await File.find({ uploadedBy: user._id })
+      .populate('likes', 'username')
+      .populate('comments.user', 'username profilePicture')
       .sort({ createdAt: -1 })
       .limit(10);
+
+    console.log('📱 Found user posts:', userPosts.length);
 
     res.json({
       user: {
@@ -975,17 +996,18 @@ app.get('/api/profile/:username', async (req, res) => {
         profilePicture: user.profilePicture,
         bio: user.bio,
         isPrivateAccount: user.isPrivateAccount,
-        followers: user.followers,
-        following: user.following,
+        followers: user.followers || [],
+        following: user.following || [],
         createdAt: user.createdAt
       },
       posts: userPosts.map(post => ({
         id: post._id,
         filename: post.filename,
         caption: post.caption,
-        tags: post.tags,
-        likes: post.likes,
-        comments: post.comments,
+        tags: post.tags || [],
+        likes: post.likes || [],
+        comments: post.comments || [],
+        isPrivate: post.isPrivate,
         createdAt: post.createdAt,
         imageUrl: `/api/images/${post._id}`
       }))
@@ -1095,15 +1117,23 @@ app.get('/api/profile', async (req, res) => {
       }
     }
 
+    console.log('🔍 Looking for current user:', decoded.id);
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
+      console.log('❌ Current user not found:', decoded.id);
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Get user's posts
+    console.log('✅ Current user found:', user.username);
+
+    // Get user's posts (both public and private for current user)
     const userPosts = await File.find({ uploadedBy: user._id })
+      .populate('likes', 'username')
+      .populate('comments.user', 'username profilePicture')
       .sort({ createdAt: -1 })
       .limit(10);
+
+    console.log('📱 Found current user posts:', userPosts.length);
 
     res.json({
       user: {
@@ -1113,17 +1143,18 @@ app.get('/api/profile', async (req, res) => {
         profilePicture: user.profilePicture,
         bio: user.bio,
         isPrivateAccount: user.isPrivateAccount,
-        followers: user.followers,
-        following: user.following,
+        followers: user.followers || [],
+        following: user.following || [],
         createdAt: user.createdAt
       },
       posts: userPosts.map(post => ({
         id: post._id,
         filename: post.filename,
         caption: post.caption,
-        tags: post.tags,
-        likes: post.likes,
-        comments: post.comments,
+        tags: post.tags || [],
+        likes: post.likes || [],
+        comments: post.comments || [],
+        isPrivate: post.isPrivate,
         createdAt: post.createdAt,
         imageUrl: `/api/images/${post._id}`
       }))
@@ -1495,6 +1526,50 @@ connectDB().then(success => {
   }
 }).catch(error => {
   console.error('❌ Database connection error on startup:', error.message);
+});
+
+// Debug endpoint to check database content
+app.get('/api/debug/data', async (req, res) => {
+  try {
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    // Count users and files
+    const userCount = await User.countDocuments();
+    const fileCount = await File.countDocuments();
+    const publicFileCount = await File.countDocuments({ isPrivate: false });
+    const privateFileCount = await File.countDocuments({ isPrivate: true });
+
+    // Get sample data
+    const sampleUsers = await User.find().select('username email createdAt').limit(5);
+    const sampleFiles = await File.find().select('filename caption uploadedBy isPrivate createdAt').limit(5);
+
+    res.json({
+      summary: {
+        userCount,
+        fileCount,
+        publicFileCount,
+        privateFileCount,
+        dbConnected: mongoose.connection.readyState === 1
+      },
+      sampleUsers,
+      sampleFiles,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ message: 'Error getting debug data', error: error.message });
+  }
 });
 
 // Export for Vercel
