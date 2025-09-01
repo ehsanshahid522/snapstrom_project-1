@@ -47,8 +47,8 @@ export default function Feed() {
           console.log('Raw post data:', p)
           console.log('uploadedBy:', p.uploadedBy)
           
-          // Ensure uploader data exists - backend returns uploadedBy with 'id' field
-          const uploader = p.uploadedBy || p.uploader || {};
+          // Backend returns uploadedBy with id and username
+          const uploader = p.uploadedBy || {};
           const username = uploader.username || 'Unknown User';
           
           const mappedPost = {
@@ -58,7 +58,7 @@ export default function Feed() {
             uploader: {
               username: username,
               profilePicture: uploader.profilePicture,
-              _id: uploader.id || uploader._id || null // Backend returns uploadedBy.id
+              _id: uploader.id || null // Backend returns uploadedBy.id
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
             __likesCount: p.likes?.length || 0
@@ -311,40 +311,7 @@ export default function Feed() {
               {/* Post Header */}
               <div className="p-6 pb-4">
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
-                    {p.uploader?.profilePicture ? (
-                      <img 
-                        src={`/uploads/${p.uploader.profilePicture}`} 
-                        alt="" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                        <span className="text-pink-600 font-bold text-lg">
-                          {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-bold text-gray-900 text-lg">
-                      {p.uploader?.username || 'Unknown User'}
-                    </div>
-                    <div className="text-sm text-gray-500 flex items-center">
-                      <span className="mr-2">🕐</span>
-                      {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      }) : 'Unknown date'}
-                    </div>
-                    {/* Debug info */}
-                    <div className="text-xs text-gray-400">
-                      Debug: User ID: {p.uploader?._id || 'null'} | Username: {p.uploader?.username || 'null'}
-                    </div>
-                  </div>
-                  
-                  {/* Follow Button - Right Corner */}
+                  {/* Follow Button - Top Left */}
                   {p.uploader?._id && (
                     <button
                       onClick={() => {
@@ -371,6 +338,43 @@ export default function Feed() {
                     </button>
                   )}
                   
+                  {/* Profile Picture */}
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
+                    {p.uploader?.profilePicture ? (
+                      <img 
+                        src={`/uploads/${p.uploader.profilePicture}`} 
+                        alt="" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
+                        <span className="text-pink-600 font-bold text-lg">
+                          {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Username and Time */}
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-900 text-lg">
+                      {p.uploader?.username || 'Unknown User'}
+                    </div>
+                    <div className="text-sm text-gray-500 flex items-center">
+                      <span className="mr-2">🕐</span>
+                      {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      }) : 'Unknown date'}
+                    </div>
+                    {/* Debug info */}
+                    <div className="text-xs text-gray-400">
+                      Debug: User ID: {p.uploader?._id || 'null'} | Username: {p.uploader?.username || 'null'}
+                    </div>
+                  </div>
+                  
+                  {/* Private Badge */}
                   {p.isPrivate && (
                     <div className="px-3 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold rounded-full">
                       🔒 Private
