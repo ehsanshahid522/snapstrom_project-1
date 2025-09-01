@@ -866,6 +866,205 @@ app.post('/api/upload', async (req, res) => {
   }
 });
 
+// Get user profile
+app.get('/api/profile/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const user = await User.findOne({ username }).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get user's posts
+    const userPosts = await File.find({ uploadedBy: user._id, isPrivate: false })
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    res.json({
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        bio: user.bio,
+        isPrivateAccount: user.isPrivateAccount,
+        followers: user.followers,
+        following: user.following,
+        createdAt: user.createdAt
+      },
+      posts: userPosts.map(post => ({
+        id: post._id,
+        filename: post.filename,
+        caption: post.caption,
+        tags: post.tags,
+        likes: post.likes,
+        comments: post.comments,
+        createdAt: post.createdAt,
+        imageUrl: `/api/images/${post._id}`
+      }))
+    });
+  } catch (error) {
+    console.error('Profile error:', error);
+    res.status(500).json({ message: 'Error loading profile', error: error.message });
+  }
+});
+
+// Update user profile (authenticated)
+app.put('/api/profile', async (req, res) => {
+  try {
+    const { username, bio, isPrivateAccount } = req.body;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update fields
+    if (username && username !== user.username) {
+      const existingUser = await User.findOne({ username });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Username already taken' });
+      }
+      user.username = username;
+    }
+
+    if (bio !== undefined) user.bio = bio;
+    if (isPrivateAccount !== undefined) user.isPrivateAccount = isPrivateAccount;
+
+    await user.save();
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        bio: user.bio,
+        isPrivateAccount: user.isPrivateAccount
+      }
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ message: 'Error updating profile', error: error.message });
+  }
+});
+
+// Get current user profile (authenticated)
+app.get('/api/profile', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get user's posts
+    const userPosts = await File.find({ uploadedBy: user._id })
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    res.json({
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        bio: user.bio,
+        isPrivateAccount: user.isPrivateAccount,
+        followers: user.followers,
+        following: user.following,
+        createdAt: user.createdAt
+      },
+      posts: userPosts.map(post => ({
+        id: post._id,
+        filename: post.filename,
+        caption: post.caption,
+        tags: post.tags,
+        likes: post.likes,
+        comments: post.comments,
+        createdAt: post.createdAt,
+        imageUrl: `/api/images/${post._id}`
+      }))
+    });
+  } catch (error) {
+    console.error('Current profile error:', error);
+    res.status(500).json({ message: 'Error loading profile', error: error.message });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
