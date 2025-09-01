@@ -1,173 +1,175 @@
-# 🔧 MongoDB Atlas Setup Guide
+# 🗄️ MongoDB Atlas Setup Guide
 
-## 🚨 **Database Connection Issue**
+## 🚨 **Current Issue: Database Connection Failed**
 
-Your MongoDB connection is failing. This guide will help you set up MongoDB Atlas correctly to fix the connection issue.
+Based on the test results, your MongoDB Atlas connection is failing. The main issues are:
+1. **Network Access**: Vercel can't reach MongoDB Atlas
+2. **Password Encoding**: `@` symbol in password needs URL encoding
 
-## 📋 **Step-by-Step MongoDB Atlas Setup**
+Here's how to fix it:
 
-### **Step 1: Create MongoDB Atlas Account**
-1. Go to [MongoDB Atlas](https://cloud.mongodb.com)
-2. Sign up for a free account
-3. Create a new project
+## 🔍 **Diagnosis Results:**
+- ✅ **Environment Variables**: `MONGO_URI` is set correctly
+- ✅ **Connection String Format**: Valid `mongodb+srv://` format
+- ❌ **Network Access**: Vercel can't reach MongoDB Atlas
+- ❌ **Password Encoding**: `@` symbol in password needs URL encoding
 
-### **Step 2: Create a Cluster**
-1. Click "Build a Database"
-2. Choose "FREE" tier (M0)
-3. Select your preferred cloud provider (AWS, Google Cloud, or Azure)
-4. Choose a region close to your location
-5. Click "Create"
+## 🛠️ **Step-by-Step Fix:**
 
-### **Step 3: Set Up Database Access**
-1. Go to "Database Access" in the left sidebar
-2. Click "Add New Database User"
-3. Choose "Password" authentication
-4. Set a username (e.g., `snapstream_user`)
-5. Set a strong password (save this!)
-6. Select "Read and write to any database" role
-7. Click "Add User"
+### **Step 1: Fix Network Access**
 
-### **Step 4: Set Up Network Access**
-1. Go to "Network Access" in the left sidebar
-2. Click "Add IP Address"
-3. Click "Allow Access from Anywhere" (for development)
-4. This adds `0.0.0.0/0` to the IP access list
-5. Click "Confirm"
+1. **Go to MongoDB Atlas Dashboard**
+   - Visit: https://cloud.mongodb.com
+   - Sign in to your account
+   - Select your project
 
-### **Step 5: Get Your Connection String**
-1. Go to "Database" in the left sidebar
-2. Click "Connect"
-3. Choose "Connect your application"
-4. Select "Node.js" and version "5.0 or later"
-5. Copy the connection string
+2. **Navigate to Network Access**
+   - Click on "Network Access" in the left sidebar
+   - Click "Add IP Address"
 
-### **Step 6: Format Your Connection String**
-Replace the placeholder values in your connection string:
+3. **Allow All IPs (Recommended for Vercel)**
+   - Click "Allow Access from Anywhere"
+   - This adds `0.0.0.0/0` to your IP access list
+   - Click "Confirm"
 
+4. **Alternative: Add Vercel IPs**
+   - If you prefer to be more restrictive, add these IP ranges:
+   - `76.76.19.0/24`
+   - `76.76.20.0/24`
+   - `76.76.21.0/24`
+   - `76.76.22.0/24`
+
+### **Step 2: Verify Database User**
+
+1. **Go to Database Access**
+   - Click on "Database Access" in the left sidebar
+   - Find your database user
+
+2. **Check User Permissions**
+   - Ensure the user has "Read and write to any database" role
+   - If not, click "Edit" and add this role
+
+3. **Verify User Status**
+   - Make sure the user is "Active"
+   - If not, click "Edit" and activate the user
+
+### **Step 3: Check Cluster Status**
+
+1. **Go to Clusters**
+   - Click on "Clusters" in the left sidebar
+   - Check if your cluster is "Active" (not paused)
+
+2. **Cluster Health**
+   - Look for any warning indicators
+   - Ensure the cluster is running properly
+
+### **Step 4: Fix Password Encoding**
+
+If your password contains special characters (especially `@`), you need to URL-encode them:
+
+1. **Common Special Characters:**
+   - `@` becomes `%40`
+   - `#` becomes `%23`
+   - `$` becomes `%24`
+   - `%` becomes `%25`
+   - `&` becomes `%26`
+   - `+` becomes `%2B`
+   - `/` becomes `%2F`
+   - `:` becomes `%3A`
+   - `=` becomes `%3D`
+   - `?` becomes `%3F`
+
+2. **Example:**
+   ```
+   Original: mypass@word
+   Encoded: mypass%40word
+   ```
+
+3. **Update Vercel Environment Variable:**
+   - Go to Vercel Dashboard → Your Project → Settings → Environment Variables
+   - Find `MONGO_URI`
+   - Update the password part with URL-encoded characters
+   - Click "Save"
+
+### **Step 5: Test the Fix**
+
+1. **Wait for Changes to Apply**
+   - MongoDB Atlas changes take a few minutes to apply
+   - Vercel will auto-deploy when you update environment variables
+
+2. **Test Database Connection**
+   ```bash
+   curl https://snapstrom-project-1.vercel.app/api/test/db
+   ```
+
+3. **Expected Result:**
+   ```json
+   {
+     "connected": true,
+     "readyState": 1,
+     "connectionAttempted": true,
+     "connectionResult": true,
+     "timestamp": "2024-01-01T...",
+     "hasMongoUri": true,
+     "mongoUriLength": 125
+   }
+   ```
+
+## 🔧 **Troubleshooting Common Issues:**
+
+### **Issue 1: Still Getting Connection Errors**
+- **Check Vercel Logs**: Go to Vercel Dashboard → Functions → View Function Logs
+- **Look for**: `MongoServerSelectionError`, `MongoNetworkError`, `Authentication failed`
+
+### **Issue 2: Authentication Failed**
+- **Check**: Username and password are correct
+- **Check**: Password is properly URL-encoded
+- **Check**: User has proper permissions
+
+### **Issue 3: Network Access Denied**
+- **Check**: IP access list includes `0.0.0.0/0`
+- **Check**: Network access changes have been applied (wait 5-10 minutes)
+
+### **Issue 4: Cluster Not Found**
+- **Check**: Connection string has correct cluster name
+- **Check**: Cluster is active and not paused
+
+## 📊 **Verification Checklist:**
+
+- [ ] Network Access allows `0.0.0.0/0`
+- [ ] Database user has "Read and write to any database" role
+- [ ] Database user is active
+- [ ] Cluster is active (not paused)
+- [ ] Password is properly URL-encoded
+- [ ] Connection string format is correct
+- [ ] Vercel environment variable is updated
+- [ ] Test endpoint returns `connected: true`
+
+## 🎯 **Success Indicators:**
+
+✅ **Database Test Passes:**
+```bash
+curl https://snapstrom-project-1.vercel.app/api/test/db
+# Returns: {"connected":true,"readyState":1,...}
 ```
-mongodb+srv://snapstream_user:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/snapstream?retryWrites=true&w=majority
-```
 
-**Important:**
-- Replace `snapstream_user` with your actual username
-- Replace `YOUR_PASSWORD` with your actual password
-- Replace `cluster0.xxxxx.mongodb.net` with your actual cluster URL
-- Add `/snapstream` before the `?` to specify the database name
+✅ **Login Works:**
+- No more "Database connection failed" errors
+- Login returns 200 status with JWT token
 
-### **Step 7: Set Environment Variables in Vercel**
-1. Go to your Vercel project dashboard
-2. Go to "Settings" → "Environment Variables"
-3. Add these variables:
+✅ **Vercel Logs Show Success:**
+- `✅ MongoDB connected successfully`
+- `✅ MongoDB ping successful`
 
-```
-MONGO_URI=mongodb+srv://snapstream_user:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/snapstream?retryWrites=true&w=majority
-JWT_SECRET=your_jwt_secret_key_here
-NODE_ENV=production
-```
+## 🆘 **If Still Not Working:**
 
-## 🔍 **Testing Your Connection**
-
-### **Test 1: Check Environment Variables**
-Visit: `https://snapstrom-project-1.vercel.app/api/test/env`
-
-**Expected Results:**
-```json
-{
-  "hasMongoUri": true,
-  "mongoUriLength": 133,
-  "mongoUriStartsWithSrv": true,
-  "mongoUriContainsNet": true,
-  "mongoUriHasUsername": true,
-  "mongoUriHasDatabase": true
-}
-```
-
-### **Test 2: Check Database Connection**
-Visit: `https://snapstrom-project-1.vercel.app/api/test/db`
-
-**Expected Results:**
-```json
-{
-  "connected": true,
-  "readyState": "connected",
-  "connectionAttempted": true
-}
-```
-
-## 🚨 **Common Issues & Solutions**
-
-### **Issue 1: "Authentication failed"**
-**Solution:**
-- Check username and password in connection string
-- Ensure user has "Read and write to any database" role
-- Verify user is active in Database Access
-
-### **Issue 2: "Network timeout"**
-**Solution:**
-- Add `0.0.0.0/0` to Network Access
-- Check if cluster is active (not paused)
-- Try a different region
-
-### **Issue 3: "Invalid connection string"**
-**Solution:**
-- Ensure format: `mongodb+srv://username:password@cluster.mongodb.net/database`
-- Check for special characters in password (use %40 for @)
-- Verify cluster URL is correct
-
-### **Issue 4: "Cluster not found"**
-**Solution:**
-- Check if cluster is active in MongoDB Atlas
-- Verify cluster URL in connection string
-- Ensure cluster is in the same project
-
-## 🔧 **Connection String Examples**
-
-### **Correct Format:**
-```
-mongodb+srv://snapstream_user:mypassword123@cluster0.abc123.mongodb.net/snapstream?retryWrites=true&w=majority
-```
-
-### **With Special Characters in Password:**
-If your password contains `@`, replace it with `%40`:
-```
-mongodb+srv://snapstream_user:mypass%40word123@cluster0.abc123.mongodb.net/snapstream?retryWrites=true&w=majority
-```
-
-## 📊 **Verification Checklist**
-
-- [ ] MongoDB Atlas account created
-- [ ] Free cluster created and active
-- [ ] Database user created with proper permissions
-- [ ] Network access allows all IPs (`0.0.0.0/0`)
-- [ ] Connection string formatted correctly
-- [ ] Environment variables set in Vercel
-- [ ] `/api/test/env` shows all checks as `true`
-- [ ] `/api/test/db` shows `connected: true`
-
-## 🎯 **Expected Results After Setup**
-
-1. **Environment Test**: All MongoDB URI checks should be `true`
-2. **Database Test**: Should show `connected: true`
-3. **Registration**: Should return 201 status instead of 500
-4. **Login**: Should work after successful registration
-
-## 🆘 **If Still Not Working**
-
-1. **Check Vercel Logs**: Look for detailed error messages
-2. **Verify MongoDB Atlas**: Ensure cluster is active and accessible
-3. **Test Connection String**: Try connecting locally with `mongosh`
-4. **Check Network**: Ensure no firewall blocking MongoDB Atlas
-
-## 📞 **Next Steps**
-
-1. **Follow the setup guide above**
-2. **Set environment variables in Vercel**
-3. **Wait for deployment**
-4. **Test the endpoints**
-5. **Try registration again**
+1. **Check Vercel Function Logs** for detailed error messages
+2. **Verify MongoDB Atlas Settings** using the checklist above
+3. **Test Connection String** locally with the provided test script
+4. **Contact Support** if the issue persists
 
 ---
 
-**Status**: 🔧 Setup guide created  
+**Status**: 🔧 Setup guide updated for current issue  
 **Last Updated**: 2024-01-01  
-**Version**: 1.0.0
+**Version**: 2.0.0

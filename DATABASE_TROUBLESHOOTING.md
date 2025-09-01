@@ -2,7 +2,7 @@
 
 ## 🚨 **Current Issue: Database Connection Failed**
 
-The registration is failing because the MongoDB connection is not working. Here's a comprehensive troubleshooting guide.
+The login is failing because the MongoDB connection is not working. Here's a comprehensive troubleshooting guide.
 
 ## 🔍 **Diagnosis Results:**
 
@@ -17,15 +17,23 @@ The registration is failing because the MongoDB connection is not working. Here'
 - **Alternative Connection Methods**: Fallback to simpler connection options
 - **Better Error Handling**: Specific error messages for different failure types
 - **Connection Testing**: Ping tests to verify connectivity
+- **URL Encoding Fix**: Auto-fix for @ symbols in passwords
 
-### **2. Improved Registration Endpoint**
+### **2. Improved Login Endpoint**
 - **Multiple Connection Attempts**: 3 attempts before giving up
 - **Better Error Messages**: Specific messages for different error types
 - **Enhanced Logging**: Detailed logs for debugging
+- **Retry Logic**: Waits between connection attempts
 
 ### **3. Enhanced Health Check**
 - **Auto-Connection**: Attempts to connect when checking health
 - **Detailed Status**: More information about connection state
+- **Comprehensive Test Endpoint**: `/api/test/db` for detailed diagnostics
+
+### **4. Serverless Optimization**
+- **Non-blocking Startup**: Database connection doesn't block serverless function
+- **On-demand Connection**: Connects when first needed
+- **Better Error Recovery**: Graceful handling of connection failures
 
 ## 🔧 **Common MongoDB Atlas Issues & Solutions:**
 
@@ -47,7 +55,7 @@ The registration is failing because the MongoDB connection is not working. Here'
 **Problem**: Malformed connection string
 **Solution**:
 1. Ensure format: `mongodb+srv://username:password@cluster.mongodb.net/database`
-2. Check for special characters in password
+2. Check for special characters in password (especially @ symbols)
 3. Verify database name is correct
 
 ### **Issue 4: Cluster Status**
@@ -65,13 +73,19 @@ curl https://snapstrom-project-1.vercel.app/api/test/db
 ```
 **Expected**: Should show connection attempt and result
 
-### **Step 2: Check Vercel Logs**
+### **Step 2: Test Local Connection**
+```bash
+node test-mongo-connection.js
+```
+**Expected**: Should connect successfully and show database info
+
+### **Step 3: Check Vercel Logs**
 1. Go to Vercel Dashboard → Your Project → Functions
 2. Check the latest function logs
 3. Look for connection attempt logs
 
-### **Step 3: Test Registration**
-Try registering a new user and check:
+### **Step 4: Test Login**
+Try logging in and check:
 - Browser console for detailed logs
 - Network tab for response details
 - Vercel function logs
@@ -82,17 +96,18 @@ Try registering a new user and check:
 ```json
 {
   "connected": true,
-  "readyState": "connected",
+  "readyState": 1,
   "connectionAttempted": true,
+  "connectionResult": true,
   "timestamp": "2024-01-01T...",
   "hasMongoUri": true,
   "mongoUriLength": 133
 }
 ```
 
-### **Successful Registration:**
-- Status: 201 Created
-- Message: "Registration successful."
+### **Successful Login:**
+- Status: 200 OK
+- Response: `{ "token": "...", "username": "..." }`
 - No more "Database connection failed" errors
 
 ## 🆘 **If Still Not Working:**
@@ -111,7 +126,7 @@ Try registering a new user and check:
 ### **3. Test Connection String Locally:**
 ```bash
 # Test if connection string works
-mongosh "your-connection-string"
+node test-mongo-connection.js
 ```
 
 ### **4. Check Vercel Function Logs:**
@@ -123,44 +138,33 @@ Look for these log messages:
 
 ## 🔧 **Manual Database Connection Test:**
 
-Create a simple test script to verify your MongoDB URI:
+The `test-mongo-connection.js` script will help you verify your MongoDB URI:
 
-```javascript
-import mongoose from 'mongoose';
-
-const testConnection = async () => {
-  try {
-    const mongoURI = process.env.MONGO_URI;
-    console.log('Testing connection to:', mongoURI);
-    
-    await mongoose.connect(mongoURI, {
-      maxPoolSize: 1,
-      serverSelectionTimeoutMS: 5000
-    });
-    
-    console.log('✅ Connection successful!');
-    await mongoose.disconnect();
-  } catch (error) {
-    console.error('❌ Connection failed:', error.message);
-  }
-};
-
-testConnection();
+```bash
+node test-mongo-connection.js
 ```
+
+This script will:
+- Test your connection string
+- Auto-fix URL encoding issues
+- Show detailed error messages
+- Provide troubleshooting suggestions
 
 ## 📞 **Next Steps:**
 
 1. **Wait for Deployment**: Vercel will auto-deploy the enhanced fixes
 2. **Test Health Check**: Visit `/api/test/db` to see connection status
-3. **Try Registration**: Attempt to register a new user
-4. **Check Logs**: Monitor Vercel function logs for detailed debugging
-5. **Verify MongoDB Atlas**: Ensure all settings are correct
+3. **Test Local Connection**: Run `node test-mongo-connection.js`
+4. **Try Login**: Attempt to login with existing credentials
+5. **Check Logs**: Monitor Vercel function logs for detailed debugging
+6. **Verify MongoDB Atlas**: Ensure all settings are correct
 
 ## 🎉 **Success Criteria:**
 
 Your database connection will work when:
 - ✅ Health check shows `connected: true`
-- ✅ Registration returns 201 status
+- ✅ Local test script connects successfully
+- ✅ Login returns 200 status with token
 - ✅ No more "Database connection failed" errors
 - ✅ Vercel logs show successful connection
 
@@ -168,4 +172,4 @@ Your database connection will work when:
 
 **Status**: 🔧 Enhanced fixes applied, troubleshooting in progress  
 **Last Updated**: 2024-01-01  
-**Version**: 2.2.0
+**Version**: 3.0.0

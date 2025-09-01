@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -111,7 +112,7 @@ const FileSchema = new mongoose.Schema({
     required: true
   },
   fileData: {
-    type: String, // Base64 encoded file data
+    type: Buffer, // Store raw binary to avoid base64 overhead
     required: true
   },
   likes: [{
@@ -149,15 +150,21 @@ async function connectDB() {
     console.log('🔍 MongoDB URI contains %40:', mongoURI.includes('%40'));
     console.log('🔍 MongoDB URI starts with mongodb+srv:', mongoURI.startsWith('mongodb+srv://'));
     console.log('🔍 MongoDB URI contains .mongodb.net:', mongoURI.includes('.mongodb.net'));
+    console.log('🔍 MongoDB URI first 50 chars:', mongoURI.substring(0, 50) + '...');
     
-    // Auto-fix URL encoding for @ symbol in password
-    if (mongoURI.includes('@') && !mongoURI.includes('%40')) {
-      console.log('🔧 Auto-fixing URL encoding for @ symbol in password...');
-      mongoURI = mongoURI.replace(/mongodb\+srv:\/\/([^:]+):([^@]+)@/, (match, username, password) => {
-        const encodedPassword = password.replace(/@/g, '%40');
-        return `mongodb+srv://${username}:${encodedPassword}@`;
-      });
-      console.log('✅ URL encoding fixed');
+    // Normalize credentials: safely encode username and password
+    const credMatch = mongoURI.match(/^(mongodb(?:\+srv)?:\/\/)([^:]+):([^@]+)@/);
+    if (credMatch) {
+      const protocol = credMatch[1];
+      let username = credMatch[2];
+      let password = credMatch[3];
+      try { username = decodeURIComponent(username); } catch (e) {}
+      try { password = decodeURIComponent(password); } catch (e) {}
+      const encodedUser = encodeURIComponent(username);
+      const encodedPass = encodeURIComponent(password);
+      mongoURI = mongoURI.replace(/^(mongodb(?:\+srv)?:\/\/)[^:]+:[^@]+@/, `${protocol}${encodedUser}:${encodedPass}@`);
+      console.log('✅ Credentials encoded');
+      console.log('📝 Fixed URI length:', mongoURI.length);
     }
 
     // Try multiple connection strategies
@@ -259,6 +266,8 @@ async function connectDB() {
            console.error('   - Cluster is paused or inactive');
            console.error('   - Wrong cluster URL');
            console.error('   - Firewall blocking connection');
+           console.error('   - Password contains special characters that need encoding');
+           console.error('   - Username or password is incorrect');
          }
        }
     }
@@ -365,55 +374,51 @@ app.get('/api/test/env', (req, res) => {
 
 app.get('/api/test/db', async (req, res) => {
   try {
-    const connected = mongoose.connection.readyState === 1;
+    console.log('🔍 Database test requested');
     
-    // Try to connect if not connected
-    if (!connected) {
-      console.log('🔄 Health check: Attempting to connect to database...');
-      const connectionResult = await connectDB();
-      res.json({
-        connected: connectionResult,
-        readyState: connectionResult ? 'connected' : 'disconnected',
-        connectionAttempted: true,
-        timestamp: new Date().toISOString(),
-        hasMongoUri: !!process.env.MONGO_URI,
-        mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0,
-        mongoUriStartsWithSrv: process.env.MONGO_URI ? process.env.MONGO_URI.startsWith('mongodb+srv://') : false,
-        mongoUriContainsNet: process.env.MONGO_URI ? process.env.MONGO_URI.includes('.mongodb.net') : false,
-        mongoUriHasAtSymbol: process.env.MONGO_URI ? process.env.MONGO_URI.includes('@') : false,
-        mongoUriHasPercent40: process.env.MONGO_URI ? process.env.MONGO_URI.includes('%40') : false,
-        environment: process.env.NODE_ENV || 'development'
-      });
-    } else {
-      res.json({
-        connected: true,
-        readyState: 'connected',
-        connectionAttempted: false,
-        timestamp: new Date().toISOString(),
-        hasMongoUri: !!process.env.MONGO_URI,
-        mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0,
-        mongoUriStartsWithSrv: process.env.MONGO_URI ? process.env.MONGO_URI.startsWith('mongodb+srv://') : false,
-        mongoUriContainsNet: process.env.MONGO_URI ? process.env.MONGO_URI.includes('.mongodb.net') : false,
-        mongoUriHasAtSymbol: process.env.MONGO_URI ? process.env.MONGO_URI.includes('@') : false,
-        mongoUriHasPercent40: process.env.MONGO_URI ? process.env.MONGO_URI.includes('%40') : false,
-        environment: process.env.NODE_ENV || 'development'
-      });
+    const hasMongoUri = !!process.env.MONGO_URI;
+    const hasJwtSecret = !!process.env.JWT_SECRET;
+    const currentState = mongoose.connection.readyState;
+    
+    console.log('📊 Current state:', {
+      hasMongoUri,
+      hasJwtSecret,
+      currentState,
+      mongoUriLength: hasMongoUri ? process.env.MONGO_URI.length : 0
+    });
+    
+    // Try to connect if not already connected
+    let connectionAttempted = false;
+    let connectionResult = false;
+    
+    if (currentState !== 1) {
+      console.log('🔄 Attempting to connect to database...');
+      connectionAttempted = true;
+      connectionResult = await connectDB();
+      console.log('📊 Connection result:', connectionResult);
     }
+    
+    const finalState = mongoose.connection.readyState;
+    
+    res.json({
+      connected: finalState === 1,
+      readyState: finalState,
+      connectionAttempted,
+      connectionResult,
+      hasMongoUri,
+      hasJwtSecret,
+      mongoUriLength: hasMongoUri ? process.env.MONGO_URI.length : 0,
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+    
   } catch (error) {
+    console.error('❌ Database test error:', error);
     res.status(500).json({
       error: error.message,
-      errorName: error.name,
-      errorCode: error.code,
       connected: false,
-      connectionAttempted: true,
-      timestamp: new Date().toISOString(),
-      hasMongoUri: !!process.env.MONGO_URI,
-      mongoUriLength: process.env.MONGO_URI ? process.env.MONGO_URI.length : 0,
-      mongoUriStartsWithSrv: process.env.MONGO_URI ? process.env.MONGO_URI.startsWith('mongodb+srv://') : false,
-      mongoUriContainsNet: process.env.MONGO_URI ? process.env.MONGO_URI.includes('.mongodb.net') : false,
-      mongoUriHasAtSymbol: process.env.MONGO_URI ? process.env.MONGO_URI.includes('@') : false,
-      mongoUriHasPercent40: process.env.MONGO_URI ? process.env.MONGO_URI.includes('%40') : false,
-      environment: process.env.NODE_ENV || 'development'
+      readyState: mongoose.connection.readyState,
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -422,27 +427,28 @@ app.get('/api/test/db', async (req, res) => {
 app.get('/api/images/:fileId', async (req, res) => {
   try {
     const { fileId } = req.params;
-    
     if (!fileId) {
       return res.status(400).json({ message: 'File ID is required' });
     }
-    
+
     const file = await File.findById(fileId);
     if (!file) {
       return res.status(404).json({ message: 'File not found' });
     }
-    
-    // Convert base64 back to buffer
-    const buffer = Buffer.from(file.fileData, 'base64');
-    
-    // Set appropriate headers
+
+    let buffer;
+    if (Buffer.isBuffer(file.fileData)) {
+      buffer = file.fileData;
+    } else if (typeof file.fileData === 'string') {
+      buffer = Buffer.from(file.fileData, 'base64');
+    } else {
+      return res.status(500).json({ message: 'Unsupported file data format' });
+    }
+
     res.setHeader('Content-Type', file.contentType);
     res.setHeader('Content-Length', buffer.length);
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-    
-    // Send the image
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
     res.send(buffer);
-    
   } catch (error) {
     console.error('Error serving image:', error);
     res.status(500).json({ message: 'Error serving image', error: error.message });
@@ -651,13 +657,33 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(500).json({ message: 'Database not configured' });
     }
     
-    // Ensure database connection
+    // Ensure database connection with retry logic
     if (mongoose.connection.readyState !== 1) {
       console.log('🔄 Database not connected, attempting to connect...');
-      const connected = await connectDB();
+      let connected = false;
+      
+      // Try up to 3 times
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        console.log(`🔄 Connection attempt ${attempt}/3...`);
+        connected = await connectDB();
+        if (connected) {
+          console.log('✅ Database connected successfully');
+          break;
+        } else {
+          console.log(`❌ Connection attempt ${attempt} failed`);
+          if (attempt < 3) {
+            // Wait 1 second before retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+      
       if (!connected) {
-        console.error('❌ Failed to connect to database');
-        return res.status(500).json({ message: 'Database connection failed' });
+        console.error('❌ All connection attempts failed');
+        return res.status(500).json({ 
+          message: 'Database connection failed',
+          error: 'Unable to establish database connection after multiple attempts'
+        });
       }
     }
     
@@ -697,7 +723,20 @@ app.post('/upload', async (req, res) => {
     if (!process.env.MONGO_URI) {
       return res.status(500).json({ message: 'Database not configured' });
     }
-    
+
+    // Ensure DB connection with quick retry loop to avoid 504s
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable, try again' });
+      }
+    }
+
     // Configure multer
     const storage = multer.diskStorage({
       destination: (req, file, cb) => {
@@ -708,10 +747,10 @@ app.post('/upload', async (req, res) => {
         cb(null, 'image-' + uniqueSuffix + path.extname(file.originalname));
       }
     });
-    
+
     const upload = multer({
       storage: storage,
-      limits: { fileSize: 10 * 1024 * 1024 },
+      limits: { fileSize: 5 * 1024 * 1024 },
       fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
           cb(null, true);
@@ -720,37 +759,35 @@ app.post('/upload', async (req, res) => {
         }
       }
     });
-    
-    // Handle single file upload
+
     upload.single('image')(req, res, async (err) => {
       if (err) {
         return res.status(400).json({ message: err.message });
       }
-      
       if (!req.file) {
         return res.status(400).json({ message: 'No image file provided' });
       }
-      
+
       const { isPrivate = false, caption = '', tags = '' } = req.body;
-      
-      // Create file document
-      const file = new File({
+
+      const fileDoc = new File({
         filename: req.file.filename,
         originalName: req.file.originalname,
         contentType: req.file.mimetype,
         size: req.file.size,
         caption: caption.trim(),
-        tags: tags ? tags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0) : [],
+        tags: tags ? tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [],
         isPrivate: isPrivate === 'true',
-        uploadedBy: req.user?.id || 'unknown'
+        uploadedBy: req.user?.id || new mongoose.Types.ObjectId(),
+        fileData: Buffer.from(await fs.promises.readFile(req.file.path))
       });
-      
-      await file.save();
-      
+
+      await fileDoc.save();
+
       res.json({
         message: 'Upload successful',
         filename: req.file.filename,
-        fileId: file._id
+        fileId: fileDoc._id
       });
     });
   } catch (err) {
@@ -759,17 +796,29 @@ app.post('/upload', async (req, res) => {
   }
 });
 
-// API prefixed upload route with memory storage for Vercel
+// API prefixed upload with memory storage
 app.post('/api/upload', async (req, res) => {
   try {
     if (!process.env.MONGO_URI) {
       return res.status(500).json({ message: 'Database not configured' });
     }
-    
-    // Use memory storage instead of disk storage for Vercel
+
+    // Ensure DB connection with quick retry loop to avoid 504s
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable, try again' });
+      }
+    }
+
     const upload = multer({
       storage: multer.memoryStorage(),
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+      limits: { fileSize: 5 * 1024 * 1024 },
       fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
           cb(null, true);
@@ -778,48 +827,36 @@ app.post('/api/upload', async (req, res) => {
         }
       }
     });
-    
-    // Handle single file upload
+
     upload.single('image')(req, res, async (err) => {
       if (err) {
         console.error('Upload error:', err);
         return res.status(400).json({ message: err.message });
       }
-      
       if (!req.file) {
         return res.status(400).json({ message: 'No image file provided' });
       }
-      
+
       const { isPrivate = false, caption = '', tags = '' } = req.body;
-      
-      // Generate a unique filename
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const filename = 'image-' + uniqueSuffix + path.extname(req.file.originalname);
-      
-      // For now, store the file data as base64 in the database
-      // In production, you'd want to use a cloud storage service like AWS S3, Cloudinary, etc.
-      const fileData = req.file.buffer.toString('base64');
-      
-      // Create file document
-      const file = new File({
-        filename: filename,
+
+      const fileDoc = new File({
+        filename: 'image-' + Date.now(),
         originalName: req.file.originalname,
         contentType: req.file.mimetype,
         size: req.file.size,
         caption: caption.trim(),
-        tags: tags ? tags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0) : [],
+        tags: tags ? tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [],
         isPrivate: isPrivate === 'true',
-        uploadedBy: req.user?.id || 'unknown',
-        // Store file data as base64 (temporary solution)
-        fileData: fileData
+        uploadedBy: req.user?.id || new mongoose.Types.ObjectId(),
+        fileData: Buffer.from(req.file.buffer)
       });
-      
-      await file.save();
-      
+
+      await fileDoc.save();
+
       res.json({
         message: 'Upload successful',
-        filename: filename,
-        fileId: file._id,
+        filename: fileDoc.filename,
+        fileId: fileDoc._id,
         size: req.file.size
       });
     });
@@ -849,8 +886,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Connect to database on startup
-connectDB();
+// Connect to database on startup (but don't block serverless function)
+connectDB().then(success => {
+  if (success) {
+    console.log('✅ Database connected on startup');
+  } else {
+    console.log('⚠️ Database connection failed on startup - will retry on first request');
+  }
+}).catch(error => {
+  console.error('❌ Database connection error on startup:', error.message);
+});
 
 // Export for Vercel
 export default app;
