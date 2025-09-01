@@ -21,6 +21,14 @@ export const config = {
 export function getApiUrl(path = '') {
   const baseUrl = config.API_BASE_URL;
   
+  // Debug logging
+  console.log('🔧 getApiUrl debug:', {
+    path,
+    baseUrl,
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
+    isLocalhost: typeof window !== 'undefined' ? window.location.hostname === 'localhost' : false
+  });
+  
   // If path is empty, return base API URL
   if (!path) {
     return `${baseUrl}/api`;
@@ -31,11 +39,15 @@ export function getApiUrl(path = '') {
   
   // If path already starts with /api, don't add another /api
   if (cleanPath.startsWith('/api/')) {
-    return `${baseUrl}${cleanPath}`;
+    const result = `${baseUrl}${cleanPath}`;
+    console.log('🔧 getApiUrl result (path starts with /api/):', result);
+    return result;
   }
   
   // Otherwise, add /api prefix
-  return `${baseUrl}/api${cleanPath}`;
+  const result = `${baseUrl}/api${cleanPath}`;
+  console.log('🔧 getApiUrl result (adding /api):', result);
+  return result;
 }
 
 // Helper function to check if running locally
