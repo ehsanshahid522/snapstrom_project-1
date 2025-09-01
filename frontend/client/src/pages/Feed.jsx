@@ -20,8 +20,8 @@ export default function Feed() {
 
         // Fetch both feeds
         const [allPostsData, followingPostsData] = await Promise.all([
-          api('/feed'),
-          api('/feed/following').catch(() => []) // Fallback to empty array if endpoint doesn't exist
+          api('/api/feed'),
+          api('/api/feed').catch(() => []) // For now, use same endpoint for both
         ])
         
         console.log('Feed data received:', allPostsData) // Debug log
@@ -47,15 +47,16 @@ export default function Feed() {
           console.log('Processing post:', p); // Debug log
           
           // Ensure uploader data exists
-          const uploader = p.uploader || {};
-          const username = uploader.username || p.uploaderUsername || 'Unknown User';
+          const uploader = p.uploadedBy || p.uploader || {};
+          const username = uploader.username || 'Unknown User';
           
           return {
             ...p,
+            _id: p.id || p._id,
             uploader: {
               username: username,
               profilePicture: uploader.profilePicture,
-              _id: uploader._id
+              _id: uploader.id || uploader._id
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
             __likesCount: p.likes?.length || 0
@@ -74,15 +75,16 @@ export default function Feed() {
         
         // Initialize following status for all users in the feed
         const allUsers = [...mapPosts(allPostsData), ...mapPosts(followingPostsData)]
-          .map(p => p.uploader._id)
+          .map(p => p.uploader?._id)
+          .filter(id => id && id !== 'undefined') // Remove duplicates and undefined values
           .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
         
         // Check follow status for each user
         const followStatus = {};
         for (const userId of allUsers) {
           try {
-            // Note: We don't have a follow-status endpoint, so we'll skip this for now
-            followStatus[userId] = false;
+            const response = await api(`/api/auth/follow-status/${userId}`).catch(() => ({ isFollowing: false }));
+            followStatus[userId] = response.isFollowing || false;
           } catch (error) {
             followStatus[userId] = false;
           }

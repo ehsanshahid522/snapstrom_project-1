@@ -1528,6 +1528,56 @@ connectDB().then(success => {
   console.error('❌ Database connection error on startup:', error.message);
 });
 
+// Get follow status for a user
+app.get('/api/auth/follow-status/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isFollowing = currentUser.following.includes(userId);
+    
+    res.json({
+      isFollowing,
+      followersCount: currentUser.followers.length,
+      followingCount: currentUser.following.length
+    });
+  } catch (error) {
+    console.error('Follow status error:', error);
+    res.status(500).json({ message: 'Error checking follow status', error: error.message });
+  }
+});
+
 // Search users
 app.get('/api/search/users', async (req, res) => {
   try {
