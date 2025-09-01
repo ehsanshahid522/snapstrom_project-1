@@ -36,16 +36,6 @@ export async function api(path, { method = 'GET', headers = {}, body, auth = tru
   // Use getApiUrl to properly construct the full URL
   const fullUrl = path.startsWith('http') ? path : getApiUrl(path);
   
-  // Debug logging with more details
-  console.log('🔍 API Request:', {
-    path,
-    config_API_BASE_URL: config.API_BASE_URL,
-    API_BASE_URL,
-    fullUrl,
-    method,
-    isLocalhost: window.location.hostname === 'localhost'
-  });
-  
   try {
     const res = await fetch(fullUrl, {
       method,
@@ -70,7 +60,6 @@ export async function api(path, { method = 'GET', headers = {}, body, auth = tru
     }
     return data;
   } catch (error) {
-    console.error('API Error:', error);
     throw error;
   }
 }

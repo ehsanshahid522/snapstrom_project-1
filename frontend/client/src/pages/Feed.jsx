@@ -24,9 +24,6 @@ export default function Feed() {
           api('/api/feed').catch(() => []) // For now, use same endpoint for both
         ])
         
-        console.log('Feed data received:', allPostsData) // Debug log
-        console.log('Following feed data received:', followingPostsData) // Debug log
-        
         // Get current user ID from token
         const currentUserId = (() => {
           try {
@@ -35,17 +32,12 @@ export default function Feed() {
             const payload = JSON.parse(atob(token.split('.')[1]))
             return payload.id
           } catch (error) {
-            console.error('Error parsing token:', error)
             return null
           }
         })()
         
-        console.log('Current user ID:', currentUserId) // Debug log
-        
         // Map the data to match expected structure
         const mapPosts = (data) => data.map(p => {
-          console.log('Processing post:', p); // Debug log
-          
           // Ensure uploader data exists
           const uploader = p.uploadedBy || p.uploader || {};
           const username = uploader.username || 'Unknown User';
@@ -53,6 +45,7 @@ export default function Feed() {
           return {
             ...p,
             _id: p.id || p._id,
+            uploadTime: p.createdAt || p.uploadTime, // Fix: use createdAt from backend
             uploader: {
               username: username,
               profilePicture: uploader.profilePicture,
@@ -76,20 +69,16 @@ export default function Feed() {
         // Initialize following status for all users in the feed
         const allUsers = [...mapPosts(allPostsData), ...mapPosts(followingPostsData)]
           .map(p => p.uploader?._id)
-          .filter(id => id && id !== 'undefined') // Remove duplicates and undefined values
+          .filter(id => id && id !== 'undefined' && id !== null) // Remove duplicates and undefined values
           .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
-        
-        console.log('All users for follow status:', allUsers); // Debug log
         
         // Check follow status for each user
         const followStatus = {};
         for (const userId of allUsers) {
           try {
-            console.log('Checking follow status for user:', userId); // Debug log
             const response = await api(`/api/auth/follow-status/${userId}`).catch(() => ({ isFollowing: false }));
             followStatus[userId] = response.isFollowing || false;
           } catch (error) {
-            console.error('Error checking follow status for user:', userId, error); // Debug log
             followStatus[userId] = false;
           }
         }
@@ -138,10 +127,7 @@ export default function Feed() {
 
   const toggleFollow = async (userId, username) => {
     try {
-      console.log('Toggling follow for user:', { userId, username }); // Debug log
-      
-      if (!userId || userId === 'undefined') {
-        console.error('Invalid userId:', userId);
+      if (!userId || userId === 'undefined' || userId === null) {
         return;
       }
       
@@ -153,12 +139,9 @@ export default function Feed() {
         [userId]: response.isFollowing
       }))
       
-      // Show success message
-      const action = response.isFollowing ? 'followed' : 'unfollowed'
-      console.log(`Successfully ${action} ${username}`)
-      
     } catch (error) {
-      console.error('Error toggling follow:', error)
+      // Show error message to user
+      alert(`Failed to ${followingStatus[userId] ? 'unfollow' : 'follow'} ${username}. Please try again.`)
     }
   }
 
@@ -323,39 +306,41 @@ export default function Feed() {
                   </div>
                   <div className="flex-1">
                     <div className="font-bold text-gray-900 text-lg">
-                      {p.uploader?.username || 'User'}
+                      {p.uploader?.username || 'Unknown User'}
                     </div>
                     <div className="text-sm text-gray-500 flex items-center">
                       <span className="mr-2">🕐</span>
-                      {new Date(p.uploadTime).toLocaleDateString('en-US', {
+                      {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric'
-                      })}
+                      }) : 'Unknown date'}
                     </div>
                   </div>
                   
                   {/* Follow Button - Right Corner */}
-                  <button
-                    onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
-                    className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
-                      followingStatus[p.uploader._id]
-                        ? 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-600'
-                        : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-lg'
-                    }`}
-                  >
-                    {followingStatus[p.uploader._id] ? (
-                      <span className="flex items-center space-x-1">
-                        <span>✓</span>
-                        <span>Following</span>
-                      </span>
-                    ) : (
-                      <span className="flex items-center space-x-1">
-                        <span>+</span>
-                        <span>Follow</span>
-                      </span>
-                    )}
-                  </button>
+                  {p.uploader?._id && p.uploader._id !== currentUserId && (
+                    <button
+                      onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
+                      className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
+                        followingStatus[p.uploader._id]
+                          ? 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-600'
+                          : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-lg'
+                      }`}
+                    >
+                      {followingStatus[p.uploader._id] ? (
+                        <span className="flex items-center space-x-1">
+                          <span>✓</span>
+                          <span>Following</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center space-x-1">
+                          <span>+</span>
+                          <span>Follow</span>
+                        </span>
+                      )}
+                    </button>
+                  )}
                   
                   {p.isPrivate && (
                     <div className="px-3 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold rounded-full">
@@ -421,7 +406,7 @@ export default function Feed() {
                 {p.caption && (
                   <div className="mb-4 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl">
                     <span className="font-bold text-gray-900 mr-2">
-                      {p.uploader?.username || 'User'}
+                      {p.uploader?.username || 'Unknown User'}
                     </span>
                     <span className="text-gray-700">{p.caption}</span>
                   </div>

@@ -163,8 +163,6 @@ async function connectDB() {
       const encodedUser = encodeURIComponent(username);
       const encodedPass = encodeURIComponent(password);
       mongoURI = mongoURI.replace(/^(mongodb(?:\+srv)?:\/\/)[^:]+:[^@]+@/, `${protocol}${encodedUser}:${encodedPass}@`);
-      console.log('✅ Credentials encoded');
-      console.log('📝 Fixed URI length:', mongoURI.length);
     }
 
     // Try multiple connection strategies
@@ -218,58 +216,40 @@ async function connectDB() {
 
     // Close existing connection if any
     if (mongoose.connection.readyState !== 0) {
-      console.log('🔄 Closing existing connection...');
       await mongoose.disconnect();
     }
 
     // Try each connection strategy
     for (let strategyIndex = 0; strategyIndex < connectionStrategies.length; strategyIndex++) {
       const strategy = connectionStrategies[strategyIndex];
-      console.log(`🔄 Trying ${strategy.name} (attempt ${strategyIndex + 1}/${connectionStrategies.length})...`);
       
       try {
         await mongoose.connect(mongoURI, strategy.options);
-        console.log(`✅ ${strategy.name} successful`);
         
         // Test the connection
         try {
-          console.log('🔍 Testing connection with ping...');
           const admin = mongoose.connection.db.admin();
           await admin.ping();
-          console.log('✅ MongoDB ping successful');
           return true;
         } catch (pingError) {
-          console.log(`❌ Ping failed for ${strategy.name}:`, pingError.message);
           // Continue to next strategy
         }
-             } catch (connectError) {
-         console.log(`❌ ${strategy.name} failed:`, connectError.message);
-         console.log(`❌ Error type:`, connectError.name);
-         console.log(`❌ Error code:`, connectError.code);
-         console.log(`❌ Full error:`, connectError);
-         
-         // If it's a network error, try next strategy
-         if (connectError.name === 'MongoNetworkError' || connectError.name === 'MongoTimeoutError') {
-           continue;
-         }
-         
-         // If it's an authentication error, stop trying
-         if (connectError.name === 'MongoServerSelectionError' && connectError.message.includes('Authentication failed')) {
-           console.error('❌ Authentication failed - check username and password');
-           return false;
-         }
-         
-         // If it's a server selection error, log more details
-         if (connectError.name === 'MongoServerSelectionError') {
-           console.error('❌ Server selection failed - possible causes:');
-           console.error('   - Network access not configured');
-           console.error('   - Cluster is paused or inactive');
-           console.error('   - Wrong cluster URL');
-           console.error('   - Firewall blocking connection');
-           console.error('   - Password contains special characters that need encoding');
-           console.error('   - Username or password is incorrect');
-         }
-       }
+      } catch (connectError) {
+        // If it's a network error, try next strategy
+        if (connectError.name === 'MongoNetworkError' || connectError.name === 'MongoTimeoutError') {
+          continue;
+        }
+        
+        // If it's an authentication error, stop trying
+        if (connectError.name === 'MongoServerSelectionError' && connectError.message.includes('Authentication failed')) {
+          return false;
+        }
+        
+        // If it's a server selection error, log more details
+        if (connectError.name === 'MongoServerSelectionError') {
+          // Continue to next strategy
+        }
+      }
     }
     
     console.error('❌ All connection strategies failed');
@@ -509,7 +489,6 @@ app.get('/api/feed', async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       let connected = false;
       for (let attempt = 1; attempt <= 2; attempt++) {
-        console.log(`🔄 Feed: Connection attempt ${attempt}/2...`);
         const ok = await connectDB();
         if (ok) { connected = true; break; }
         await new Promise(r => setTimeout(r, 500));
@@ -518,8 +497,6 @@ app.get('/api/feed', async (req, res) => {
         return res.status(503).json({ message: 'Database unavailable, try again' });
       }
     }
-
-    console.log('📱 Loading feed posts...');
     
     // Get all posts (both public and private) for now to debug
     const files = await File.find({})
@@ -528,8 +505,6 @@ app.get('/api/feed', async (req, res) => {
       .populate('comments.user', 'username profilePicture')
       .sort({ createdAt: -1 })
       .limit(20);
-    
-    console.log(`✅ Found ${files.length} posts for feed`);
     
     const posts = files.map(file => ({
       id: file._id,
@@ -549,12 +524,8 @@ app.get('/api/feed', async (req, res) => {
       imageUrl: `/api/images/${file._id}`
     }));
     
-    console.log('📊 Feed posts processed:', posts.length);
-    console.log('👥 Sample post uploadedBy:', posts[0]?.uploadedBy);
-    
     res.json(posts);
   } catch (error) {
-    console.error('❌ Error getting feed:', error);
     res.status(500).json({ 
       message: 'Error getting feed', 
       error: error.message,
