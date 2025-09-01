@@ -1134,6 +1134,338 @@ app.get('/api/profile', async (req, res) => {
   }
 });
 
+// Follow/Unfollow user
+app.post('/api/follow/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const currentUser = await User.findById(decoded.id);
+    const targetUser = await User.findById(userId);
+    
+    if (!currentUser || !targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (currentUser._id.toString() === userId) {
+      return res.status(400).json({ message: 'Cannot follow yourself' });
+    }
+
+    const isFollowing = currentUser.following.includes(userId);
+    
+    if (isFollowing) {
+      // Unfollow
+      currentUser.following = currentUser.following.filter(id => id.toString() !== userId);
+      targetUser.followers = targetUser.followers.filter(id => id.toString() !== currentUser._id.toString());
+    } else {
+      // Follow
+      currentUser.following.push(userId);
+      targetUser.followers.push(currentUser._id);
+    }
+
+    await currentUser.save();
+    await targetUser.save();
+
+    res.json({
+      message: isFollowing ? 'Unfollowed successfully' : 'Followed successfully',
+      isFollowing: !isFollowing,
+      followersCount: targetUser.followers.length,
+      followingCount: currentUser.following.length
+    });
+  } catch (error) {
+    console.error('Follow error:', error);
+    res.status(500).json({ message: 'Error processing follow request', error: error.message });
+  }
+});
+
+// Like/Unlike post
+app.post('/api/like/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const post = await File.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const userId = decoded.id;
+    const isLiked = post.likes.includes(userId);
+    
+    if (isLiked) {
+      // Unlike
+      post.likes = post.likes.filter(id => id.toString() !== userId);
+    } else {
+      // Like
+      post.likes.push(userId);
+    }
+
+    await post.save();
+
+    res.json({
+      message: isLiked ? 'Post unliked' : 'Post liked',
+      isLiked: !isLiked,
+      likesCount: post.likes.length
+    });
+  } catch (error) {
+    console.error('Like error:', error);
+    res.status(500).json({ message: 'Error processing like request', error: error.message });
+  }
+});
+
+// Add comment to post
+app.post('/api/comment/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { text } = req.body;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    if (!text || text.trim().length === 0) {
+      return res.status(400).json({ message: 'Comment text is required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const post = await File.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comment = {
+      user: decoded.id,
+      text: text.trim(),
+      createdAt: new Date()
+    };
+
+    post.comments.push(comment);
+    await post.save();
+
+    // Populate user info for the comment
+    const populatedPost = await File.findById(postId).populate('comments.user', 'username profilePicture');
+
+    res.json({
+      message: 'Comment added successfully',
+      comment: {
+        id: comment._id,
+        text: comment.text,
+        user: {
+          id: decoded.id,
+          username: decoded.username
+        },
+        createdAt: comment.createdAt
+      },
+      commentsCount: post.comments.length
+    });
+  } catch (error) {
+    console.error('Comment error:', error);
+    res.status(500).json({ message: 'Error adding comment', error: error.message });
+  }
+});
+
+// Get comments for a post
+app.get('/api/comments/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const post = await File.findById(postId).populate('comments.user', 'username profilePicture');
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comments = post.comments.map(comment => ({
+      id: comment._id,
+      text: comment.text,
+      user: {
+        id: comment.user._id,
+        username: comment.user.username,
+        profilePicture: comment.user.profilePicture
+      },
+      createdAt: comment.createdAt
+    }));
+
+    res.json({
+      comments,
+      count: comments.length
+    });
+  } catch (error) {
+    console.error('Get comments error:', error);
+    res.status(500).json({ message: 'Error fetching comments', error: error.message });
+  }
+});
+
+// Share post (generate shareable link)
+app.post('/api/share/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const post = await File.findById(postId).populate('uploadedBy', 'username');
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const shareUrl = `https://snapstrom-project-1.vercel.app/post/${postId}`;
+    
+    res.json({
+      message: 'Share link generated',
+      shareUrl,
+      post: {
+        id: post._id,
+        caption: post.caption,
+        uploadedBy: post.uploadedBy.username,
+        imageUrl: `/api/images/${post._id}`
+      }
+    });
+  } catch (error) {
+    console.error('Share error:', error);
+    res.status(500).json({ message: 'Error generating share link', error: error.message });
+  }
+});
+
+// Get single post with full details
+app.get('/api/post/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const post = await File.findById(postId)
+      .populate('uploadedBy', 'username profilePicture')
+      .populate('comments.user', 'username profilePicture');
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    res.json({
+      id: post._id,
+      filename: post.filename,
+      caption: post.caption,
+      tags: post.tags,
+      uploadedBy: post.uploadedBy,
+      likes: post.likes,
+      comments: post.comments,
+      createdAt: post.createdAt,
+      imageUrl: `/api/images/${post._id}`
+    });
+  } catch (error) {
+    console.error('Get post error:', error);
+    res.status(500).json({ message: 'Error fetching post', error: error.message });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
