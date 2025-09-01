@@ -1,4 +1,4 @@
-import { getApiUrl } from '../config.js';
+import { config, getApiUrl } from '../config.js';
 
 export function getToken() {
   return localStorage.getItem('token');
@@ -18,8 +18,8 @@ export function getUsername() {
   return localStorage.getItem('username');
 }
 
-// Base URL for the backend API
-const API_BASE_URL = getApiUrl();
+// Base URL for the backend API (without /api prefix)
+const API_BASE_URL = config.API_BASE_URL;
 
 async function parseJsonSafe(res) {
   try {
@@ -33,7 +33,8 @@ async function parseJsonSafe(res) {
 export async function api(path, { method = 'GET', headers = {}, body, auth = true } = {}) {
   const token = getToken();
   
-  const fullUrl = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
+  // Use getApiUrl to properly construct the full URL
+  const fullUrl = path.startsWith('http') ? path : getApiUrl(path);
   
   // Debug logging
   console.log('🔍 API Request:', {

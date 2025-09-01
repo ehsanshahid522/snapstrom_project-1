@@ -20,10 +20,21 @@ export const config = {
 // Helper function to get API URL
 export function getApiUrl(path = '') {
   const baseUrl = config.API_BASE_URL;
+  
+  // If path is empty, return base API URL
   if (!path) {
     return `${baseUrl}/api`;
   }
+  
+  // Clean the path
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  
+  // If path already starts with /api, don't add another /api
+  if (cleanPath.startsWith('/api/')) {
+    return `${baseUrl}${cleanPath}`;
+  }
+  
+  // Otherwise, add /api prefix
   return `${baseUrl}/api${cleanPath}`;
 }
 
