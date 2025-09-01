@@ -43,7 +43,11 @@ export default function Feed() {
         
         // Map the data to match expected structure
         const mapPosts = (data) => data.map(p => {
-          // Ensure uploader data exists
+          // Debug the raw post data
+          console.log('Raw post data:', p)
+          console.log('uploadedBy:', p.uploadedBy)
+          
+          // Ensure uploader data exists - backend returns uploadedBy with 'id' field
           const uploader = p.uploadedBy || p.uploader || {};
           const username = uploader.username || 'Unknown User';
           
@@ -54,13 +58,14 @@ export default function Feed() {
             uploader: {
               username: username,
               profilePicture: uploader.profilePicture,
-              _id: uploader.id || uploader._id || null // Backend returns 'id', we need '_id'
+              _id: uploader.id || uploader._id || null // Backend returns uploadedBy.id
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
             __likesCount: p.likes?.length || 0
           };
           
           console.log('Mapped Post:', mappedPost)
+          console.log('Final uploader data:', mappedPost.uploader)
           return mappedPost;
         });
         
