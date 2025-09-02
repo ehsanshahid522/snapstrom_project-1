@@ -7,6 +7,7 @@ export default function Profile() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
+  const [activeTab, setActiveTab] = useState('all') // 'all', 'public', 'private'
   const [hoveredPost, setHoveredPost] = useState(null)
   const [followersCount, setFollowersCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
@@ -48,8 +49,21 @@ export default function Profile() {
   const currentUsername = localStorage.getItem('username')
   const isOwnProfile = currentUsername === username
   
-  // Get all posts
+  // Separate posts by privacy
+  const publicPosts = data?.posts?.filter(post => !post.isPrivate) || []
+  const privatePosts = data?.posts?.filter(post => post.isPrivate) || []
   const allPosts = data?.posts || []
+
+  // Get posts based on active tab
+  const getDisplayPosts = () => {
+    switch(activeTab) {
+      case 'public': return publicPosts
+      case 'private': return privatePosts
+      default: return allPosts
+    }
+  }
+
+  const displayPosts = getDisplayPosts()
 
   const handleFollow = async () => {
     if (followLoading) return
@@ -244,32 +258,57 @@ export default function Profile() {
 
       {/* Content Tabs */}
       <div className="max-w-6xl mx-auto px-4 py-8 relative">
-        {/* Floating Action Button - Only show for own profile */}
-        {isOwnProfile && (
-          <div className="fixed bottom-8 right-8 z-50">
-            <button className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-2xl hover:shadow-pink-500/50 transition-all duration-300 transform hover:scale-110 hover:rotate-12 flex items-center justify-center text-white text-2xl animate-bounce">
-              📸
-            </button>
-          </div>
-        )}
-        
         {/* Decorative Background Elements */}
         <div className="absolute top-20 left-10 w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-20 animate-pulse"></div>
         <div className="absolute top-40 right-20 w-16 h-16 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
         <div className="absolute bottom-40 left-20 w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
         
+        {/* Tab Navigation */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-3 shadow-2xl border border-slate-600">
+            <div className="flex space-x-3">
+              {[
+                { id: 'all', label: 'All Posts', count: allPosts.length, color: 'cyan', icon: '🌟' },
+                { id: 'public', label: 'Public', count: publicPosts.length, color: 'emerald', icon: '🌍' },
+                // Only show private tab for own profile
+                ...(isOwnProfile ? [{ id: 'private', label: 'Private', count: privatePosts.length, color: 'violet', icon: '🔒' }] : [])
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-3 transform hover:scale-105 ${
+                    activeTab === tab.id
+                      ? `bg-gradient-to-r from-${tab.color}-400 to-${tab.color}-600 text-white shadow-lg scale-105`
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                  }`}
+                >
+                  <span className="text-lg">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold bg-${tab.color}-500 text-white shadow-md`}>
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        
         {/* Posts Display */}
-        {allPosts.length > 0 ? (
+        {displayPosts.length > 0 ? (
           <>
             {/* Section Header */}
             <div className="mb-8 text-center">
               <div className="inline-block p-6 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-2xl shadow-xl mb-4">
                 <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
-                  {isOwnProfile ? '🌟 All Posts' : '🌟 Posts'}
+                  {activeTab === 'all' && (isOwnProfile ? '🌟 All Posts' : '🌟 Posts')}
+                  {activeTab === 'public' && '🌍 Public Posts'}
+                  {activeTab === 'private' && '🔒 Private Posts'}
                 </h2>
               </div>
               <p className="text-lg text-slate-700 font-medium">
-                {isOwnProfile ? `✨ Showing all ${allPosts.length} posts` : `✨ Showing ${allPosts.length} posts`}
+                {activeTab === 'all' && (isOwnProfile ? `✨ Showing all ${allPosts.length} posts` : `✨ Showing ${publicPosts.length} public posts`)}
+                {activeTab === 'public' && `🌍 Showing ${publicPosts.length} public posts`}
+                {activeTab === 'private' && `🔒 Showing ${privatePosts.length} private posts`}
               </p>
               {!isOwnProfile && (
                 <p className="text-sm text-slate-500 mt-2">
@@ -286,7 +325,7 @@ export default function Profile() {
               <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full opacity-60 animate-bounce" style={{animationDelay: '1s'}}></div>
               <div className="absolute -bottom-4 -right-4 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full opacity-60 animate-bounce" style={{animationDelay: '1.5s'}}></div>
               
-              {allPosts.map(post => (
+              {displayPosts.map(post => (
                 <div 
                   key={post._id} 
                   className="group relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-pink-100 to-purple-100 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:rotate-1 cursor-pointer border-2 border-transparent hover:border-pink-300"
@@ -359,16 +398,10 @@ export default function Profile() {
             </div>
             <h3 className="text-3xl font-bold text-slate-800 mb-3">No posts found</h3>
             <p className="text-slate-600 mb-8 text-lg">
-              {isOwnProfile ? `@${username} hasn't shared any photos yet. ✨` : `@${username} hasn't shared any photos yet. ✨`}
+              {activeTab === 'all' && (isOwnProfile ? `@${username} hasn't shared any photos yet. ✨` : `@${username} hasn't shared any public photos yet. ✨`)}
+              {activeTab === 'public' && `@${username} doesn't have any public posts yet. 🌍`}
+              {activeTab === 'private' && `@${username} doesn't have any private posts yet. 🔒`}
             </p>
-            {isOwnProfile && (
-              <a href="/upload" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:via-purple-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:rotate-1 shadow-2xl">
-                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Share Your First Photo 🚀
-              </a>
-            )}
           </div>
         )}
       </div>
