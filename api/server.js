@@ -529,7 +529,12 @@ app.get('/api/feed', async (req, res) => {
         username: file.uploadedBy.username,
         profilePicture: file.uploadedBy.profilePicture,
         bio: file.uploadedBy.bio
-      } : null,
+      } : {
+        id: null,
+        username: 'Anonymous User',
+        profilePicture: null,
+        bio: ''
+      },
       likes: file.likes || [],
       comments: file.comments || [],
       isPrivate: file.isPrivate,

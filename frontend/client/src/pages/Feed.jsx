@@ -53,9 +53,9 @@ export default function Feed() {
             _id: p.id || p._id,
             uploadTime: p.uploadTime || p.createdAt,
             uploader: {
-              username: p.uploaderUsername || p.uploader?.username || p.username || 'Unknown User',
-              profilePicture: p.uploader?.profilePicture || null,
-              _id: p.uploader?._id || p.uploader || p.uploadedBy
+              username: p.uploadedBy?.username || p.uploaderUsername || p.uploader?.username || p.username || 'Anonymous User',
+              profilePicture: p.uploadedBy?.profilePicture || p.uploader?.profilePicture || null,
+              _id: p.uploadedBy?.id || p.uploader?._id || p.uploader || p.uploadedBy
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
             __likesCount: p.likeCount || p.likes?.length || 0,
