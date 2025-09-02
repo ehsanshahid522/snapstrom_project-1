@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api.js'
-import config from '../config.js'
+import { config } from '../config.js'
 
 export default function Following() {
   const [posts, setPosts] = useState([])
