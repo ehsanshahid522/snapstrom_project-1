@@ -196,6 +196,40 @@ export default function Feed() {
     }
   }
 
+  const deleteAllPosts = async () => {
+    try {
+      // Double confirmation for safety
+      const confirmed = window.confirm(
+        '⚠️ WARNING: This will permanently delete ALL posts from the database!\n\n' +
+        'This action cannot be undone. Are you absolutely sure you want to continue?'
+      );
+      
+      if (!confirmed) return;
+      
+      // Second confirmation
+      const finalConfirmed = window.confirm(
+        '🚨 FINAL WARNING: You are about to delete ALL posts!\n\n' +
+        'Type "YES" to confirm:'
+      );
+      
+      if (!finalConfirmed) return;
+      
+      console.log('🗑️  Deleting all posts...');
+      
+      const response = await api('/admin/delete-all-posts', { method: 'DELETE' });
+      
+      console.log('✅ All posts deleted:', response);
+      
+      alert(`Successfully deleted ${response.deletedCount} posts!`);
+      
+      // Refresh the posts list
+      fetchPosts();
+    } catch (error) {
+      console.error('Error deleting all posts:', error);
+      alert('Failed to delete all posts. Please try again.');
+    }
+  }
+
   const fixPostOwnership = async (id) => {
     try {
       console.log('🔧 Attempting to fix post ownership:', id);
@@ -410,6 +444,20 @@ export default function Feed() {
                 ))}
               </div>
             </div>
+          </div>
+          
+          {/* Admin Controls */}
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={deleteAllPosts}
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-red-500/50 transform hover:scale-105"
+              title="Delete all posts (Admin only)"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              🗑️ Delete All Posts
+            </button>
           </div>
         </div>
       </div>

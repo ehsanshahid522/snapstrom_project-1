@@ -1740,7 +1740,65 @@ app.get('/api/search/users', async (req, res) => {
   }
 });
 
-// Temporary endpoint to fix post ownership (for debugging)
+// Admin endpoint to delete all posts (use with caution!)
+app.delete('/api/admin/delete-all-posts', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    // Get the current user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Count posts before deletion
+    const totalPosts = await File.countDocuments();
+    
+    console.log(`🗑️  User ${user.username} is deleting all ${totalPosts} posts`);
+
+    // Delete all posts
+    const result = await File.deleteMany({});
+    
+    console.log(`✅ Successfully deleted ${result.deletedCount} posts`);
+
+    res.json({
+      message: 'All posts deleted successfully',
+      deletedCount: result.deletedCount,
+      totalPosts: totalPosts,
+      deletedBy: user.username,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Delete all posts error:', error);
+    res.status(500).json({ message: 'Error deleting all posts', error: error.message });
+  }
+});
 app.post('/api/fix-post-ownership/:postId', async (req, res) => {
   try {
     const { postId } = req.params;
