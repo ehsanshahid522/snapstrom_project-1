@@ -375,9 +375,9 @@ export default function Feed() {
 
               {/* Post Image */}
               <div className="relative">
-                {console.log('🔍 Image URL:', `${config.API_BASE_URL}/api/upload/${p._id}`, 'for post:', p._id)}
+                {console.log('🔍 Image URL:', `${config.API_BASE_URL}/api/images/${p._id}`, 'for post:', p._id)}
                 <img 
-                  src={`${config.API_BASE_URL}/api/upload/${p._id}`} 
+                  src={`${config.API_BASE_URL}/api/images/${p._id}`} 
                   alt={p.originalName || ''} 
                   className="w-full h-auto object-cover"
                   onError={(e) => {
