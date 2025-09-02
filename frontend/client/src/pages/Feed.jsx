@@ -54,6 +54,7 @@ export default function Feed() {
       const mapPosts = (data) => data.map(p => {
         console.log('🔍 Processing post:', p);
         console.log('🔍 uploadedBy object:', p.uploadedBy);
+        console.log('🔍 Profile picture value:', p.uploadedBy?.profilePicture);
         
         const mappedPost = {
           ...p,
@@ -72,6 +73,7 @@ export default function Feed() {
         console.log('🔍 Mapped post result:', mappedPost);
         console.log('🔍 Username found:', mappedPost.uploader.username);
         console.log('🔍 Uploader ID:', mappedPost.uploader._id);
+        console.log('🔍 Final profile picture:', mappedPost.uploader.profilePicture);
         return mappedPost;
       });
       

@@ -543,6 +543,8 @@ app.get('/api/feed', async (req, res) => {
         uploader = fallbackUser;
       }
       
+      console.log(`🔍 Post ${file._id} - Uploader: ${uploader?.username}, Profile Picture: ${uploader?.profilePicture}`);
+      
       return {
         id: file._id,
         filename: file.filename,
