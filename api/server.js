@@ -519,28 +519,48 @@ app.get('/api/feed', async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(20);
     
-    const posts = files.map(file => ({
-      id: file._id,
-      filename: file.filename,
-      caption: file.caption,
-      tags: file.tags || [],
-      uploadedBy: file.uploadedBy ? {
-        id: file.uploadedBy._id,
-        username: file.uploadedBy.username,
-        profilePicture: file.uploadedBy.profilePicture,
-        bio: file.uploadedBy.bio
-      } : {
-        id: null,
-        username: 'Anonymous User',
-        profilePicture: null,
-        bio: ''
-      },
-      likes: file.likes || [],
-      comments: file.comments || [],
-      isPrivate: file.isPrivate,
-      createdAt: file.createdAt,
-      imageUrl: `/api/images/${file._id}`
-    }));
+    // Try to find any user for fallback
+    let fallbackUser = null;
+    try {
+      fallbackUser = await User.findOne().select('username profilePicture bio');
+      console.log('🔍 Found fallback user:', fallbackUser?.username);
+    } catch (error) {
+      console.log('⚠️ No fallback user found');
+    }
+    
+    const posts = files.map(file => {
+      // Try to find a real user for posts with missing uploaders
+      let uploader = file.uploadedBy;
+      
+      if (!uploader && fallbackUser) {
+        // Use fallback user for posts with missing uploaders
+        console.log(`⚠️ Post ${file._id} has no uploader, using fallback: ${fallbackUser.username}`);
+        uploader = fallbackUser;
+      }
+      
+      return {
+        id: file._id,
+        filename: file.filename,
+        caption: file.caption,
+        tags: file.tags || [],
+        uploadedBy: uploader ? {
+          id: uploader._id,
+          username: uploader.username,
+          profilePicture: uploader.profilePicture,
+          bio: uploader.bio
+        } : {
+          id: null,
+          username: 'SnapStream User',
+          profilePicture: null,
+          bio: 'Original uploader not available'
+        },
+        likes: file.likes || [],
+        comments: file.comments || [],
+        isPrivate: file.isPrivate,
+        createdAt: file.createdAt,
+        imageUrl: `/api/images/${file._id}`
+      };
+    });
     
     res.json(posts);
   } catch (error) {
