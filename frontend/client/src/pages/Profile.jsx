@@ -7,6 +7,7 @@ export default function Profile() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
+  const [activeTab, setActiveTab] = useState('public') // 'public', 'private'
   const [hoveredPost, setHoveredPost] = useState(null)
   const [followersCount, setFollowersCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
@@ -53,15 +54,18 @@ export default function Profile() {
   const privatePosts = data?.posts?.filter(post => post.isPrivate) || []
   const allPosts = data?.posts || []
 
-  // Get posts based on profile ownership (no tabs needed)
+  // Get posts based on active tab and profile ownership
   const getDisplayPosts = () => {
     // For other users' profiles, only show public posts
     if (!isOwnProfile) {
       return publicPosts
     }
     
-    // For own profile, show all posts (no filtering needed)
-    return allPosts
+    // For own profile, show based on selected tab
+    switch(activeTab) {
+      case 'private': return privatePosts
+      default: return publicPosts
+    }
   }
 
   const displayPosts = getDisplayPosts()
@@ -264,6 +268,36 @@ export default function Profile() {
         <div className="absolute top-40 right-20 w-16 h-16 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
         <div className="absolute bottom-40 left-20 w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
         
+        {/* Tab Navigation - Only for own profile */}
+        {isOwnProfile && (
+          <div className="flex justify-center mb-8">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-3 shadow-2xl border border-slate-600">
+              <div className="flex space-x-3">
+                {[
+                  { id: 'public', label: 'Public Posts', count: publicPosts.length, color: 'emerald', icon: '🌍' },
+                  { id: 'private', label: 'Private Posts', count: privatePosts.length, color: 'violet', icon: '🔒' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-3 transform hover:scale-105 ${
+                      activeTab === tab.id
+                        ? `bg-gradient-to-r from-${tab.color}-400 to-${tab.color}-600 text-white shadow-lg scale-105`
+                        : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                    }`}
+                  >
+                    <span className="text-lg">{tab.icon}</span>
+                    <span>{tab.label}</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold bg-${tab.color}-500 text-white shadow-md`}>
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Posts Display */}
         {displayPosts.length > 0 ? (
           <>
@@ -271,11 +305,20 @@ export default function Profile() {
             <div className="mb-8 text-center">
               <div className="inline-block p-6 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-2xl shadow-xl mb-4">
                 <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
-                  {isOwnProfile ? '🌟 All Posts' : '🌍 Public Posts'}
+                  {isOwnProfile ? (
+                    activeTab === 'public' ? '🌍 Public Posts' : '🔒 Private Posts'
+                  ) : (
+                    '🌍 Public Posts'
+                  )}
                 </h2>
               </div>
               <p className="text-lg text-slate-700 font-medium">
-                {isOwnProfile ? `✨ Showing all ${allPosts.length} posts` : `🌍 Showing ${publicPosts.length} public posts from @${username}`}
+                {isOwnProfile ? (
+                  activeTab === 'public' ? `🌍 Showing ${publicPosts.length} public posts` :
+                  `🔒 Showing ${privatePosts.length} private posts`
+                ) : (
+                  `🌍 Showing ${publicPosts.length} public posts from @${username}`
+                )}
               </p>
               {!isOwnProfile && (
                 <p className="text-sm text-slate-500 mt-2">
@@ -365,7 +408,12 @@ export default function Profile() {
             </div>
             <h3 className="text-3xl font-bold text-slate-800 mb-3">No posts found</h3>
             <p className="text-slate-600 mb-8 text-lg">
-              {isOwnProfile ? `@${username} hasn't shared any photos yet. ✨` : `@${username} doesn't have any public posts yet. 🌍`}
+              {isOwnProfile ? (
+                activeTab === 'public' ? `@${username} doesn't have any public posts yet. 🌍` :
+                `@${username} doesn't have any private posts yet. 🔒`
+              ) : (
+                `@${username} doesn't have any public posts yet. 🌍`
+              )}
             </p>
           </div>
         )}
