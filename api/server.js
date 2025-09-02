@@ -1144,6 +1144,10 @@ app.get('/api/profile/:username', async (req, res) => {
 
     console.log('📱 Found user posts:', userPosts.length);
 
+    // Get follower and following counts
+    const followersCount = user.followers ? user.followers.length : 0;
+    const followingCount = user.following ? user.following.length : 0;
+
     res.json({
       user: {
         id: user._id,
@@ -1154,16 +1158,20 @@ app.get('/api/profile/:username', async (req, res) => {
         isPrivateAccount: user.isPrivateAccount,
         followers: user.followers || [],
         following: user.following || [],
+        followersCount,
+        followingCount,
         createdAt: user.createdAt
       },
       posts: userPosts.map(post => ({
         id: post._id,
         filename: post.filename,
+        originalName: post.originalName,
         caption: post.caption,
         tags: post.tags || [],
         likes: post.likes || [],
         comments: post.comments || [],
         isPrivate: post.isPrivate,
+        uploadTime: post.createdAt,
         createdAt: post.createdAt,
         imageUrl: `/api/images/${post._id}`
       }))

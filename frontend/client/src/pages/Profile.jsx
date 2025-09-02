@@ -9,6 +9,10 @@ export default function Profile() {
   const [msg, setMsg] = useState('')
   const [activeTab, setActiveTab] = useState('all') // 'all', 'public', 'private'
   const [hoveredPost, setHoveredPost] = useState(null)
+  const [followersCount, setFollowersCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
 
   useEffect(()=>{
     (async()=>{
@@ -24,6 +28,15 @@ export default function Profile() {
         }
         
         setData({ posts: res.posts, username, user: res.user })
+        setFollowersCount(res.user?.followersCount || 0)
+        setFollowingCount(res.user?.followingCount || 0)
+        
+        // Check if current user is following this user
+        if (!isOwnProfile) {
+          const currentUserId = localStorage.getItem('userId')
+          const isFollowingUser = res.user?.followers?.includes(currentUserId)
+          setIsFollowing(isFollowingUser)
+        }
       }catch(e){ 
         console.error('Error fetching profile:', e)
         setMsg(e.message || 'Failed to load profile') 
@@ -51,6 +64,31 @@ export default function Profile() {
   }
 
   const displayPosts = getDisplayPosts()
+
+  const handleFollow = async () => {
+    if (followLoading) return
+    
+    setFollowLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/${isFollowing ? 'unfollow' : 'follow'}/${data.user.id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        setIsFollowing(!isFollowing)
+        setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1)
+      }
+    } catch (error) {
+      console.error('Follow error:', error)
+    } finally {
+      setFollowLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -152,7 +190,7 @@ export default function Profile() {
                   <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-purple-400/20 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                   <div className="relative">
                     <div className="text-5xl font-bold text-white mb-2 group-hover:text-pink-300 transition-colors drop-shadow-lg animate-pulse" style={{animationDelay: '0.5s'}}>
-                      0
+                      {followingCount}
                     </div>
                     <div className="text-sm text-pink-200 font-medium uppercase tracking-wider group-hover:text-pink-100">
                       Following 👥
@@ -164,7 +202,7 @@ export default function Profile() {
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                   <div className="relative">
                     <div className="text-5xl font-bold text-white mb-2 group-hover:text-cyan-300 transition-colors drop-shadow-lg animate-pulse" style={{animationDelay: '1s'}}>
-                      0
+                      {followersCount}
                     </div>
                     <div className="text-sm text-cyan-200 font-medium uppercase tracking-wider group-hover:text-cyan-100">
                       Followers 👤
@@ -180,11 +218,38 @@ export default function Profile() {
                   <>Welcome to <span className="font-semibold text-yellow-300">@{username}</span>'s creative space on Snapstream ✨</>
                 )}
               </p>
+              {data?.user?.bio && (
+                <p className="text-white/90 max-w-md text-base drop-shadow-md mt-3 italic">
+                  "{data.user.bio}"
+                </p>
+              )}
               {!isOwnProfile && (
                 <div className="mt-3 inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm">
                   <span className="mr-2">👁️</span>
                   Viewing public profile
                 </div>
+              )}
+              {!isOwnProfile && (
+                <button
+                  onClick={handleFollow}
+                  disabled={followLoading}
+                  className={`mt-4 px-8 py-3 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
+                    isFollowing
+                      ? 'bg-gray-600 text-white hover:bg-gray-700'
+                      : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {followLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Loading...</span>
+                    </div>
+                  ) : isFollowing ? (
+                    '✓ Following'
+                  ) : (
+                    'Follow'
+                  )}
+                </button>
               )}
             </div>
           </div>
@@ -278,9 +343,12 @@ export default function Profile() {
                 >
                   {/* Post Image */}
                   <img 
-                    src={`/api/images/${post._id}`} 
-                    alt={post.originalName || ''} 
+                    src={post.imageUrl || `/api/images/${post.id}`} 
+                    alt={post.originalName || post.caption || 'Post image'} 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    onError={(e) => {
+                      e.target.src = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop';
+                    }}
                   />
                   
                   {/* Privacy Badge */}
@@ -321,7 +389,7 @@ export default function Profile() {
                         
                         {/* Upload Time */}
                         <div className="text-xs text-pink-200 bg-black/30 px-2 py-1 rounded-full">
-                          {new Date(post.uploadTime).toLocaleDateString()}
+                          {new Date(post.uploadTime || post.createdAt).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
