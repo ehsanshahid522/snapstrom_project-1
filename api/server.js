@@ -511,8 +511,13 @@ app.get('/api/feed', async (req, res) => {
       }
     }
     
-    // Get all posts (both public and private) for now to debug
-    const files = await File.find({})
+    // Get only public posts (isPrivate is false or undefined)
+    const files = await File.find({ 
+      $or: [
+        { isPrivate: { $ne: true } },  // isPrivate is false or undefined
+        { isPrivate: false }
+      ]
+    })
       .populate('uploadedBy', 'username profilePicture bio')
       .populate('likes', 'username')
       .populate('comments.user', 'username profilePicture')
@@ -618,7 +623,11 @@ app.get('/api/feed/following', async (req, res) => {
     }
     
     const files = await File.find({
-      uploadedBy: { $in: followingUserIds }
+      uploadedBy: { $in: followingUserIds },
+      $or: [
+        { isPrivate: { $ne: true } },  // isPrivate is false or undefined
+        { isPrivate: false }
+      ]
     })
       .populate('uploadedBy', 'username profilePicture bio')
       .populate('likes', 'username')
@@ -1112,11 +1121,93 @@ app.post('/api/test-upload', async (req, res) => {
   }
 });
 
+// Simple test upload endpoint (for debugging)
+app.post('/api/test-upload', async (req, res) => {
+  try {
+    console.log('🧪 Test upload request received');
+    
+    // Skip authentication for testing
+    console.log('⚠️ Skipping authentication for test');
+    
+    // Check if we have basic environment
+    const hasMongoUri = !!process.env.MONGO_URI;
+    const hasJwtSecret = !!process.env.JWT_SECRET;
+    
+    console.log('📊 Environment check:', { hasMongoUri, hasJwtSecret });
+    
+    if (!hasMongoUri) {
+      return res.status(500).json({ 
+        message: 'MONGO_URI not configured',
+        error: 'Please set MONGO_URI environment variable in Vercel dashboard',
+        instructions: 'Go to Vercel dashboard > Your project > Settings > Environment Variables > Add MONGO_URI'
+      });
+    }
+    
+    // Try to connect to database
+    if (mongoose.connection.readyState !== 1) {
+      console.log('🔄 Attempting database connection...');
+      const connected = await connectDB();
+      if (!connected) {
+        return res.status(503).json({ 
+          message: 'Database connection failed',
+          error: 'Unable to connect to MongoDB',
+          check: 'Verify your MONGO_URI is correct and MongoDB Atlas is accessible'
+        });
+      }
+    }
+    
+    console.log('✅ Database connected successfully');
+    
+    // Test file upload
+    const upload = multer({
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only image files are allowed'));
+        }
+      }
+    });
+
+    upload.single('image')(req, res, async (err) => {
+      if (err) {
+        console.error('❌ Multer error:', err);
+        return res.status(400).json({ message: err.message });
+      }
+      if (!req.file) {
+        console.log('❌ No file in request');
+        return res.status(400).json({ message: 'No image file provided' });
+      }
+      
+      console.log('✅ Test file received:', req.file.originalname, 'Size:', req.file.size);
+      
+      res.json({
+        message: 'Test upload successful',
+        filename: req.file.originalname,
+        size: req.file.size,
+        environment: {
+          hasMongoUri,
+          hasJwtSecret,
+          dbConnected: mongoose.connection.readyState === 1
+        }
+      });
+    });
+  } catch (err) {
+    console.error('❌ Test upload error:', err);
+    res.status(500).json({ 
+      message: 'Test upload error', 
+      error: err.message,
+      stack: err.stack
+    });
+  }
+});
+
 // API prefixed upload with memory storage
 app.post('/api/upload', async (req, res) => {
   try {
     console.log('📤 Upload request received');
-    console.log('🔑 Headers:', req.headers);
     
     // Check authentication first
     const authHeader = req.headers.authorization;
@@ -1152,11 +1243,13 @@ app.post('/api/upload', async (req, res) => {
     }
     console.log('✅ User found:', user.username);
 
-    // Use a fallback MongoDB URI if not configured
-    const mongoUri = process.env.MONGO_URI || 'mongodb+srv://fallback:fallback@cluster.mongodb.net/snapstream';
+    // Check if MONGO_URI is configured
     if (!process.env.MONGO_URI) {
-      console.warn('⚠️ MONGO_URI not configured, using fallback');
-      return res.status(500).json({ message: 'Database not configured. Please set MONGO_URI environment variable.' });
+      console.error('❌ MONGO_URI not configured');
+      return res.status(500).json({ 
+        message: 'Database not configured. Please set MONGO_URI environment variable in Vercel dashboard.',
+        error: 'Missing MONGO_URI'
+      });
     }
 
     // Ensure DB connection with quick retry loop to avoid 504s
