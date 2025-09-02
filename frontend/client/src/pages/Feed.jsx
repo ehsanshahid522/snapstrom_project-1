@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api.js'
+import { config } from '../config.js'
 
 export default function Feed() {
   const [posts, setPosts] = useState([])
@@ -52,7 +53,7 @@ export default function Feed() {
             _id: p.id || p._id,
             uploadTime: p.uploadTime || p.createdAt,
             uploader: {
-              username: p.uploaderUsername || p.uploader?.username || 'Unknown User',
+              username: p.uploaderUsername || p.uploader?.username || p.username || 'Unknown User',
               profilePicture: p.uploader?.profilePicture || null,
               _id: p.uploader?._id || p.uploader || p.uploadedBy
             },
@@ -62,6 +63,7 @@ export default function Feed() {
           };
           
           console.log('🔍 Mapped post result:', mappedPost);
+          console.log('🔍 Username found:', mappedPost.uploader.username);
           return mappedPost;
         });
         
@@ -373,9 +375,9 @@ export default function Feed() {
 
               {/* Post Image */}
               <div className="relative">
-                {console.log('🔍 Image URL:', `/uploads/${p.filename}`, 'for post:', p._id)}
+                {console.log('🔍 Image URL:', `${config.API_BASE_URL}/uploads/${p.filename}`, 'for post:', p._id)}
                 <img 
-                  src={`${window.location.origin}/uploads/${p.filename}`} 
+                  src={`${config.API_BASE_URL}/uploads/${p.filename}`} 
                   alt={p.originalName || ''} 
                   className="w-full h-auto object-cover"
                   onError={(e) => {
