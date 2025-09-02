@@ -453,6 +453,19 @@ app.get('/api/test/feed', async (req, res) => {
 // Serve uploaded images
 app.get('/api/images/:fileId', async (req, res) => {
   try {
+    // Ensure DB connection with retry logic
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable, try again' });
+      }
+    }
+
     const { fileId } = req.params;
     if (!fileId) {
       return res.status(400).json({ message: 'File ID is required' });
