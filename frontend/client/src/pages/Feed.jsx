@@ -186,7 +186,7 @@ export default function Feed() {
     }
   }
 
-  const share = async (id) => {
+  const share = async (id, post) => {
     try {
       console.log('🔍 Sharing post:', id);
       
@@ -197,10 +197,9 @@ export default function Feed() {
       
       console.log('✅ Share response:', response);
       
-      // Copy share URL to clipboard
       if (response.shareUrl) {
-        await navigator.clipboard.writeText(response.shareUrl);
-        alert('Share link copied to clipboard!');
+        // Create share options modal
+        showShareOptions(response.shareUrl, post);
       }
       
       return response.shareUrl;
@@ -211,6 +210,199 @@ export default function Feed() {
       // Clear loading state
       setInteractingPosts(prev => ({ ...prev, [`share-${id}`]: false }));
     }
+  }
+
+  const showShareOptions = (shareUrl, post) => {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.id = 'share-modal';
+    
+    const modalContent = `
+      <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl animate-slide-up">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-2xl font-bold text-gray-900">Share Post</h3>
+          <button onclick="closeShareModal()" class="text-gray-500 hover:text-gray-700 text-2xl">
+            ✕
+          </button>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- Copy Link -->
+          <button onclick="copyToClipboard('${shareUrl}')" class="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 px-6 rounded-2xl hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105">
+            <span class="text-xl">📋</span>
+            <span class="font-semibold">Copy Link</span>
+          </button>
+          
+          <!-- Share on WhatsApp -->
+          <button onclick="shareOnWhatsApp('${shareUrl}', '${post?.caption || 'Check out this post!'}')" class="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-green-500 to-green-600 text-white py-4 px-6 rounded-2xl hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105">
+            <span class="text-xl">📱</span>
+            <span class="font-semibold">Share on WhatsApp</span>
+          </button>
+          
+          <!-- Share on Twitter/X -->
+          <button onclick="shareOnTwitter('${shareUrl}', '${post?.caption || 'Check out this post!'}')" class="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-black to-gray-800 text-white py-4 px-6 rounded-2xl hover:from-gray-800 hover:to-gray-900 transition-all duration-300 transform hover:scale-105">
+            <span class="text-xl">🐦</span>
+            <span class="font-semibold">Share on Twitter/X</span>
+          </button>
+          
+          <!-- Share on Facebook -->
+          <button onclick="shareOnFacebook('${shareUrl}')" class="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105">
+            <span class="text-xl">📘</span>
+            <span class="font-semibold">Share on Facebook</span>
+          </button>
+          
+          <!-- Share on LinkedIn -->
+          <button onclick="shareOnLinkedIn('${shareUrl}', '${post?.caption || 'Check out this post!'}')" class="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-700 to-blue-800 text-white py-4 px-6 rounded-2xl hover:from-blue-800 hover:to-blue-900 transition-all duration-300 transform hover:scale-105">
+            <span class="text-xl">💼</span>
+            <span class="font-semibold">Share on LinkedIn</span>
+          </button>
+          
+          <!-- Share via Email -->
+          <button onclick="shareViaEmail('${shareUrl}', '${post?.caption || 'Check out this post!'}')" class="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-red-500 to-red-600 text-white py-4 px-6 rounded-2xl hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105">
+            <span class="text-xl">📧</span>
+            <span class="font-semibold">Share via Email</span>
+          </button>
+          
+          <!-- Download Image -->
+          <button onclick="downloadImage('${post?.imageUrl || ''}', '${post?.caption || 'snapstream-post'}')" class="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white py-4 px-6 rounded-2xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
+            <span class="text-xl">💾</span>
+            <span class="font-semibold">Download Image</span>
+          </button>
+          
+          <!-- QR Code -->
+          <button onclick="generateQRCode('${shareUrl}')" class="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white py-4 px-6 rounded-2xl hover:from-indigo-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105">
+            <span class="text-xl">📱</span>
+            <span class="font-semibold">Generate QR Code</span>
+          </button>
+        </div>
+        
+        <div class="mt-6 text-center">
+          <button onclick="closeShareModal()" class="text-gray-500 hover:text-gray-700 font-medium">
+            Cancel
+          </button>
+        </div>
+      </div>
+    `;
+    
+    modal.innerHTML = modalContent;
+    document.body.appendChild(modal);
+    
+    // Add global functions for sharing
+    window.closeShareModal = () => {
+      const modal = document.getElementById('share-modal');
+      if (modal) {
+        modal.remove();
+      }
+    };
+    
+    window.copyToClipboard = async (text) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('✅ Link copied to clipboard!', 'success');
+      } catch (error) {
+        showToast('❌ Failed to copy link', 'error');
+      }
+    };
+    
+    window.shareOnWhatsApp = (url, text) => {
+      const message = encodeURIComponent(`${text}\n\n${url}`);
+      window.open(`https://wa.me/?text=${message}`, '_blank');
+      closeShareModal();
+    };
+    
+    window.shareOnTwitter = (url, text) => {
+      const message = encodeURIComponent(`${text}\n\n${url}`);
+      window.open(`https://twitter.com/intent/tweet?text=${message}`, '_blank');
+      closeShareModal();
+    };
+    
+    window.shareOnFacebook = (url) => {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+      closeShareModal();
+    };
+    
+    window.shareOnLinkedIn = (url, text) => {
+      const message = encodeURIComponent(`${text}\n\n${url}`);
+      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+      closeShareModal();
+    };
+    
+    window.shareViaEmail = (url, text) => {
+      const subject = encodeURIComponent('Check out this post on SnapStream!');
+      const body = encodeURIComponent(`${text}\n\n${url}`);
+      window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+      closeShareModal();
+    };
+    
+    window.downloadImage = async (imageUrl, filename) => {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        showToast('✅ Image downloaded!', 'success');
+      } catch (error) {
+        showToast('❌ Failed to download image', 'error');
+      }
+      closeShareModal();
+    };
+    
+    window.generateQRCode = (url) => {
+      // Create QR code modal
+      const qrModal = document.createElement('div');
+      qrModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      qrModal.id = 'qr-modal';
+      
+      const qrContent = `
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+          <div class="text-center">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">QR Code</h3>
+            <div class="bg-gray-100 p-4 rounded-2xl mb-4">
+              <div class="text-center text-gray-500">
+                <div class="text-6xl mb-2">📱</div>
+                <p class="text-sm">QR Code would be generated here</p>
+                <p class="text-xs text-gray-400 mt-2">URL: ${url.substring(0, 30)}...</p>
+              </div>
+            </div>
+            <button onclick="closeQRModal()" class="bg-blue-500 text-white px-6 py-2 rounded-xl hover:bg-blue-600 transition-colors">
+              Close
+            </button>
+          </div>
+        </div>
+      `;
+      
+      qrModal.innerHTML = qrContent;
+      document.body.appendChild(qrModal);
+      
+      window.closeQRModal = () => {
+        const modal = document.getElementById('qr-modal');
+        if (modal) {
+          modal.remove();
+        }
+      };
+    };
+    
+    // Toast notification function
+    window.showToast = (message, type = 'info') => {
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-xl text-white font-semibold shadow-2xl transform transition-all duration-300 ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+      }`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    };
   }
 
   const deleteAllPosts = async () => {
@@ -654,7 +846,7 @@ export default function Feed() {
                   </div>
                   
                   <button 
-                    onClick={() => share(p._id)}
+                    onClick={() => share(p._id, p)}
                     disabled={interactingPosts[`share-${p._id}`]}
                     className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
