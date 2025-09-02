@@ -353,7 +353,7 @@ export default function Explore() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-10">
         {/* Categories */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
