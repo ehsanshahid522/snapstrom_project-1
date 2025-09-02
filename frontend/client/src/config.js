@@ -1,7 +1,8 @@
 // Frontend Configuration
 export const config = {
   // API Configuration
-  API_BASE_URL: import.meta.env.VITE_API_URL || '',
+  API_BASE_URL: import.meta.env.VITE_API_URL || 
+    (window.location.hostname === 'localhost' ? 'http://localhost:3000' : window.location.origin),
   
   // Environment
   NODE_ENV: import.meta.env.NODE_ENV || 'development',

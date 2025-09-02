@@ -32,7 +32,10 @@ export default function Feed() {
         // Fetch feed data
         const response = await api('/feed')
         
+        console.log('🔍 Feed response:', response);
+        
         if (!response.success || !response.data) {
+          console.error('❌ Feed response error:', response);
           throw new Error('Failed to fetch feed data')
         }
         
@@ -84,6 +87,11 @@ export default function Feed() {
         
       } catch (e) {
         console.error('Error fetching feed:', e)
+        console.error('Error details:', {
+          message: e.message,
+          status: e.status,
+          body: e.body
+        })
         setPosts([]) // Set empty array on error
       } finally {
         setLoading(false)
