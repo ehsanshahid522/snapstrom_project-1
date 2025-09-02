@@ -15,18 +15,14 @@ export default function Profile() {
       setMsg('')
       setLoading(true)
       try{
-        console.log('Fetching profile for username:', username);
         const res = await api(`/api/profile/${encodeURIComponent(username)}`)
-        console.log('Profile data received:', res) // Debug log
         
         // Check if res has the expected structure
         if (!res || !res.posts || !Array.isArray(res.posts)) {
-          console.error('Profile data is not in expected format:', res);
           setMsg('Invalid data format received');
           return;
         }
         
-        console.log('Setting profile data:', { posts: res.posts.length, username, user: res.user });
         setData({ posts: res.posts, username, user: res.user })
       }catch(e){ 
         console.error('Error fetching profile:', e)

@@ -3,7 +3,6 @@ import { api } from '../lib/api.js'
 
 export default function Feed() {
   const [posts, setPosts] = useState([])
-  const [followingPosts, setFollowingPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('forYou') // 'forYou' or 'following'
   const [currentUser, setCurrentUser] = useState(null)
@@ -30,66 +29,52 @@ export default function Feed() {
           }
         })()
 
-        // Fetch both feeds
-        const [allPostsData, followingPostsData] = await Promise.all([
-          api('/api/feed'),
-          api('/api/feed').catch(() => []) // For now, use same endpoint for both
-        ])
+        // Fetch feed data
+        const response = await api('/feed')
         
-        // Debug: Log the data to see what we're getting
-        console.log('Current User ID:', currentUserId)
-        console.log('Feed Data:', allPostsData)
-        console.log('Sample Post:', allPostsData[0])
+        if (!response.success || !response.data) {
+          throw new Error('Failed to fetch feed data')
+        }
         
         // Map the data to match expected structure
         const mapPosts = (data) => data.map(p => {
-          // Debug the raw post data
-          console.log('Raw post data:', p)
-          console.log('uploadedBy:', p.uploadedBy)
-          
-          // Backend returns uploadedBy with id and username
-          const uploader = p.uploadedBy || {};
-          const username = uploader.username || 'Unknown User';
+          const uploader = p.uploader || {};
           
           const mappedPost = {
             ...p,
-            _id: p.id || p._id,
-            uploadTime: p.createdAt || p.uploadTime,
+            _id: p._id,
+            uploadTime: p.uploadTime,
             uploader: {
-              username: username,
+              username: uploader.username || p.uploaderUsername || 'Unknown User',
               profilePicture: uploader.profilePicture,
-              _id: uploader.id || null // Backend returns uploadedBy.id
+              _id: uploader._id || p.uploader
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
-            __likesCount: p.likes?.length || 0
+            __likesCount: p.likeCount || p.likes?.length || 0,
+            comments: p.comments || []
           };
           
-          console.log('Mapped Post:', mappedPost)
-          console.log('Final uploader data:', mappedPost.uploader)
           return mappedPost;
         });
         
-        // Filter out own posts from "For You" feed (all posts)
-        const filteredForYouPosts = mapPosts(allPostsData).filter(p => p.uploader?._id !== currentUserId);
+        const mappedPosts = mapPosts(response.data);
         
-        // For "Following" feed, the backend already filters to only show posts from followed users
-        // We just need to filter out own posts from those
-        const filteredFollowingPosts = mapPosts(followingPostsData).filter(p => p.uploader?._id !== currentUserId);
+        // Filter out own posts from feed
+        const filteredPosts = mappedPosts.filter(p => p.uploader?._id !== currentUserId);
         
-        setPosts(filteredForYouPosts);
-        setFollowingPosts(filteredFollowingPosts);
+        setPosts(filteredPosts);
         
         // Initialize following status for all users in the feed
-        const allUsers = [...mapPosts(allPostsData), ...mapPosts(followingPostsData)]
+        const allUsers = mappedPosts
           .map(p => p.uploader?._id)
-          .filter(id => id && id !== 'undefined' && id !== null) // Remove duplicates and undefined values
-          .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
+          .filter(id => id && id !== 'undefined' && id !== null)
+          .filter((id, index, arr) => arr.indexOf(id) === index);
         
         // Check follow status for each user
         const followStatus = {};
         for (const userId of allUsers) {
           try {
-            const response = await api(`/api/auth/follow-status/${userId}`).catch(() => ({ isFollowing: false }));
+            const response = await api(`/auth/follow-status/${userId}`).catch(() => ({ isFollowing: false }));
             followStatus[userId] = response.isFollowing || false;
           } catch (error) {
             followStatus[userId] = false;
@@ -108,47 +93,48 @@ export default function Feed() {
 
   const like = async (id) => {
     try {
-      await api(`/api/like/${id}`, { method: 'POST' })
-      // Update both feeds
+      const response = await api(`/interactions/like/${id}`, { method: 'POST' })
+      
+      // Update posts with new like status
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
         ...p,
-        __liked: !p.__liked,
-        __likesCount: p.__likesCount + (p.__liked ? -1 : 1)
+        __liked: response.isLiked,
+        __likesCount: response.likes
       }) : p)
       
       setPosts(ps => updatePosts(ps))
-      setFollowingPosts(ps => updatePosts(ps))
-    } catch {}
+    } catch (error) {
+      console.error('Error liking post:', error)
+    }
   }
 
   const comment = async (id, text) => {
     try {
-      await api(`/api/comment/${id}`, { 
+      const response = await api(`/interactions/comment/${id}`, { 
         method: 'POST', 
         body: { text } 
       })
       
+      // Update posts with new comment
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
         ...p,
-        comments: [...(p.comments || []), { username: localStorage.getItem('username'), text, createdAt: new Date().toISOString() }]
+        comments: [...(p.comments || []), response.comment]
       }) : p)
       
       setPosts(ps => updatePosts(ps))
-      setFollowingPosts(ps => updatePosts(ps))
-    } catch {}
+    } catch (error) {
+      console.error('Error commenting on post:', error)
+    }
   }
 
   const toggleFollow = async (userId, username) => {
     try {
-      console.log('Toggling follow for:', { userId, username })
-      
       if (!userId || userId === 'undefined' || userId === null) {
         console.error('Invalid userId:', userId)
         return
       }
       
-      const response = await api(`/api/follow/${userId}`, { method: 'POST' })
-      console.log('Follow response:', response)
+      const response = await api(`/auth/follow/${userId}`, { method: 'POST' })
       
       // Update following status
       setFollowingStatus(prev => ({
@@ -156,18 +142,13 @@ export default function Feed() {
         [userId]: response.isFollowing
       }))
       
-      // Show success message
-      const action = response.isFollowing ? 'followed' : 'unfollowed'
-      console.log(`Successfully ${action} ${username}`)
-      
     } catch (error) {
       console.error('Error toggling follow:', error)
-      // Show error message to user
       alert(`Failed to ${followingStatus[userId] ? 'unfollow' : 'follow'} ${username}. Please try again.`)
     }
   }
 
-  const getCurrentPosts = () => activeTab === 'following' ? followingPosts : posts
+  const getCurrentPosts = () => posts // For now, both tabs show the same posts
 
   if (loading) {
     return (
@@ -276,7 +257,7 @@ export default function Feed() {
                     <span className="text-lg">{tab.icon}</span>
                     <span>{tab.label}</span>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold bg-${tab.color}-500 text-white shadow-md`}>
-                      {activeTab === tab.id ? (tab.id === 'following' ? followingPosts.length : posts.length) : '...'}
+                      {activeTab === tab.id ? posts.length : '...'}
                     </span>
                   </button>
                 ))}
@@ -310,83 +291,82 @@ export default function Feed() {
             >
               {/* Post Header */}
               <div className="p-6 pb-4">
-                <div className="flex items-center space-x-4">
-                  {/* Follow Button - Top Left */}
-                  {p.uploader?._id && (
-                    <button
-                      onClick={() => {
-                        console.log('Follow button clicked for:', { userId: p.uploader._id, username: p.uploader.username })
-                        toggleFollow(p.uploader._id, p.uploader.username)
-                      }}
-                      className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
-                        followingStatus[p.uploader._id]
-                          ? 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-600'
-                          : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-lg'
-                      }`}
-                    >
-                      {followingStatus[p.uploader._id] ? (
-                        <span className="flex items-center space-x-1">
-                          <span>✓</span>
-                          <span>Following</span>
-                        </span>
+                <div className="flex items-center justify-between">
+                  {/* Left Side - Username and Profile Info */}
+                  <div className="flex items-center space-x-4">
+                    {/* Profile Picture */}
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
+                      {p.uploader?.profilePicture ? (
+                        <img 
+                          src={`/uploads/${p.uploader.profilePicture}`} 
+                          alt="" 
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        <span className="flex items-center space-x-1">
-                          <span>+</span>
-                          <span>Follow</span>
-                        </span>
+                        <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
+                          <span className="text-pink-600 font-bold text-lg">
+                            {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
+                          </span>
+                        </div>
                       )}
-                    </button>
-                  )}
+                    </div>
+                    
+                    {/* Username and Time */}
+                    <div>
+                      <div className="font-bold text-gray-900 text-lg">
+                        {p.uploader?.username || 'Unknown User'}
+                      </div>
+                      <div className="text-sm text-gray-500 flex items-center">
+                        <span className="mr-2">🕐</span>
+                        {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        }) : 'Unknown date'}
+                      </div>
+                    </div>
+                  </div>
                   
-                  {/* Profile Picture */}
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
-                    {p.uploader?.profilePicture ? (
-                      <img 
-                        src={`/uploads/${p.uploader.profilePicture}`} 
-                        alt="" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                        <span className="text-pink-600 font-bold text-lg">
-                          {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
-                        </span>
+                  {/* Right Side - Follow Button and Private Badge */}
+                  <div className="flex items-center space-x-3">
+                    {/* Private Badge */}
+                    {p.isPrivate && (
+                      <div className="px-3 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold rounded-full">
+                        🔒 Private
                       </div>
                     )}
+                    
+                    {/* Follow Button - Right Side */}
+                    {p.uploader?._id && (
+                      <button
+                        onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
+                        className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
+                          followingStatus[p.uploader._id]
+                            ? 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-600'
+                            : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-lg'
+                        }`}
+                      >
+                        {followingStatus[p.uploader._id] ? (
+                          <span className="flex items-center space-x-1">
+                            <span>✓</span>
+                            <span>Following</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center space-x-1">
+                            <span>+</span>
+                            <span>Follow</span>
+                          </span>
+                        )}
+                      </button>
+                    )}
                   </div>
-                  
-                  {/* Username and Time */}
-                  <div className="flex-1">
-                    <div className="font-bold text-gray-900 text-lg">
-                      {p.uploader?.username || 'Unknown User'}
-                    </div>
-                    <div className="text-sm text-gray-500 flex items-center">
-                      <span className="mr-2">🕐</span>
-                      {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      }) : 'Unknown date'}
-                    </div>
-                    {/* Debug info */}
-                    <div className="text-xs text-gray-400">
-                      Debug: User ID: {p.uploader?._id || 'null'} | Username: {p.uploader?.username || 'null'}
-                    </div>
-                  </div>
-                  
-                  {/* Private Badge */}
-                  {p.isPrivate && (
-                    <div className="px-3 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold rounded-full">
-                      🔒 Private
-                    </div>
-                  )}
                 </div>
               </div>
 
               {/* Post Image */}
               <div className="relative">
                 <img 
-                  src={`/api/images/${p._id}`} 
+                  src={`/api/upload/${p._id}`} 
                   alt={p.originalName || ''} 
                   className="w-full h-auto object-cover"
                 />

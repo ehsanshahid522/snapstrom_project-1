@@ -1,137 +1,137 @@
-# 🚀 Final Deployment Guide
+# 🚀 Automatic Deployment Setup Guide
 
-## ✅ **Project Status: COMPLETELY FIXED**
+This guide will help you set up automatic deployment for your SnapStream project using GitHub Actions and Vercel.
 
-Your project has been completely debugged and fixed. All CORS errors, API path issues, and configuration problems have been resolved.
+## 📋 Prerequisites
 
-## 🎯 **What Was Fixed:**
+1. **GitHub Repository**: Your code should be pushed to GitHub
+2. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
+3. **Vercel CLI**: Install with `npm i -g vercel`
 
-1. **CORS Issues**: Simplified CORS configuration to allow all origins
-2. **API Paths**: Fixed all double `/api/` path issues
-3. **Backend URL**: Changed from non-existent `snapstream-backend.vercel.app` to relative paths
-4. **Project Structure**: Cleaned up redundant files and organized the codebase
-5. **Monorepo Setup**: Configured for single Vercel deployment
+## 🔧 Setup Steps
 
-## 🚀 **Deployment Steps:**
+### 1. Initialize Vercel Projects
 
-### **1. Automatic Deployment (Recommended)**
-Your project is already pushed to GitHub and will automatically deploy to Vercel.
-
-**Current Status:**
-- ✅ Code pushed to GitHub: `f89fadf`
-- ✅ Vercel will auto-deploy from GitHub
-- ✅ Monorepo configuration ready
-
-### **2. Manual Deployment (If Needed)**
-If you need to deploy manually:
-
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Click "New Project"
-3. Import your GitHub repository: `ehsanshahid522/snapstrom_project-1`
-4. Vercel will automatically detect the configuration
-
-## 🔧 **Environment Variables Setup:**
-
-In your Vercel project settings, add these environment variables:
-
-```
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
-NODE_ENV=production
-```
-
-### **How to Get MongoDB URI:**
-1. Go to [MongoDB Atlas](https://cloud.mongodb.com)
-2. Create a new cluster (free tier available)
-3. Get your connection string
-4. Replace `<password>` with your actual password
-
-### **How to Generate JWT Secret:**
+#### Frontend Project Setup:
 ```bash
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+cd frontend/client
+vercel
 ```
 
-## 📊 **Testing Your Deployment:**
-
-Once deployed, test these endpoints:
-
-### **Health Check:**
-```
-https://your-app.vercel.app/api/health
+#### Backend Project Setup:
+```bash
+vercel
 ```
 
-### **API Test:**
+### 2. Get Vercel Configuration
+
+After initializing both projects, you'll need these values:
+
+#### Frontend Project:
+- **Project ID**: Found in Vercel dashboard
+- **Org ID**: Found in Vercel dashboard
+
+#### Backend Project:
+- **Project ID**: Found in Vercel dashboard
+- **Org ID**: Same as frontend
+
+### 3. Set Up GitHub Secrets
+
+Go to your GitHub repository → Settings → Secrets and variables → Actions
+
+Add these secrets:
+
+| Secret Name | Description | Example |
+|-------------|-------------|---------|
+| `VERCEL_TOKEN` | Vercel API token | `vercel_xxxxx` |
+| `VERCEL_ORG_ID` | Vercel organization ID | `team_xxxxx` |
+| `VERCEL_PROJECT_ID` | Frontend project ID | `prj_xxxxx` |
+| `VERCEL_BACKEND_PROJECT_ID` | Backend project ID | `prj_xxxxx` |
+| `VITE_API_URL` | Backend API URL | `https://your-backend.vercel.app` |
+
+### 4. Get Vercel Token
+
+1. Go to [Vercel Account Settings](https://vercel.com/account/tokens)
+2. Create a new token
+3. Copy the token value
+4. Add it to GitHub secrets as `VERCEL_TOKEN`
+
+### 5. Get Project IDs
+
+1. Go to your Vercel dashboard
+2. Select each project
+3. Go to Settings → General
+4. Copy the Project ID
+5. Add to GitHub secrets
+
+## 🔄 How It Works
+
+### Automatic Triggers:
+- **Push to main/master**: Triggers full deployment
+- **Pull Request**: Runs tests and builds (no deployment)
+- **Path-specific changes**: Only deploys relevant parts
+
+### Workflow Files:
+- `frontend-deploy.yml`: Deploys frontend changes
+- `backend-deploy.yml`: Deploys backend changes  
+- `full-deploy.yml`: Full-stack deployment with testing
+
+## 🚀 Deployment Process
+
+1. **Push your code** to GitHub
+2. **GitHub Actions** automatically:
+   - Installs dependencies
+   - Runs tests
+   - Builds the frontend
+   - Deploys to Vercel
+3. **Vercel** handles the hosting and CDN
+
+## 🔍 Monitoring
+
+- **GitHub Actions**: Check the Actions tab in your repository
+- **Vercel Dashboard**: Monitor deployments and performance
+- **Build Logs**: Available in both GitHub Actions and Vercel
+
+## 🛠️ Troubleshooting
+
+### Common Issues:
+
+1. **Build Failures**: Check the Actions logs for error details
+2. **Missing Secrets**: Ensure all required secrets are set
+3. **Environment Variables**: Verify `VITE_API_URL` is correct
+4. **Dependencies**: Make sure `package.json` files are correct
+
+### Debug Commands:
+```bash
+# Test locally
+npm run build
+cd frontend/client && npm run build
+
+# Check Vercel status
+vercel ls
+vercel logs
 ```
-https://your-app.vercel.app/api/test/ping
-```
 
-### **Frontend:**
-```
-https://your-app.vercel.app
-```
+## 📝 Environment Variables
 
-## 🎉 **Expected Results:**
+Make sure these are set in Vercel:
 
-After deployment, you should see:
+### Backend Environment Variables:
+- `MONGO_URI`: Your MongoDB connection string
+- `JWT_SECRET`: Your JWT secret key
+- `NODE_ENV`: `production`
 
-1. **No CORS Errors**: Registration and login will work
-2. **Correct API URLs**: `/api/auth/register` instead of double paths
-3. **Working Features**: All functionality should work
-4. **Clean Console**: No more "Failed to fetch" errors
+### Frontend Environment Variables:
+- `VITE_API_URL`: Your backend API URL
 
-## 🔍 **Debug Information:**
+## 🎉 Success!
 
-If you still see issues, check:
+Once set up, every push to your main branch will automatically:
+1. ✅ Run tests
+2. ✅ Build the frontend
+3. ✅ Deploy to Vercel
+4. ✅ Update your live application
 
-1. **Browser Console**: Look for the debug logs:
-   ```
-   🔍 API Request: {
-     path: "/auth/register",
-     API_BASE_URL: "/api",
-     fullUrl: "/api/auth/register",
-     method: "POST"
-   }
-   ```
-
-2. **Network Tab**: Verify OPTIONS requests return 204 status
-
-3. **Vercel Logs**: Check deployment logs in Vercel dashboard
-
-## 📱 **Complete Testing Checklist:**
-
-- ✅ Registration form works
-- ✅ Login form works
-- ✅ Upload functionality works
-- ✅ Settings page works
-- ✅ No CORS errors in console
-- ✅ No "Failed to fetch" errors
-- ✅ All API endpoints respond correctly
-
-## 🎯 **Success Criteria:**
-
-Your project is successfully deployed when:
-- ✅ Frontend loads without errors
-- ✅ Registration works without CORS errors
-- ✅ Login works without CORS errors
-- ✅ All features function properly
-- ✅ No console errors
-
-## 🆘 **If You Still Have Issues:**
-
-1. **Check Vercel Logs**: Look for deployment errors
-2. **Verify Environment Variables**: Make sure MongoDB URI and JWT secret are set
-3. **Test API Endpoints**: Use the health check endpoints
-4. **Check Browser Console**: Look for specific error messages
-
-## 📞 **Support:**
-
-If you need help:
-1. Check the `PROJECT_FIX_SUMMARY.md` file for detailed fixes
-2. Review the `README.md` for project documentation
-3. Check Vercel deployment logs for specific errors
-
----
-
-**Status**: ✅ Ready for deployment  
-**Last Updated**: 2024-01-01  
-**Version**: 2.0.0
+Your app will be available at:
+- **Frontend**: `https://your-frontend-project.vercel.app`
+- **Backend**: `https://your-backend-project.vercel.app`

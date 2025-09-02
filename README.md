@@ -27,7 +27,16 @@ cp env.example .env
 npm run dev:full
 ```
 
-### **Deployment**
+### **Automatic Deployment**
+This project is configured for automatic deployment using GitHub Actions and Vercel.
+
+#### **Setup Instructions:**
+1. **Push to GitHub**: Your code is already connected to GitHub
+2. **Set up Vercel**: Follow the [Deployment Guide](DEPLOYMENT_GUIDE.md)
+3. **Configure Secrets**: Add required secrets to GitHub repository
+4. **Deploy**: Every push to `main` branch triggers automatic deployment
+
+#### **Manual Deployment**
 ```bash
 # Run the deployment script
 ./deploy.sh
@@ -38,33 +47,38 @@ git commit -m "Deploy SnapStream"
 git push origin main
 ```
 
-## 🔧 **Recent Fixes (v1.0.0)**
+## 🔧 **Recent Fixes (v2.0.0)**
 
 ### **Fixed Issues:**
-- ✅ **500 Error on Login**: Resolved import path issues in API server
-- ✅ **API Communication**: Fixed frontend-backend communication
-- ✅ **Database Connection**: Enhanced MongoDB connection handling
-- ✅ **Environment Configuration**: Centralized configuration management
+- ✅ **Feed Page**: Fixed API endpoints and data structure mapping
+- ✅ **Localhost Code**: Removed all localhost-specific logic
+- ✅ **Performance**: Optimized code for production deployment
+- ✅ **API Communication**: Corrected backend API calls
+- ✅ **Automatic Deployment**: Set up GitHub Actions workflows
 
 ### **Key Changes:**
-1. **Inline Schemas**: User and File schemas now defined inline to avoid import issues
-2. **Smart API URLs**: Frontend automatically detects environment and sets correct API URL
-3. **Enhanced Error Handling**: Better error messages and logging throughout
-4. **Improved CORS**: Configured for better cross-origin request handling
+1. **Correct API Endpoints**: Fixed all API routes to match backend structure
+2. **Production Optimization**: Removed debug code and localhost references
+3. **GitHub Actions**: Added automatic deployment workflows
+4. **Data Mapping**: Fixed frontend-backend data structure compatibility
 
 ## 📁 **Project Structure**
 
 ```
 snapstream/
-├── api/                    # Vercel API functions
+├── .github/workflows/     # GitHub Actions workflows
+│   ├── frontend-deploy.yml
+│   ├── backend-deploy.yml
+│   └── full-deploy.yml
+├── api/                   # Vercel API functions
 │   └── server.js         # Main API server
-├── backend/               # Backend server (local development)
+├── legacy/backend/        # Backend server (local development)
 │   └── server/
 ├── frontend/              # Frontend application
 │   └── client/
 ├── docs/                  # Documentation
 ├── tests/                 # Test files
-└── deploy.sh             # Deployment script
+└── DEPLOYMENT_GUIDE.md   # Deployment instructions
 ```
 
 ## 🛠️ **Technology Stack**

@@ -1639,6 +1639,66 @@ app.get('/api/debug/data', async (req, res) => {
   }
 });
 
+// Test endpoint to add sample data
+app.post('/api/test/add-sample-data', async (req, res) => {
+  try {
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    // Create a test user if none exists
+    let testUser = await User.findOne({ username: 'testuser' });
+    if (!testUser) {
+      testUser = new User({
+        username: 'testuser',
+        email: 'test@example.com',
+        password: await bcrypt.hash('password123', 10)
+      });
+      await testUser.save();
+    }
+
+    // Create a test post if none exists
+    let testPost = await File.findOne({ uploadedBy: testUser._id });
+    if (!testPost) {
+      testPost = new File({
+        filename: 'test-image.jpg',
+        originalName: 'test-image.jpg',
+        contentType: 'image/jpeg',
+        size: 1024,
+        caption: 'This is a test post!',
+        isPrivate: false,
+        uploadedBy: testUser._id,
+        fileData: Buffer.from('fake-image-data')
+      });
+      await testPost.save();
+    }
+
+    res.json({
+      message: 'Sample data added successfully',
+      user: {
+        id: testUser._id,
+        username: testUser.username
+      },
+      post: {
+        id: testPost._id,
+        caption: testPost.caption
+      }
+    });
+  } catch (error) {
+    console.error('Error adding sample data:', error);
+    res.status(500).json({ message: 'Error adding sample data', error: error.message });
+  }
+});
+
 // Export for Vercel
 export default app;
 

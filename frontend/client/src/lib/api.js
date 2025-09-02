@@ -1,4 +1,4 @@
-import { config, getApiUrl } from '../config.js';
+import { getApiUrl } from '../config.js';
 
 export function getToken() {
   return localStorage.getItem('token');
@@ -18,9 +18,6 @@ export function getUsername() {
   return localStorage.getItem('username');
 }
 
-// Base URL for the backend API (without /api prefix)
-const API_BASE_URL = config.API_BASE_URL;
-
 async function parseJsonSafe(res) {
   try {
     const text = await res.text();
@@ -32,35 +29,29 @@ async function parseJsonSafe(res) {
 
 export async function api(path, { method = 'GET', headers = {}, body, auth = true } = {}) {
   const token = getToken();
+  const fullUrl = getApiUrl(path);
   
-  // Use getApiUrl to properly construct the full URL
-  const fullUrl = path.startsWith('http') ? path : getApiUrl(path);
+  const res = await fetch(fullUrl, {
+    method,
+    headers: {
+      ...(body && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
+      ...(auth && token ? { 'Authorization': 'Bearer ' + token } : {}),
+      ...headers
+    },
+    body: body && !(body instanceof FormData) ? JSON.stringify(body) : body
+  });
   
-  try {
-    const res = await fetch(fullUrl, {
-      method,
-      headers: {
-        ...(body && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
-        ...(auth && token ? { 'Authorization': 'Bearer ' + token } : {}),
-        ...headers
-      },
-      body: body && !(body instanceof FormData) ? JSON.stringify(body) : body
-    });
-    
-    const data = await parseJsonSafe(res);
-    if (!res.ok) {
-      if (res.status === 401) {
-        clearAuth();
-        try { window.location.href = '/login'; } catch {}
-      }
-      const err = new Error(data.message || `HTTP ${res.status}`);
-      err.status = res.status;
-      err.body = data;
-      throw err;
+  const data = await parseJsonSafe(res);
+  if (!res.ok) {
+    if (res.status === 401) {
+      clearAuth();
+      try { window.location.href = '/login'; } catch {}
     }
-    return data;
-  } catch (error) {
-    throw error;
+    const err = new Error(data.message || `HTTP ${res.status}`);
+    err.status = res.status;
+    err.body = data;
+    throw err;
   }
+  return data;
 }
 
