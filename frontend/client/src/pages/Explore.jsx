@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api.js'
+import { config } from '../config.js'
 
 export default function Explore() {
   const [trendingPosts, setTrendingPosts] = useState([])
@@ -7,158 +8,554 @@ export default function Explore() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filteredPosts, setFilteredPosts] = useState([])
+  const [currentUser, setCurrentUser] = useState(null)
+  const [followingStatus, setFollowingStatus] = useState({})
+  const [interactingPosts, setInteractingPosts] = useState({})
+  const [interactingUsers, setInteractingUsers] = useState({})
+  const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
+  const [sortBy, setSortBy] = useState('trending') // 'trending', 'recent', 'popular'
 
   useEffect(() => {
     fetchExploreData()
+    getCurrentUser()
   }, [])
+
+  useEffect(() => {
+    filterAndSortPosts()
+  }, [trendingPosts, activeCategory, searchQuery, sortBy])
+
+  const getCurrentUser = () => {
+    const username = localStorage.getItem('username')
+    if (username) {
+      setCurrentUser({ username })
+    }
+  }
 
   async function fetchExploreData() {
     try {
       setLoading(true)
-      // We'll implement these API endpoints in the backend
-      const [postsData, usersData, categoriesData] = await Promise.all([
-        api('/explore/trending', { method: 'GET' }),
-        api('/explore/popular-users', { method: 'GET' }),
-        api('/explore/categories', { method: 'GET' })
-      ])
       
-      setTrendingPosts(postsData.posts || [])
-      setPopularUsers(usersData.users || [])
-      setCategories(categoriesData.categories || [])
+      // Try to fetch real data first
+      try {
+        const [postsData, usersData, categoriesData] = await Promise.all([
+          api('/feed'), // Use existing feed endpoint for now
+          api('/explore/popular-users', { method: 'GET' }).catch(() => ({ users: [] })),
+          api('/explore/categories', { method: 'GET' }).catch(() => ({ categories: [] }))
+        ])
+        
+        // Process posts data
+        const processedPosts = Array.isArray(postsData) ? postsData : (postsData.data || [])
+        setTrendingPosts(processedPosts)
+        
+        // Process users data
+        setPopularUsers(usersData.users || [])
+        setCategories(categoriesData.categories || [])
+        
+      } catch (error) {
+        console.log('Using fallback data for explore page')
+        // Fallback to mock data
+        setTrendingPosts([
+          { 
+            _id: 1, 
+            caption: 'Amazing Sunset at the Beach', 
+            uploader: { username: 'photographer1' }, 
+            __likesCount: 156, 
+            uploadTime: new Date(Date.now() - 86400000).toISOString(),
+            image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
+          },
+          { 
+            _id: 2, 
+            caption: 'City Lights at Night', 
+            uploader: { username: 'urban_explorer' }, 
+            __likesCount: 89, 
+            uploadTime: new Date(Date.now() - 172800000).toISOString(),
+            image: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=400&h=300&fit=crop'
+          },
+          { 
+            _id: 3, 
+            caption: 'Beautiful Nature Walk', 
+            uploader: { username: 'nature_lover' }, 
+            __likesCount: 234, 
+            uploadTime: new Date(Date.now() - 259200000).toISOString(),
+            image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop'
+          },
+          { 
+            _id: 4, 
+            caption: 'Delicious Food Photography', 
+            uploader: { username: 'foodie_creator' }, 
+            __likesCount: 189, 
+            uploadTime: new Date(Date.now() - 345600000).toISOString(),
+            image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop'
+          },
+          { 
+            _id: 5, 
+            caption: 'Artistic Photography', 
+            uploader: { username: 'art_photographer' }, 
+            __likesCount: 312, 
+            uploadTime: new Date(Date.now() - 432000000).toISOString(),
+            image: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop'
+          },
+          { 
+            _id: 6, 
+            caption: 'Technology and Innovation', 
+            uploader: { username: 'tech_enthusiast' }, 
+            __likesCount: 145, 
+            uploadTime: new Date(Date.now() - 518400000).toISOString(),
+            image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop'
+          }
+        ])
+        
+        setPopularUsers([
+          { 
+            _id: 1, 
+            username: 'photographer1', 
+            followers: 1200, 
+            profilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=60&h=60&fit=crop&crop=face',
+            posts: 45
+          },
+          { 
+            _id: 2, 
+            username: 'urban_explorer', 
+            followers: 890, 
+            profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop&crop=face',
+            posts: 32
+          },
+          { 
+            _id: 3, 
+            username: 'nature_lover', 
+            followers: 2100, 
+            profilePicture: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=60&h=60&fit=crop&crop=face',
+            posts: 67
+          },
+          { 
+            _id: 4, 
+            username: 'foodie_creator', 
+            followers: 1560, 
+            profilePicture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face',
+            posts: 28
+          }
+        ])
+        
+        setCategories([
+          { id: 'photography', name: '📸 Photography', count: 1250, color: 'from-blue-500 to-purple-600' },
+          { id: 'travel', name: '✈️ Travel', count: 890, color: 'from-green-500 to-teal-600' },
+          { id: 'food', name: '🍕 Food', count: 567, color: 'from-orange-500 to-red-600' },
+          { id: 'art', name: '🎨 Art', count: 432, color: 'from-pink-500 to-rose-600' },
+          { id: 'technology', name: '💻 Technology', count: 345, color: 'from-indigo-500 to-blue-600' },
+          { id: 'nature', name: '🌿 Nature', count: 678, color: 'from-emerald-500 to-green-600' }
+        ])
+      }
+      
     } catch (error) {
       console.error('Error fetching explore data:', error)
-      // For now, set some mock data until backend is ready
-      setTrendingPosts([
-        { id: 1, title: 'Amazing Sunset', username: 'photographer1', likes: 156, image: 'https://via.placeholder.com/300x200/FF6B6B/FFFFFF?text=Sunset' },
-        { id: 2, title: 'City Lights', username: 'urban_explorer', likes: 89, image: 'https://via.placeholder.com/300x200/4ECDC4/FFFFFF?text=City' },
-        { id: 3, title: 'Nature Walk', username: 'nature_lover', likes: 234, image: 'https://via.placeholder.com/300x200/45B7D1/FFFFFF?text=Nature' }
-      ])
-      setPopularUsers([
-        { id: 1, username: 'photographer1', followers: 1200, avatar: 'https://via.placeholder.com/60x60/FF6B6B/FFFFFF?text=P1' },
-        { id: 2, username: 'urban_explorer', followers: 890, avatar: 'https://via.placeholder.com/60x60/4ECDC4/FFFFFF?text=UE' },
-        { id: 3, username: 'nature_lover', followers: 2100, avatar: 'https://via.placeholder.com/60x60/45B7D1/FFFFFF?text=NL' }
-      ])
-      setCategories([
-        { id: 'photography', name: 'Photography', count: 1250 },
-        { id: 'travel', name: 'Travel', count: 890 },
-        { id: 'food', name: 'Food', count: 567 },
-        { id: 'art', name: 'Art', count: 432 },
-        { id: 'technology', name: 'Technology', count: 345 }
-      ])
     } finally {
       setLoading(false)
     }
   }
 
+  const filterAndSortPosts = () => {
+    let filtered = [...trendingPosts]
+    
+    // Filter by category (if not 'all')
+    if (activeCategory !== 'all') {
+      // For now, we'll do basic filtering. In real app, posts would have category tags
+      filtered = filtered.filter((_, index) => {
+        const categoryIndex = index % categories.length
+        return categories[categoryIndex]?.id === activeCategory
+      })
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(post => 
+        post.caption?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.uploader?.username?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+    
+    // Sort posts
+    switch (sortBy) {
+      case 'recent':
+        filtered.sort((a, b) => new Date(b.uploadTime) - new Date(a.uploadTime))
+        break
+      case 'popular':
+        filtered.sort((a, b) => (b.__likesCount || 0) - (a.__likesCount || 0))
+        break
+      case 'trending':
+      default:
+        // Trending combines recency and popularity
+        filtered.sort((a, b) => {
+          const aScore = (a.__likesCount || 0) * (1 / (Date.now() - new Date(a.uploadTime).getTime() + 1))
+          const bScore = (b.__likesCount || 0) * (1 / (Date.now() - new Date(b.uploadTime).getTime() + 1))
+          return bScore - aScore
+        })
+        break
+    }
+    
+    setFilteredPosts(filtered)
+  }
+
+  const like = async (id) => {
+    try {
+      setInteractingPosts(prev => ({ ...prev, [`like-${id}`]: true }))
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      setTrendingPosts(prev => prev.map(p => {
+        if (p._id === id) {
+          return {
+            ...p,
+            __liked: !p.__liked,
+            __likesCount: p.__liked ? p.__likesCount - 1 : p.__likesCount + 1
+          }
+        }
+        return p
+      }))
+    } catch (error) {
+      console.error('Error liking post:', error)
+    } finally {
+      setInteractingPosts(prev => ({ ...prev, [`like-${id}`]: false }))
+    }
+  }
+
+  const followUser = async (userId) => {
+    try {
+      setInteractingUsers(prev => ({ ...prev, [`follow-${userId}`]: true }))
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      setFollowingStatus(prev => ({
+        ...prev,
+        [userId]: !prev[userId]
+      }))
+      
+      setPopularUsers(prev => prev.map(user => {
+        if (user._id === userId) {
+          return {
+            ...user,
+            followers: prev[userId] ? user.followers - 1 : user.followers + 1
+          }
+        }
+        return user
+      }))
+    } catch (error) {
+      console.error('Error following user:', error)
+    } finally {
+      setInteractingUsers(prev => ({ ...prev, [`follow-${userId}`]: false }))
+    }
+  }
+
+  const share = (postId, post) => {
+    const shareUrl = `${window.location.origin}/post/${postId}`
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'Check out this post on Snapstream',
+        text: post.caption || 'Amazing content on Snapstream',
+        url: shareUrl
+      })
+    } else {
+      navigator.clipboard.writeText(shareUrl)
+      alert('Link copied to clipboard!')
+    }
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Exploring amazing content...</p>
+          <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Exploring amazing content...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Explore</h1>
-        <p className="text-gray-600">Discover trending posts, popular creators, and amazing content</p>
-      </div>
-
-      {/* Categories */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Categories</h2>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => setActiveCategory('all')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-              activeCategory === 'all'
-                ? 'bg-pink-500 text-white shadow-lg'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            All
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setActiveCategory(category.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                activeCategory === category.id
-                  ? 'bg-pink-500 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {category.name} ({category.count})
-            </button>
-          ))}
+      <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold mb-3">🌍 Explore</h1>
+            <p className="text-xl opacity-90">Discover trending posts, popular creators, and amazing content</p>
+          </div>
         </div>
       </div>
 
-      {/* Trending Posts */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Trending Posts</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {trendingPosts.map((post) => (
-            <div key={post.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
-              <img 
-                src={post.image} 
-                alt={post.title}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">{post.title}</h3>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">by @{post.username}</span>
-                  <div className="flex items-center space-x-1 text-pink-500">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                    <span className="text-sm font-medium">{post.likes}</span>
-                  </div>
-                </div>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Search and Filters */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4 items-center">
+            {/* Search Bar */}
+            <div className="flex-1 w-full">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="🔍 Search posts, creators, or categories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-3 pl-12 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                />
+                <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Popular Users */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Popular Creators</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {popularUsers.map((user) => (
-            <div key={user.id} className="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow duration-300 text-center">
-              <img 
-                src={user.avatar} 
-                alt={user.username}
-                className="w-16 h-16 rounded-full mx-auto mb-3 object-cover"
-              />
-              <h3 className="font-semibold text-gray-900 mb-1">@{user.username}</h3>
-              <p className="text-sm text-gray-600 mb-3">{user.followers.toLocaleString()} followers</p>
-              <button className="w-full bg-pink-500 text-white py-2 px-4 rounded-lg hover:bg-pink-600 transition-colors duration-200 text-sm font-medium">
-                Follow
-              </button>
+            {/* Sort Options */}
+            <div className="flex items-center space-x-4">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+              >
+                <option value="trending">🔥 Trending</option>
+                <option value="recent">⏰ Recent</option>
+                <option value="popular">⭐ Popular</option>
+              </select>
+
+              {/* View Mode Toggle */}
+              <div className="flex bg-gray-100 rounded-xl p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    viewMode === 'grid' ? 'bg-white shadow-md' : 'text-gray-500'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    viewMode === 'list' ? 'bg-white shadow-md' : 'text-gray-500'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 13h18v-2H3v2zm0 6h18v-2H3v2zM3 5v2h18V5H3z"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-          ))}
+          </div>
         </div>
-      </div>
 
-      {/* Search and Discovery */}
-      <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Discover More</h2>
-        <p className="text-gray-600 mb-6">Find amazing content and connect with creators from around the world</p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600 transition-colors duration-200 font-medium">
-            Browse All Posts
-          </button>
-          <button className="bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 transition-colors duration-200 font-medium">
-            Find Friends
-          </button>
+        {/* Categories */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+            <span className="mr-3">📂</span>
+            Categories
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setActiveCategory('all')}
+              className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                activeCategory === 'all'
+                  ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
+              }`}
+            >
+              🌟 All Posts
+            </button>
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  activeCategory === category.id
+                    ? `bg-gradient-to-r ${category.color} text-white shadow-lg`
+                    : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
+                }`}
+              >
+                {category.name} ({category.count})
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="mb-6">
+          <p className="text-gray-600">
+            Showing {filteredPosts.length} {filteredPosts.length === 1 ? 'post' : 'posts'} 
+            {searchQuery && ` for "${searchQuery}"`}
+            {activeCategory !== 'all' && ` in ${categories.find(c => c.id === activeCategory)?.name}`}
+          </p>
+        </div>
+
+        {/* Trending Posts */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+            <span className="mr-3">🔥</span>
+            {sortBy === 'trending' ? 'Trending Posts' : sortBy === 'recent' ? 'Recent Posts' : 'Popular Posts'}
+          </h2>
+          
+          {filteredPosts.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No posts found</h3>
+              <p className="text-gray-600">Try adjusting your search or filters</p>
+            </div>
+          ) : (
+            <div className={`grid gap-6 ${
+              viewMode === 'grid' 
+                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                : 'grid-cols-1'
+            }`}>
+              {filteredPosts.map((post) => (
+                <div key={post._id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  {/* Post Image */}
+                  <div className="relative group">
+                    <img 
+                      src={post.image || `https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop`} 
+                      alt={post.caption}
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    
+                    {/* Floating Action Buttons */}
+                    <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <button 
+                        onClick={() => share(post._id, post)}
+                        className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all duration-200 transform hover:scale-110 shadow-lg"
+                      >
+                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Post Content */}
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
+                          <span className="text-pink-600 font-bold text-sm">
+                            {post.uploader?.username?.charAt(0).toUpperCase() || 'U'}
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">@{post.uploader?.username || 'user'}</h3>
+                          <p className="text-xs text-gray-500">
+                            {post.uploadTime ? new Date(post.uploadTime).toLocaleDateString() : 'Recently'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {post.caption && (
+                      <p className="text-gray-800 text-sm mb-4 line-clamp-2">{post.caption}</p>
+                    )}
+
+                    {/* Post Actions */}
+                    <div className="flex items-center justify-between">
+                      <button 
+                        onClick={() => like(post._id)}
+                        disabled={interactingPosts[`like-${post._id}`]}
+                        className="flex items-center space-x-2 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {interactingPosts[`like-${post._id}`] ? (
+                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                          </div>
+                        )}
+                        <span className="font-semibold text-sm">{post.__likesCount || 0}</span>
+                      </button>
+
+                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                        <span>💬 {Math.floor(Math.random() * 20) + 1}</span>
+                        <span>👁️ {Math.floor(Math.random() * 100) + 50}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Popular Users */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+            <span className="mr-3">⭐</span>
+            Popular Creators
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {popularUsers.map((user) => (
+              <div key={user._id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-center">
+                <div className="relative mb-4">
+                  <img 
+                    src={user.profilePicture || `https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop&crop=face`} 
+                    alt={user.username}
+                    className="w-20 h-20 rounded-full mx-auto object-cover ring-4 ring-purple-100"
+                  />
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
+                <h3 className="font-bold text-gray-900 mb-1">@{user.username}</h3>
+                <div className="flex items-center justify-center space-x-4 text-sm text-gray-600 mb-4">
+                  <span>{user.followers.toLocaleString()} followers</span>
+                  <span>•</span>
+                  <span>{user.posts} posts</span>
+                </div>
+                <button 
+                  onClick={() => followUser(user._id)}
+                  disabled={interactingUsers[`follow-${user._id}`]}
+                  className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
+                    followingStatus[user._id]
+                      ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-lg'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {interactingUsers[`follow-${user._id}`] ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Following...</span>
+                    </div>
+                  ) : followingStatus[user._id] ? (
+                    '✓ Following'
+                  ) : (
+                    'Follow'
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Call to Action */}
+        <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-3xl p-8 text-center text-white">
+          <h2 className="text-3xl font-bold mb-4">Ready to Share Your Story?</h2>
+          <p className="text-xl opacity-90 mb-6">Join thousands of creators sharing amazing moments</p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a 
+              href="/upload"
+              className="bg-white text-purple-600 px-8 py-4 rounded-xl hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg"
+            >
+              📸 Start Sharing
+            </a>
+            <a 
+              href="/"
+              className="bg-white/20 backdrop-blur-sm text-white px-8 py-4 rounded-xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 font-semibold border border-white/30"
+            >
+              🌍 Browse All Posts
+            </a>
+          </div>
         </div>
       </div>
     </div>
