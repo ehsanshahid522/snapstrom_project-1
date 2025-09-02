@@ -10,6 +10,7 @@ export default function Following() {
   const [interactingPosts, setInteractingPosts] = useState({})
   const [currentUserId, setCurrentUserId] = useState(null)
   const [expandedComments, setExpandedComments] = useState({})
+  const [headerHovered, setHeaderHovered] = useState(false)
 
   // Function to fetch following posts
   const fetchFollowingPosts = async () => {
@@ -204,6 +205,18 @@ export default function Following() {
     }
   }
 
+  const handleHeaderClick = () => {
+    const messages = [
+      "👥 Your personalized feed!",
+      "💫 Content from people you follow!",
+      "🌟 Curated just for you!",
+      "💖 Your social circle!",
+      "🎯 Focused on what matters to you!"
+    ];
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    alert(randomMessage);
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
@@ -245,16 +258,56 @@ export default function Following() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Professional Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-6">
+      {/* Interactive Header with Colors */}
+      <div 
+        className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 border-b border-gray-200 shadow-sm relative overflow-hidden"
+        onMouseEnter={() => setHeaderHovered(true)}
+        onMouseLeave={() => setHeaderHovered(false)}
+      >
+        {/* Animated background elements */}
+        <div className="absolute inset-0">
+          <div className={`absolute top-0 left-1/4 w-32 h-32 bg-gradient-to-r from-green-300 to-emerald-300 rounded-full blur-3xl opacity-20 transition-all duration-500 ${headerHovered ? 'animate-pulse' : ''}`}></div>
+          <div className={`absolute top-0 right-1/4 w-24 h-24 bg-gradient-to-r from-teal-300 to-cyan-300 rounded-full blur-3xl opacity-20 transition-all duration-500 ${headerHovered ? 'animate-pulse' : ''}`} style={{animationDelay: '1s'}}></div>
+        </div>
+        
+        <div className="max-w-2xl mx-auto px-4 py-6 relative z-10">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Following Feed
-            </h1>
-            <p className="text-gray-600 text-lg">
+            <div 
+              className="inline-block cursor-pointer transform transition-all duration-300 hover:scale-105"
+              onClick={handleHeaderClick}
+            >
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2 hover:from-green-500 hover:via-emerald-500 hover:to-teal-500 transition-all duration-300">
+                Following Feed
+              </h1>
+              {/* Floating icon */}
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-bounce">
+                👥
+              </div>
+            </div>
+            <p className="text-gray-600 text-lg font-medium">
               Posts from people you follow
             </p>
+            
+            {/* Interactive stats */}
+            <div className="flex justify-center space-x-6 mt-4">
+              <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 cursor-pointer">
+                <span className="text-2xl">👥</span>
+                <span className="text-sm font-semibold text-gray-700">Following</span>
+                <span className="text-xs text-green-600 font-bold">•</span>
+              </div>
+              
+              <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 cursor-pointer">
+                <span className="text-2xl">📱</span>
+                <span className="text-sm font-semibold text-gray-700">Personal</span>
+                <span className="text-xs text-emerald-600 font-bold">•</span>
+              </div>
+              
+              <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 cursor-pointer">
+                <span className="text-2xl">💖</span>
+                <span className="text-sm font-semibold text-gray-700">Curated</span>
+                <span className="text-xs text-teal-600 font-bold">•</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

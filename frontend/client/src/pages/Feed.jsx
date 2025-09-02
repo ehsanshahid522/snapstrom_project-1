@@ -10,6 +10,7 @@ export default function Feed() {
   const [interactingPosts, setInteractingPosts] = useState({}) // Track posts being interacted with
   const [currentUserId, setCurrentUserId] = useState(null) // Store current user ID
   const [expandedComments, setExpandedComments] = useState({}) // Track which posts have comments expanded
+  const [headerHovered, setHeaderHovered] = useState(false)
 
     // Function to fetch posts
   const fetchPosts = async () => {
@@ -533,6 +534,18 @@ export default function Feed() {
     }));
   }
 
+  const handleHeaderClick = () => {
+    const messages = [
+      "🌟 Welcome to Snapstream!",
+      "✨ Discover amazing moments!",
+      "🚀 Your social media journey starts here!",
+      "💫 Ready to explore?",
+      "🎉 Let's make some memories!"
+    ];
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    alert(randomMessage);
+  }
+
   const getCurrentPosts = () => posts // Posts are already filtered based on active tab
 
   if (loading) {
@@ -602,16 +615,56 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Professional Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-6">
+      {/* Interactive Header with Colors */}
+      <div 
+        className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-gray-200 shadow-sm relative overflow-hidden"
+        onMouseEnter={() => setHeaderHovered(true)}
+        onMouseLeave={() => setHeaderHovered(false)}
+      >
+        {/* Animated background elements */}
+        <div className="absolute inset-0">
+          <div className={`absolute top-0 left-1/4 w-32 h-32 bg-gradient-to-r from-blue-300 to-indigo-300 rounded-full blur-3xl opacity-20 transition-all duration-500 ${headerHovered ? 'animate-pulse' : ''}`}></div>
+          <div className={`absolute top-0 right-1/4 w-24 h-24 bg-gradient-to-r from-purple-300 to-pink-300 rounded-full blur-3xl opacity-20 transition-all duration-500 ${headerHovered ? 'animate-pulse' : ''}`} style={{animationDelay: '1s'}}></div>
+        </div>
+        
+        <div className="max-w-2xl mx-auto px-4 py-6 relative z-10">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Snapstream
-            </h1>
-            <p className="text-gray-600 text-lg">
+            <div 
+              className="inline-block cursor-pointer transform transition-all duration-300 hover:scale-105"
+              onClick={handleHeaderClick}
+            >
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2 hover:from-blue-500 hover:via-indigo-500 hover:to-purple-500 transition-all duration-300">
+                Snapstream
+              </h1>
+              {/* Floating icon */}
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-bounce">
+                ✨
+              </div>
+            </div>
+            <p className="text-gray-600 text-lg font-medium">
               Discover amazing moments from around the world
             </p>
+            
+            {/* Interactive stats */}
+            <div className="flex justify-center space-x-6 mt-4">
+              <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 cursor-pointer">
+                <span className="text-2xl">📸</span>
+                <span className="text-sm font-semibold text-gray-700">Live Posts</span>
+                <span className="text-xs text-blue-600 font-bold">•</span>
+              </div>
+              
+              <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 cursor-pointer">
+                <span className="text-2xl">🌍</span>
+                <span className="text-sm font-semibold text-gray-700">Global</span>
+                <span className="text-xs text-indigo-600 font-bold">•</span>
+              </div>
+              
+              <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 cursor-pointer">
+                <span className="text-2xl">⚡</span>
+                <span className="text-sm font-semibold text-gray-700">Real-time</span>
+                <span className="text-xs text-purple-600 font-bold">•</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
