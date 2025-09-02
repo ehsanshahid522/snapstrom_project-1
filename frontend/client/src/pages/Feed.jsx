@@ -217,7 +217,22 @@ export default function Feed() {
       alert('Post deleted successfully!');
     } catch (error) {
       console.error('Error deleting post:', error)
-      alert('Failed to delete post. Please try again.');
+      console.error('Error details:', {
+        status: error.status,
+        message: error.message,
+        body: error.body
+      });
+      
+      let errorMessage = 'Failed to delete post. Please try again.';
+      if (error.status === 403) {
+        errorMessage = 'You can only delete your own posts.';
+      } else if (error.status === 401) {
+        errorMessage = 'Please log in again to delete posts.';
+      } else if (error.body && error.body.debug) {
+        console.log('Debug info:', error.body.debug);
+      }
+      
+      alert(errorMessage);
     } finally {
       // Clear loading state
       setInteractingPosts(prev => ({ ...prev, [`delete-${id}`]: false }));

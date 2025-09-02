@@ -810,6 +810,28 @@ app.post('/api/auth/login', async (req, res) => {
 // Simple upload route (without database dependency)
 app.post('/upload', async (req, res) => {
   try {
+    // Check authentication first
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Get the authenticated user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
     if (!process.env.MONGO_URI) {
       return res.status(500).json({ message: 'Database not configured' });
     }
@@ -868,11 +890,18 @@ app.post('/upload', async (req, res) => {
         caption: caption.trim(),
         tags: tags ? tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [],
         isPrivate: isPrivate === 'true',
-        uploadedBy: req.user?.id || new mongoose.Types.ObjectId(),
+        uploadedBy: user._id, // Use the authenticated user's ID
         fileData: Buffer.from(await fs.promises.readFile(req.file.path))
       });
 
       await fileDoc.save();
+
+      console.log('✅ Upload successful:', {
+        fileId: fileDoc._id,
+        uploadedBy: user._id,
+        username: user.username,
+        filename: fileDoc.filename
+      });
 
       res.json({
         message: 'Upload successful',
@@ -889,6 +918,28 @@ app.post('/upload', async (req, res) => {
 // API prefixed upload with memory storage
 app.post('/api/upload', async (req, res) => {
   try {
+    // Check authentication first
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Get the authenticated user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
     if (!process.env.MONGO_URI) {
       return res.status(500).json({ message: 'Database not configured' });
     }
@@ -937,11 +988,18 @@ app.post('/api/upload', async (req, res) => {
         caption: caption.trim(),
         tags: tags ? tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [],
         isPrivate: isPrivate === 'true',
-        uploadedBy: req.user?.id || new mongoose.Types.ObjectId(),
+        uploadedBy: user._id, // Use the authenticated user's ID
         fileData: Buffer.from(req.file.buffer)
       });
 
       await fileDoc.save();
+
+      console.log('✅ Upload successful:', {
+        fileId: fileDoc._id,
+        uploadedBy: user._id,
+        username: user.username,
+        filename: fileDoc.filename
+      });
 
       res.json({
         message: 'Upload successful',
@@ -1543,9 +1601,32 @@ app.delete('/api/post/:postId', async (req, res) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
+    // Debug logging
+    console.log('🔍 Delete post debug:', {
+      postId,
+      postOwner: post.uploadedBy.toString(),
+      currentUser: decoded.id,
+      postOwnerType: typeof post.uploadedBy,
+      currentUserType: typeof decoded.id
+    });
+
     // Check if user is the owner of the post
     if (post.uploadedBy.toString() !== decoded.id) {
-      return res.status(403).json({ message: 'You can only delete your own posts' });
+      console.log('❌ Authorization failed: User is not the owner of the post');
+      
+      // Additional check: if the post was created with a random ObjectId (old system),
+      // we might need to handle this differently. For now, we'll still deny access
+      // but provide more detailed error information.
+      
+      return res.status(403).json({ 
+        message: 'You can only delete your own posts',
+        debug: {
+          postOwner: post.uploadedBy.toString(),
+          currentUser: decoded.id,
+          postCreatedAt: post.createdAt,
+          note: 'If you believe this is your post, please contact support'
+        }
+      });
     }
 
     // Delete the post
