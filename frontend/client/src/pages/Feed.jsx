@@ -8,6 +8,7 @@ export default function Feed() {
   const [activeTab, setActiveTab] = useState('forYou') // 'forYou' or 'following'
   const [currentUser, setCurrentUser] = useState(null)
   const [followingStatus, setFollowingStatus] = useState({}) // Track follow status for each user
+  const [interactingPosts, setInteractingPosts] = useState({}) // Track posts being interacted with
 
   useEffect(() => {
     (async () => {
@@ -113,27 +114,44 @@ export default function Feed() {
 
   const like = async (id) => {
     try {
-      const response = await api(`/interactions/like/${id}`, { method: 'POST' })
+      console.log('🔍 Liking post:', id);
+      
+      // Set loading state
+      setInteractingPosts(prev => ({ ...prev, [`like-${id}`]: true }));
+      
+      const response = await api(`/like/${id}`, { method: 'POST' })
+      
+      console.log('✅ Like response:', response);
       
       // Update posts with new like status
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
         ...p,
         __liked: response.isLiked,
-        __likesCount: response.likes
+        __likesCount: response.likesCount
       }) : p)
       
       setPosts(ps => updatePosts(ps))
     } catch (error) {
       console.error('Error liking post:', error)
+    } finally {
+      // Clear loading state
+      setInteractingPosts(prev => ({ ...prev, [`like-${id}`]: false }));
     }
   }
 
   const comment = async (id, text) => {
     try {
-      const response = await api(`/interactions/comment/${id}`, { 
+      console.log('🔍 Commenting on post:', id, 'Text:', text);
+      
+      // Set loading state
+      setInteractingPosts(prev => ({ ...prev, [`comment-${id}`]: true }));
+      
+      const response = await api(`/comment/${id}`, { 
         method: 'POST', 
         body: { text } 
       })
+      
+      console.log('✅ Comment response:', response);
       
       // Update posts with new comment
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
@@ -144,6 +162,36 @@ export default function Feed() {
       setPosts(ps => updatePosts(ps))
     } catch (error) {
       console.error('Error commenting on post:', error)
+    } finally {
+      // Clear loading state
+      setInteractingPosts(prev => ({ ...prev, [`comment-${id}`]: false }));
+    }
+  }
+
+  const share = async (id) => {
+    try {
+      console.log('🔍 Sharing post:', id);
+      
+      // Set loading state
+      setInteractingPosts(prev => ({ ...prev, [`share-${id}`]: true }));
+      
+      const response = await api(`/share/${id}`, { method: 'POST' })
+      
+      console.log('✅ Share response:', response);
+      
+      // Copy share URL to clipboard
+      if (response.shareUrl) {
+        await navigator.clipboard.writeText(response.shareUrl);
+        alert('Share link copied to clipboard!');
+      }
+      
+      return response.shareUrl;
+    } catch (error) {
+      console.error('Error sharing post:', error)
+      alert('Failed to share post. Please try again.');
+    } finally {
+      // Clear loading state
+      setInteractingPosts(prev => ({ ...prev, [`share-${id}`]: false }));
     }
   }
 
@@ -411,9 +459,14 @@ export default function Feed() {
                   <div className="flex items-center space-x-6">
                     <button 
                       onClick={() => like(p._id)}
-                      className="flex items-center space-x-2 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group"
+                      disabled={interactingPosts[`like-${p._id}`]}
+                      className="flex items-center space-x-2 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {p.__liked ? (
+                      {interactingPosts[`like-${p._id}`] ? (
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : p.__liked ? (
                         <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors">
                           <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -429,20 +482,44 @@ export default function Feed() {
                       <span className="font-bold text-lg">{p.__likesCount || 0}</span>
                     </button>
                     
-                    <div className="flex items-center space-x-2 text-gray-700">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                      </div>
+                    <button 
+                      onClick={() => {
+                        // Toggle comment input visibility or focus
+                        const commentInput = document.querySelector(`input[name="comment-${p._id}"]`);
+                        if (commentInput) {
+                          commentInput.focus();
+                        }
+                      }}
+                      disabled={interactingPosts[`comment-${p._id}`]}
+                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {interactingPosts[`comment-${p._id}`] ? (
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                          <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                        </div>
+                      )}
                       <span className="font-bold text-lg">{p.comments?.length || 0}</span>
-                    </div>
+                    </button>
                   </div>
                   
-                  <button className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                    </svg>
+                  <button 
+                    onClick={() => share(p._id)}
+                    disabled={interactingPosts[`share-${p._id}`]}
+                    className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {interactingPosts[`share-${p._id}`] ? (
+                      <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                      </svg>
+                    )}
                   </button>
                 </div>
 
@@ -480,7 +557,7 @@ export default function Feed() {
                 <form 
                   onSubmit={(e) => {
                     e.preventDefault()
-                    const text = e.currentTarget.comment.value.trim()
+                    const text = e.currentTarget[`comment-${p._id}`].value.trim()
                     if (!text) return
                     comment(p._id, text)
                     e.currentTarget.reset()
@@ -488,12 +565,24 @@ export default function Feed() {
                   className="flex space-x-3"
                 >
                   <input 
-                    name="comment" 
+                    name={`comment-${p._id}`}
                     placeholder="💭 Add a comment..." 
-                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    disabled={interactingPosts[`comment-${p._id}`]}
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <button type="submit" className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-2xl hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
-                    Post
+                  <button 
+                    type="submit" 
+                    disabled={interactingPosts[`comment-${p._id}`]}
+                    className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-2xl hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {interactingPosts[`comment-${p._id}`] ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Posting...</span>
+                      </div>
+                    ) : (
+                      'Post'
+                    )}
                   </button>
                 </form>
               </div>
