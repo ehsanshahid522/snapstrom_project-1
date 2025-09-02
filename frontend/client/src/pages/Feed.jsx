@@ -47,6 +47,7 @@ export default function Feed() {
         // Map the data to match expected structure
         const mapPosts = (data) => data.map(p => {
           console.log('🔍 Processing post:', p);
+          console.log('🔍 uploadedBy object:', p.uploadedBy);
           
           const mappedPost = {
             ...p,
@@ -55,7 +56,7 @@ export default function Feed() {
             uploader: {
               username: p.uploadedBy?.username || p.uploaderUsername || p.uploader?.username || p.username || 'Anonymous User',
               profilePicture: p.uploadedBy?.profilePicture || p.uploader?.profilePicture || null,
-              _id: p.uploadedBy?.id || p.uploader?._id || p.uploader || p.uploadedBy
+              _id: p.uploadedBy?.id || p.uploadedBy?._id || p.uploader?._id || p.uploader || p.uploadedBy
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
             __likesCount: p.likeCount || p.likes?.length || 0,
@@ -64,6 +65,7 @@ export default function Feed() {
           
           console.log('🔍 Mapped post result:', mappedPost);
           console.log('🔍 Username found:', mappedPost.uploader.username);
+          console.log('🔍 Uploader ID:', mappedPost.uploader._id);
           return mappedPost;
         });
         
@@ -76,17 +78,25 @@ export default function Feed() {
         
         // Initialize following status for all users in the feed
         const allUsers = mappedPosts
-          .map(p => p.uploader?._id)
+          .map(p => {
+            const userId = p.uploader?._id;
+            // Ensure userId is a string, not an object
+            return typeof userId === 'object' ? userId._id || userId.id : userId;
+          })
           .filter(id => id && id !== 'undefined' && id !== null)
           .filter((id, index, arr) => arr.indexOf(id) === index);
+        
+        console.log('🔍 All users for follow status:', allUsers);
         
         // Check follow status for each user
         const followStatus = {};
         for (const userId of allUsers) {
           try {
+            console.log('🔍 Checking follow status for:', userId);
             const response = await api(`/auth/follow-status/${userId}`).catch(() => ({ isFollowing: false }));
             followStatus[userId] = response.isFollowing || false;
           } catch (error) {
+            console.error('❌ Error checking follow status for', userId, ':', error);
             followStatus[userId] = false;
           }
         }
