@@ -1555,6 +1555,100 @@ app.get('/api/profile', async (req, res) => {
   }
 });
 
+// Upload profile picture
+app.post('/api/profile/picture', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Configure multer for profile picture upload
+    const upload = multer({
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only image files are allowed'));
+        }
+      }
+    });
+
+    upload.single('profilePicture')(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ message: err.message });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: 'No image file provided' });
+      }
+
+      try {
+        // Create a new file document for the profile picture
+        const profilePictureFile = new File({
+          filename: 'profile-' + Date.now(),
+          originalName: req.file.originalname,
+          contentType: req.file.mimetype,
+          size: req.file.size,
+          caption: 'Profile Picture',
+          isPrivate: false,
+          uploadedBy: user._id,
+          fileData: Buffer.from(req.file.buffer)
+        });
+
+        await profilePictureFile.save();
+
+        // Update user's profile picture
+        user.profilePicture = profilePictureFile._id;
+        await user.save();
+
+        console.log('✅ Profile picture updated successfully:', user.username);
+
+        res.json({
+          message: 'Profile picture updated successfully',
+          profilePicture: profilePictureFile._id
+        });
+      } catch (error) {
+        console.error('❌ Profile picture upload error:', error);
+        res.status(500).json({ message: 'Error uploading profile picture', error: error.message });
+      }
+    });
+  } catch (error) {
+    console.error('Profile picture upload error:', error);
+    res.status(500).json({ message: 'Error uploading profile picture', error: error.message });
+  }
+});
+
 // Follow/Unfollow user
 app.post('/api/follow/:userId', async (req, res) => {
   try {

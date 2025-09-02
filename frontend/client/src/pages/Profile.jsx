@@ -13,6 +13,7 @@ export default function Profile() {
   const [followingCount, setFollowingCount] = useState(0)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
+  const [uploadingProfilePic, setUploadingProfilePic] = useState(false)
 
   useEffect(()=>{
     (async()=>{
@@ -69,6 +70,59 @@ export default function Profile() {
   }
 
   const displayPosts = getDisplayPosts()
+
+  const handleProfilePictureUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB')
+      return
+    }
+
+    setUploadingProfilePic(true)
+    try {
+      const formData = new FormData()
+      formData.append('profilePicture', file)
+
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/profile/picture`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        // Update the user data with new profile picture
+        setData(prev => ({
+          ...prev,
+          user: {
+            ...prev.user,
+            profilePicture: result.profilePicture
+          }
+        }))
+        alert('Profile picture updated successfully!')
+      } else {
+        const error = await response.json()
+        alert(error.message || 'Failed to update profile picture')
+      }
+    } catch (error) {
+      console.error('Profile picture upload error:', error)
+      alert('Failed to update profile picture. Please try again.')
+    } finally {
+      setUploadingProfilePic(false)
+    }
+  }
 
   const handleFollow = async () => {
     if (followLoading) return
@@ -158,12 +212,48 @@ export default function Profile() {
             {/* Profile Picture */}
             <div className="relative group">
               <div className="w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 flex-shrink-0 shadow-2xl ring-4 ring-white ring-opacity-50 transform group-hover:scale-110 transition-all duration-300">
-                <div className="w-full h-full bg-gradient-to-br from-yellow-100 via-orange-100 to-red-100 flex items-center justify-center">
+                {data?.user?.profilePicture ? (
+                  <img 
+                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/images/${data.user.profilePicture}`} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                      e.target.nextSibling.style.display = 'flex'
+                    }}
+                  />
+                ) : null}
+                <div className={`w-full h-full bg-gradient-to-br from-yellow-100 via-orange-100 to-red-100 flex items-center justify-center ${data?.user?.profilePicture ? 'hidden' : ''}`}>
                   <span className="text-orange-600 font-bold text-3xl md:text-4xl drop-shadow-lg">
                     {username?.charAt(0).toUpperCase()}
                   </span>
                 </div>
               </div>
+              
+              {/* Upload Button - Only for own profile */}
+              {isOwnProfile && (
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePictureUpload}
+                      className="hidden"
+                      disabled={uploadingProfilePic}
+                    />
+                    <div className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 transform hover:scale-110">
+                      {uploadingProfilePic ? (
+                        <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              )}
+              
               {/* Online indicator with pulse animation */}
               <div className="absolute bottom-2 right-2 w-6 h-6 bg-emerald-500 border-4 border-white rounded-full shadow-lg animate-pulse"></div>
               {/* Decorative elements */}
