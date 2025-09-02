@@ -31,14 +31,6 @@ export async function api(path, { method = 'GET', headers = {}, body, auth = tru
   const token = getToken();
   const fullUrl = getApiUrl(path);
   
-  // Debug logging
-  console.log('🔍 API Request:', {
-    path,
-    fullUrl,
-    method,
-    hasToken: !!token
-  });
-  
   const res = await fetch(fullUrl, {
     method,
     headers: {

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api.js'
-import HealthCheck from '../components/HealthCheck.jsx'
 
 export default function Feed() {
   const [posts, setPosts] = useState([])
@@ -33,10 +32,10 @@ export default function Feed() {
         // Fetch feed data
         const response = await api('/feed')
         
-        console.log('🔍 Feed response:', response);
+        // Handle both direct array response and wrapped response
+        const postsData = Array.isArray(response) ? response : (response.data || response);
         
-        if (!response.success || !response.data) {
-          console.error('❌ Feed response error:', response);
+        if (!postsData || !Array.isArray(postsData)) {
           throw new Error('Failed to fetch feed data')
         }
         
@@ -61,7 +60,7 @@ export default function Feed() {
           return mappedPost;
         });
         
-        const mappedPosts = mapPosts(response.data);
+        const mappedPosts = mapPosts(postsData);
         
         // Filter out own posts from feed
         const filteredPosts = mappedPosts.filter(p => p.uploader?._id !== currentUserId);
@@ -88,11 +87,6 @@ export default function Feed() {
         
       } catch (e) {
         console.error('Error fetching feed:', e)
-        console.error('Error details:', {
-          message: e.message,
-          status: e.status,
-          body: e.body
-        })
         setPosts([]) // Set empty array on error
       } finally {
         setLoading(false)
@@ -226,11 +220,6 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Debug Health Check */}
-      <div className="max-w-4xl mx-auto px-4 py-4">
-        <HealthCheck />
-      </div>
-      
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full blur-3xl"></div>
