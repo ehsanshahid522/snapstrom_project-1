@@ -511,11 +511,11 @@ app.get('/api/feed', async (req, res) => {
       }
     }
     
-    // Get only public posts (isPrivate is false or undefined)
+    // Get only public posts (exclude private posts)
     const files = await File.find({ 
       $or: [
-        { isPrivate: { $ne: true } },  // isPrivate is false or undefined
-        { isPrivate: false }
+        { isPrivate: false },
+        { isPrivate: { $exists: false } }
       ]
     })
       .populate('uploadedBy', 'username profilePicture bio')
@@ -625,8 +625,8 @@ app.get('/api/feed/following', async (req, res) => {
     const files = await File.find({
       uploadedBy: { $in: followingUserIds },
       $or: [
-        { isPrivate: { $ne: true } },  // isPrivate is false or undefined
-        { isPrivate: false }
+        { isPrivate: false },
+        { isPrivate: { $exists: false } }
       ]
     })
       .populate('uploadedBy', 'username profilePicture bio')
