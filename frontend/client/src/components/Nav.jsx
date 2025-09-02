@@ -8,6 +8,7 @@ export default function Nav() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
+  const [followingStatus, setFollowingStatus] = useState({}) // Track follow status for each user
 
   function logout() {
     clearAuth()
@@ -24,11 +25,45 @@ export default function Nav() {
       setSearchLoading(true)
       const data = await api(`/api/search/users?q=${encodeURIComponent(searchQuery)}`)
       setSearchResults(data.users || [])
+      
+      // Check follow status for each user
+      const followStatus = {}
+      for (const user of data.users || []) {
+        try {
+          const statusResponse = await api(`/auth/follow-status/${user._id}`)
+          followStatus[user._id] = statusResponse.isFollowing || false
+        } catch (error) {
+          console.error('Error checking follow status for user:', user._id, error)
+          followStatus[user._id] = false
+        }
+      }
+      setFollowingStatus(followStatus)
     } catch (error) {
       console.error('Search error:', error)
       setSearchResults([])
     } finally {
       setSearchLoading(false)
+    }
+  }
+
+  const toggleFollow = async (userId, username) => {
+    try {
+      const isFollowing = followingStatus[userId]
+      const endpoint = isFollowing ? `/auth/unfollow/${userId}` : `/auth/follow/${userId}`
+      const method = isFollowing ? 'DELETE' : 'POST'
+      
+      await api(endpoint, { method })
+      
+      // Update follow status
+      setFollowingStatus(prev => ({
+        ...prev,
+        [userId]: !isFollowing
+      }))
+      
+      console.log(`${isFollowing ? 'Unfollowed' : 'Followed'} user:`, username)
+    } catch (error) {
+      console.error('Error toggling follow:', error)
+      alert(`Failed to ${followingStatus[userId] ? 'unfollow' : 'follow'} user. Please try again.`)
     }
   }
 
@@ -68,7 +103,7 @@ export default function Nav() {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-white via-pink-50 to-purple-50 shadow-2xl border-r border-pink-200 z-50 transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed left-0 top-0 h-full w-80 bg-gradient-to-b from-white via-pink-50 to-purple-50 shadow-2xl border-r border-pink-200 z-50 transform transition-transform duration-300 ease-in-out ${
         isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
         {/* Logo and Brand Section */}
@@ -127,17 +162,29 @@ export default function Nav() {
                       <p className="text-sm font-medium text-gray-900 truncate">@{user.username}</p>
                       {user.bio && <p className="text-xs text-gray-500 truncate">{user.bio}</p>}
                     </div>
-                    <a 
-                      href={`/profile/${user.username}`}
-                      className="text-xs text-pink-600 hover:text-pink-700 font-medium"
-                      onClick={() => {
-                        setIsMobileOpen(false)
-                        setSearchQuery('')
-                        setSearchResults([])
-                      }}
-                    >
-                      View
-                    </a>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => toggleFollow(user._id, user.username)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                          followingStatus[user._id]
+                            ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                            : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                        }`}
+                      >
+                        {followingStatus[user._id] ? 'Unfollow' : 'Follow'}
+                      </button>
+                      <a 
+                        href={`/profile/${user.username}`}
+                        className="text-xs text-pink-600 hover:text-pink-700 font-medium"
+                        onClick={() => {
+                          setIsMobileOpen(false)
+                          setSearchQuery('')
+                          setSearchResults([])
+                        }}
+                      >
+                        View
+                      </a>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -223,7 +270,7 @@ export default function Nav() {
             </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-semibold text-gray-900 truncate">{username}</p>
-              <p className="text-xs text-pink-600">Click for account options</p>
+              <p className="text-xs text-pink-600">Click for options</p>
             </div>
             <svg className={`w-4 h-4 text-pink-500 transition-transform duration-200 ${showAccountMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -233,33 +280,6 @@ export default function Nav() {
           {/* Account Menu */}
           {showAccountMenu && (
             <div className="mt-3 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-              <a 
-                href={`/profile/${username}`}
-                className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 border-b border-gray-100"
-                onClick={() => {
-                  setIsMobileOpen(false)
-                  setShowAccountMenu(false)
-                }}
-              >
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span>View Profile</span>
-              </a>
-              <a 
-                href="/settings"
-                className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 border-b border-gray-100"
-                onClick={() => {
-                  setIsMobileOpen(false)
-                  setShowAccountMenu(false)
-                }}
-              >
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span>Settings</span>
-              </a>
               <button
                 onClick={logout}
                 className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"

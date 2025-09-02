@@ -5,16 +5,14 @@ import { config } from '../config.js'
 export default function Feed() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('forYou') // 'forYou' or 'following'
   const [currentUser, setCurrentUser] = useState(null)
   const [followingStatus, setFollowingStatus] = useState({}) // Track follow status for each user
   const [interactingPosts, setInteractingPosts] = useState({}) // Track posts being interacted with
   const [currentUserId, setCurrentUserId] = useState(null) // Store current user ID
-  const [postCounts, setPostCounts] = useState({ forYou: 0, following: 0 }) // Track post counts for each tab
   const [expandedComments, setExpandedComments] = useState({}) // Track which posts have comments expanded
 
-  // Function to fetch posts based on active tab
-  const fetchPosts = async (tabType) => {
+    // Function to fetch posts
+  const fetchPosts = async () => {
     try {
       setLoading(true)
       
@@ -38,13 +36,8 @@ export default function Feed() {
       
       setCurrentUserId(currentUserId) // Store current user ID in state
 
-      // Fetch feed data based on tab type
-      let response
-      if (tabType === 'following') {
-        response = await api('/feed/following')
-      } else {
-        response = await api('/feed')
-      }
+      // Fetch feed data
+      const response = await api('/feed')
       
       console.log('🔍 Full API response:', response);
       
@@ -84,14 +77,8 @@ export default function Feed() {
       
       const mappedPosts = mapPosts(postsData);
       
-      // Set posts based on tab type
+      // Set posts
       setPosts(mappedPosts);
-      
-      // Update post counts for the current tab
-      setPostCounts(prev => ({
-        ...prev,
-        [tabType]: mappedPosts.length
-      }));
       
       // Initialize following status for all users in the feed
       const allUsers = mappedPosts
@@ -128,8 +115,8 @@ export default function Feed() {
   }
 
   useEffect(() => {
-    fetchPosts(activeTab)
-  }, [activeTab]) // Re-fetch when activeTab changes
+    fetchPosts()
+  }, []) // Re-fetch when activeTab changes
 
   const like = async (id) => {
     try {
@@ -433,7 +420,7 @@ export default function Feed() {
       alert(`Successfully deleted ${response.deletedCount} posts!`);
       
       // Refresh the posts list
-      fetchPosts(activeTab);
+      fetchPosts();
     } catch (error) {
       console.error('Error deleting all posts:', error);
       alert('Failed to delete all posts. Please try again.');
@@ -451,7 +438,7 @@ export default function Feed() {
       alert('Post ownership has been fixed! You can now delete this post.');
       
       // Refresh the posts to show updated data
-      fetchPosts(activeTab);
+      fetchPosts();
     } catch (error) {
       console.error('Error fixing post ownership:', error);
       alert('Failed to fix post ownership. Please try again.');
@@ -633,34 +620,6 @@ export default function Feed() {
             <p className="text-slate-600 text-xs">
               Discover amazing moments from around the world ✨
             </p>
-          </div>
-          
-          {/* Tab Navigation */}
-          <div className="flex justify-center">
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-1 shadow-2xl border border-slate-600">
-              <div className="flex space-x-1">
-                {[
-                  { id: 'forYou', label: 'For You', icon: '🌟', color: 'cyan' },
-                  { id: 'following', label: 'Following', icon: '👥', color: 'emerald' }
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-1 transform hover:scale-105 ${
-                      activeTab === tab.id
-                        ? `bg-gradient-to-r from-${tab.color}-400 to-${tab.color}-600 text-white shadow-lg scale-105`
-                        : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="text-sm">{tab.icon}</span>
-                    <span className="text-xs">{tab.label}</span>
-                    <span className={`px-1 py-0.5 rounded-full text-xs font-bold bg-${tab.color}-500 text-white shadow-md`}>
-                      {activeTab === tab.id ? postCounts[tab.id] || 0 : postCounts[tab.id] || '...'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>
