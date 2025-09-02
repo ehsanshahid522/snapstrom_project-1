@@ -1563,37 +1563,6 @@ app.delete('/api/post/:postId', async (req, res) => {
   }
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ 
-    message: 'Not Found',
-    path: req.originalUrl,
-    method: req.method,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({ 
-    message: 'Internal Server Error',
-    error: err.message,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Connect to database on startup (but don't block serverless function)
-connectDB().then(success => {
-  if (success) {
-    console.log('✅ Database connected on startup');
-  } else {
-    console.log('⚠️ Database connection failed on startup - will retry on first request');
-  }
-}).catch(error => {
-  console.error('❌ Database connection error on startup:', error.message);
-});
-
 // Get follow status for a user
 app.get('/api/auth/follow-status/:userId', async (req, res) => {
   try {
@@ -1792,6 +1761,37 @@ app.post('/api/test/add-sample-data', async (req, res) => {
     console.error('Error adding sample data:', error);
     res.status(500).json({ message: 'Error adding sample data', error: error.message });
   }
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ 
+    message: 'Not Found',
+    path: req.originalUrl,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ 
+    message: 'Internal Server Error',
+    error: err.message,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Connect to database on startup (but don't block serverless function)
+connectDB().then(success => {
+  if (success) {
+    console.log('✅ Database connected on startup');
+  } else {
+    console.log('⚠️ Database connection failed on startup - will retry on first request');
+  }
+}).catch(error => {
+  console.error('❌ Database connection error on startup:', error.message);
 });
 
 // Export for Vercel
