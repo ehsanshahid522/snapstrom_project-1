@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Feed from './pages/Feed.jsx'
+import Following from './pages/Following.jsx'
 import Settings from './pages/Settings.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
@@ -36,6 +37,7 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/share/:id" element={<Share />} />
       <Route path="/" element={<PrivateRoute><WithNav><Feed /></WithNav></PrivateRoute>} />
+      <Route path="/following" element={<PrivateRoute><WithNav><Following /></WithNav></PrivateRoute>} />
       <Route path="/explore" element={<PrivateRoute><WithNav><Explore /></WithNav></PrivateRoute>} />
       <Route path="/settings" element={<PrivateRoute><WithNav><Settings /></WithNav></PrivateRoute>} />
       <Route path="/profile/:username" element={<PrivateRoute><WithNav><Profile /></WithNav></PrivateRoute>} />
