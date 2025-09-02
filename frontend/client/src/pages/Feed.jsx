@@ -33,7 +33,7 @@ export default function Feed() {
         const response = await api('/feed')
         
         // Handle both direct array response and wrapped response
-        const postsData = Array.isArray(response) ? response : (response.data || response);
+        const postsData = response.success ? response.data : (Array.isArray(response) ? response : []);
         
         if (!postsData || !Array.isArray(postsData)) {
           throw new Error('Failed to fetch feed data')
@@ -41,22 +41,24 @@ export default function Feed() {
         
         // Map the data to match expected structure
         const mapPosts = (data) => data.map(p => {
+          console.log('🔍 Raw post data:', p);
           const uploader = p.uploader || {};
           
           const mappedPost = {
             ...p,
-            _id: p._id,
-            uploadTime: p.uploadTime,
+            _id: p._id || p.id || p.filename, // Try multiple possible ID fields
+            uploadTime: p.uploadTime || p.createdAt,
             uploader: {
               username: uploader.username || p.uploaderUsername || 'Unknown User',
               profilePicture: uploader.profilePicture,
-              _id: uploader._id || p.uploader
+              _id: uploader._id || uploader.id || p.uploader
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
             __likesCount: p.likeCount || p.likes?.length || 0,
             comments: p.comments || []
           };
           
+          console.log('🔍 Mapped post:', mappedPost);
           return mappedPost;
         });
         
