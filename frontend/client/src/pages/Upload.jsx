@@ -20,11 +20,18 @@ export default function Upload() {
 
   const handleFile = (file) => {
     if (!file.type.startsWith('image/')) {
-      setMsg('Please select an image file.')
+      setMsg('Please select an image file (JPG, PNG, GIF, etc.).')
       return
     }
     if (file.size > 5*1024*1024) {
       setMsg('File size must be less than 5MB.')
+      return
+    }
+    
+    // Additional validation for common image formats
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      setMsg('Please select a valid image file (JPG, PNG, GIF, WebP).')
       return
     }
     
@@ -65,10 +72,17 @@ export default function Upload() {
     if (!file.type.startsWith('image/')) { setMsg('Please select an image file.'); return }
     if (file.size > 5*1024*1024) { setMsg('File size must be less than 5MB.'); return }
     
+    // Check if user is authenticated
+    const token = localStorage.getItem('token')
+    if (!token) {
+      setMsg('Please log in to upload photos.')
+      return
+    }
+    
     const form = new FormData()
     form.append('image', file)
     form.append('caption', caption)
-    form.append('isPrivate', isPrivate)
+    form.append('isPrivate', isPrivate.toString())
     
     setLoading(true)
     setUploadProgress(0)
@@ -85,18 +99,21 @@ export default function Upload() {
     }, 200)
     
     try {
-      await api('/upload', { method:'POST', body: form })
+      const response = await api('/upload', { method:'POST', body: form })
       setUploadProgress(100)
-      setMsg('Uploaded successfully!')
+      setMsg('Uploaded successfully! Redirecting to feed...')
       setCaption('')
       setIsPrivate(false)
       setPreview(null)
       if (fileRef.current) fileRef.current.value = ''
       
-      // Reset progress after success
-      setTimeout(() => setUploadProgress(0), 2000)
+      // Redirect to feed after successful upload
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1500)
     } catch (e) {
-      setMsg(e.message)
+      console.error('Upload error:', e)
+      setMsg(e.message || 'Upload failed. Please try again.')
       setUploadProgress(0)
     } finally {
       setLoading(false)
