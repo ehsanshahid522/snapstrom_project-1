@@ -495,7 +495,7 @@ app.get('/api/images/:fileId', async (req, res) => {
   }
 });
 
-// Get feed posts
+// Get feed posts (For You - all recent posts)
 app.get('/api/feed', async (req, res) => {
   try {
     // Ensure DB connection with retry logic
@@ -566,6 +566,95 @@ app.get('/api/feed', async (req, res) => {
   } catch (error) {
     res.status(500).json({ 
       message: 'Error getting feed', 
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Get following feed posts (posts from users you follow)
+app.get('/api/feed/following', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection with retry logic
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable, try again' });
+      }
+    }
+    
+    // Get current user with following list
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Get posts from users that the current user follows
+    const followingUserIds = currentUser.following || [];
+    
+    if (followingUserIds.length === 0) {
+      // User is not following anyone, return empty array
+      return res.json([]);
+    }
+    
+    const files = await File.find({
+      uploadedBy: { $in: followingUserIds }
+    })
+      .populate('uploadedBy', 'username profilePicture bio')
+      .populate('likes', 'username')
+      .populate('comments.user', 'username profilePicture')
+      .sort({ createdAt: -1 })
+      .limit(20);
+    
+    const posts = files.map(file => {
+      return {
+        id: file._id,
+        filename: file.filename,
+        caption: file.caption,
+        tags: file.tags || [],
+        uploadedBy: file.uploadedBy ? {
+          id: file.uploadedBy._id,
+          username: file.uploadedBy.username,
+          profilePicture: file.uploadedBy.profilePicture,
+          bio: file.uploadedBy.bio
+        } : {
+          id: null,
+          username: 'Unknown User',
+          profilePicture: null,
+          bio: 'User not found'
+        },
+        likes: file.likes || [],
+        comments: file.comments || [],
+        isPrivate: file.isPrivate,
+        createdAt: file.createdAt,
+        imageUrl: `/api/images/${file._id}`
+      };
+    });
+    
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error getting following feed', 
       error: error.message,
       timestamp: new Date().toISOString()
     });

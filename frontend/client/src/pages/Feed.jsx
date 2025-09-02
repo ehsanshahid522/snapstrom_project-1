@@ -10,108 +10,125 @@ export default function Feed() {
   const [followingStatus, setFollowingStatus] = useState({}) // Track follow status for each user
   const [interactingPosts, setInteractingPosts] = useState({}) // Track posts being interacted with
   const [currentUserId, setCurrentUserId] = useState(null) // Store current user ID
+  const [postCounts, setPostCounts] = useState({ forYou: 0, following: 0 }) // Track post counts for each tab
+
+  // Function to fetch posts based on active tab
+  const fetchPosts = async (tabType) => {
+    try {
+      setLoading(true)
+      
+      // Get current user info
+      const username = localStorage.getItem('username')
+      if (username) {
+        setCurrentUser({ username })
+      }
+
+      // Get current user ID from token
+      const currentUserId = (() => {
+        try {
+          const token = localStorage.getItem('token')
+          if (!token) return null
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          return payload.id
+        } catch (error) {
+          return null
+        }
+      })()
+      
+      setCurrentUserId(currentUserId) // Store current user ID in state
+
+      // Fetch feed data based on tab type
+      let response
+      if (tabType === 'following') {
+        response = await api('/feed/following')
+      } else {
+        response = await api('/feed')
+      }
+      
+      console.log('🔍 Full API response:', response);
+      
+      // Handle both direct array response and wrapped response
+      const postsData = response.success ? response.data : (Array.isArray(response) ? response : []);
+      
+      console.log('🔍 Posts data:', postsData);
+      
+      if (!postsData || !Array.isArray(postsData)) {
+        throw new Error('Failed to fetch feed data')
+      }
+      
+      // Map the data to match expected structure
+      const mapPosts = (data) => data.map(p => {
+        console.log('🔍 Processing post:', p);
+        console.log('🔍 uploadedBy object:', p.uploadedBy);
+        
+        const mappedPost = {
+          ...p,
+          _id: p.id || p._id,
+          uploadTime: p.uploadTime || p.createdAt,
+          uploader: {
+            username: p.uploadedBy?.username || p.uploaderUsername || p.uploader?.username || p.username || 'Anonymous User',
+            profilePicture: p.uploadedBy?.profilePicture || p.uploader?.profilePicture || null,
+            _id: p.uploadedBy?.id || p.uploadedBy?._id || p.uploader?._id || p.uploader || p.uploadedBy
+          },
+          __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
+          __likesCount: p.likeCount || p.likes?.length || 0,
+          comments: p.comments || []
+        };
+        
+        console.log('🔍 Mapped post result:', mappedPost);
+        console.log('🔍 Username found:', mappedPost.uploader.username);
+        console.log('🔍 Uploader ID:', mappedPost.uploader._id);
+        return mappedPost;
+      });
+      
+      const mappedPosts = mapPosts(postsData);
+      
+      // Set posts based on tab type
+      setPosts(mappedPosts);
+      
+      // Update post counts for the current tab
+      setPostCounts(prev => ({
+        ...prev,
+        [tabType]: mappedPosts.length
+      }));
+      
+      // Initialize following status for all users in the feed
+      const allUsers = mappedPosts
+        .map(p => {
+          const userId = p.uploader?._id;
+          // Ensure userId is a string, not an object
+          return typeof userId === 'object' ? userId._id || userId.id : userId;
+        })
+        .filter(id => id && id !== 'undefined' && id !== null)
+        .filter((id, index, arr) => arr.indexOf(id) === index);
+      
+      console.log('🔍 All users for follow status:', allUsers);
+      
+      // Check follow status for each user
+      const followStatus = {};
+      for (const userId of allUsers) {
+        try {
+          console.log('🔍 Checking follow status for:', userId);
+          const response = await api(`/auth/follow-status/${userId}`).catch(() => ({ isFollowing: false }));
+          followStatus[userId] = response.isFollowing || false;
+        } catch (error) {
+          console.error('❌ Error checking follow status for', userId, ':', error);
+          followStatus[userId] = false;
+        }
+      }
+      setFollowingStatus(followStatus);
+      
+    } catch (e) {
+      console.error('Error fetching feed:', e)
+      setPosts([]) // Set empty array on error
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    (async () => {
-      try {
-        // Get current user info
-        const username = localStorage.getItem('username')
-        if (username) {
-          setCurrentUser({ username })
-        }
-
-        // Get current user ID from token
-        const currentUserId = (() => {
-          try {
-            const token = localStorage.getItem('token')
-            if (!token) return null
-            const payload = JSON.parse(atob(token.split('.')[1]))
-            return payload.id
-          } catch (error) {
-            return null
-          }
-        })()
-        
-        setCurrentUserId(currentUserId) // Store current user ID in state
-
-        // Fetch feed data
-        const response = await api('/feed')
-        
-        console.log('🔍 Full API response:', response);
-        
-        // Handle both direct array response and wrapped response
-        const postsData = response.success ? response.data : (Array.isArray(response) ? response : []);
-        
-        console.log('🔍 Posts data:', postsData);
-        
-        if (!postsData || !Array.isArray(postsData)) {
-          throw new Error('Failed to fetch feed data')
-        }
-        
-        // Map the data to match expected structure
-        const mapPosts = (data) => data.map(p => {
-          console.log('🔍 Processing post:', p);
-          console.log('🔍 uploadedBy object:', p.uploadedBy);
-          
-          const mappedPost = {
-            ...p,
-            _id: p.id || p._id,
-            uploadTime: p.uploadTime || p.createdAt,
-            uploader: {
-              username: p.uploadedBy?.username || p.uploaderUsername || p.uploader?.username || p.username || 'Anonymous User',
-              profilePicture: p.uploadedBy?.profilePicture || p.uploader?.profilePicture || null,
-              _id: p.uploadedBy?.id || p.uploadedBy?._id || p.uploader?._id || p.uploader || p.uploadedBy
-            },
-            __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
-            __likesCount: p.likeCount || p.likes?.length || 0,
-            comments: p.comments || []
-          };
-          
-          console.log('🔍 Mapped post result:', mappedPost);
-          console.log('🔍 Username found:', mappedPost.uploader.username);
-          console.log('🔍 Uploader ID:', mappedPost.uploader._id);
-          return mappedPost;
-        });
-        
-        const mappedPosts = mapPosts(postsData);
-        
-        // Show all posts (including own posts)
-        setPosts(mappedPosts);
-        
-        // Initialize following status for all users in the feed
-        const allUsers = mappedPosts
-          .map(p => {
-            const userId = p.uploader?._id;
-            // Ensure userId is a string, not an object
-            return typeof userId === 'object' ? userId._id || userId.id : userId;
-          })
-          .filter(id => id && id !== 'undefined' && id !== null)
-          .filter((id, index, arr) => arr.indexOf(id) === index);
-        
-        console.log('🔍 All users for follow status:', allUsers);
-        
-        // Check follow status for each user
-        const followStatus = {};
-        for (const userId of allUsers) {
-          try {
-            console.log('🔍 Checking follow status for:', userId);
-            const response = await api(`/auth/follow-status/${userId}`).catch(() => ({ isFollowing: false }));
-            followStatus[userId] = response.isFollowing || false;
-          } catch (error) {
-            console.error('❌ Error checking follow status for', userId, ':', error);
-            followStatus[userId] = false;
-          }
-        }
-        setFollowingStatus(followStatus);
-        
-      } catch (e) {
-        console.error('Error fetching feed:', e)
-        setPosts([]) // Set empty array on error
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [])
+    fetchPosts(activeTab)
+  }, [activeTab]) // Re-fetch when activeTab changes
 
   const like = async (id) => {
     try {
@@ -223,7 +240,7 @@ export default function Feed() {
       alert(`Successfully deleted ${response.deletedCount} posts!`);
       
       // Refresh the posts list
-      fetchPosts();
+      fetchPosts(activeTab);
     } catch (error) {
       console.error('Error deleting all posts:', error);
       alert('Failed to delete all posts. Please try again.');
@@ -241,7 +258,7 @@ export default function Feed() {
       alert('Post ownership has been fixed! You can now delete this post.');
       
       // Refresh the posts to show updated data
-      fetchPosts();
+      fetchPosts(activeTab);
     } catch (error) {
       console.error('Error fixing post ownership:', error);
       alert('Failed to fix post ownership. Please try again.');
@@ -329,7 +346,7 @@ export default function Feed() {
     }
   }
 
-  const getCurrentPosts = () => posts // For now, both tabs show the same posts
+  const getCurrentPosts = () => posts // Posts are already filtered based on active tab
 
   if (loading) {
     return (
@@ -438,7 +455,7 @@ export default function Feed() {
                     <span className="text-lg">{tab.icon}</span>
                     <span>{tab.label}</span>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold bg-${tab.color}-500 text-white shadow-md`}>
-                      {activeTab === tab.id ? posts.length : '...'}
+                      {activeTab === tab.id ? postCounts[tab.id] || 0 : postCounts[tab.id] || '...'}
                     </span>
                   </button>
                 ))}
