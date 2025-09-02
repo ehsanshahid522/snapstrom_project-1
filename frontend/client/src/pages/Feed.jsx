@@ -236,7 +236,7 @@ export default function Feed() {
       
       console.log('🔍 Following user:', userIdString, username);
       
-      const response = await api(`/auth/follow/${userIdString}`, { method: 'POST' })
+      const response = await api(`/follow/${userIdString}`, { method: 'POST' })
       
       // Update following status
       setFollowingStatus(prev => ({
