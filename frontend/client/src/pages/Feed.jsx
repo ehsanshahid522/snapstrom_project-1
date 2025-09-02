@@ -625,20 +625,20 @@ export default function Feed() {
 
       {/* Header with Tabs */}
       <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="text-center mb-4">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-1">
+        <div className="max-w-4xl mx-auto px-4 py-2">
+          <div className="text-center mb-2">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-0">
               Snapstream
             </h1>
-            <p className="text-slate-600 text-sm">
+            <p className="text-slate-600 text-xs">
               Discover amazing moments from around the world ✨
             </p>
           </div>
           
           {/* Tab Navigation */}
           <div className="flex justify-center">
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-2 shadow-2xl border border-slate-600">
-              <div className="flex space-x-2">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-1 shadow-2xl border border-slate-600">
+              <div className="flex space-x-1">
                 {[
                   { id: 'forYou', label: 'For You', icon: '🌟', color: 'cyan' },
                   { id: 'following', label: 'Following', icon: '👥', color: 'emerald' }
@@ -646,15 +646,15 @@ export default function Feed() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 ${
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-1 transform hover:scale-105 ${
                       activeTab === tab.id
                         ? `bg-gradient-to-r from-${tab.color}-400 to-${tab.color}-600 text-white shadow-lg scale-105`
                         : 'text-slate-300 hover:text-white hover:bg-slate-700'
                     }`}
                   >
-                    <span className="text-base">{tab.icon}</span>
-                    <span className="text-sm">{tab.label}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold bg-${tab.color}-500 text-white shadow-md`}>
+                    <span className="text-sm">{tab.icon}</span>
+                    <span className="text-xs">{tab.label}</span>
+                    <span className={`px-1 py-0.5 rounded-full text-xs font-bold bg-${tab.color}-500 text-white shadow-md`}>
                       {activeTab === tab.id ? postCounts[tab.id] || 0 : postCounts[tab.id] || '...'}
                     </span>
                   </button>
@@ -666,7 +666,7 @@ export default function Feed() {
       </div>
 
       {/* Posts Feed */}
-      <div className="max-w-2xl mx-auto px-4 py-4 relative">
+      <div className="max-w-2xl mx-auto px-4 py-2 relative">
         {/* Floating Action Button */}
         <div className="fixed bottom-8 right-8 z-50">
           <a href="/upload" className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-2xl hover:shadow-pink-500/50 transition-all duration-300 transform hover:scale-110 hover:rotate-12 flex items-center justify-center text-white text-2xl animate-bounce">
