@@ -11,6 +11,7 @@ export default function Feed() {
   const [interactingPosts, setInteractingPosts] = useState({}) // Track posts being interacted with
   const [currentUserId, setCurrentUserId] = useState(null) // Store current user ID
   const [postCounts, setPostCounts] = useState({ forYou: 0, following: 0 }) // Track post counts for each tab
+  const [expandedComments, setExpandedComments] = useState({}) // Track which posts have comments expanded
 
   // Function to fetch posts based on active tab
   const fetchPosts = async (tabType) => {
@@ -538,6 +539,13 @@ export default function Feed() {
     }
   }
 
+  const toggleComments = (postId) => {
+    setExpandedComments(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
+  }
+
   const getCurrentPosts = () => posts // Posts are already filtered based on active tab
 
   if (loading) {
@@ -616,13 +624,13 @@ export default function Feed() {
       </div>
 
       {/* Header with Tabs */}
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="text-center mb-6">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="text-center mb-4">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-1">
               Snapstream
             </h1>
-            <p className="text-slate-600 text-lg">
+            <p className="text-slate-600 text-sm">
               Discover amazing moments from around the world ✨
             </p>
           </div>
@@ -638,15 +646,15 @@ export default function Feed() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-8 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-3 transform hover:scale-105 ${
+                    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 ${
                       activeTab === tab.id
                         ? `bg-gradient-to-r from-${tab.color}-400 to-${tab.color}-600 text-white shadow-lg scale-105`
                         : 'text-slate-300 hover:text-white hover:bg-slate-700'
                     }`}
                   >
-                    <span className="text-lg">{tab.icon}</span>
-                    <span>{tab.label}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold bg-${tab.color}-500 text-white shadow-md`}>
+                    <span className="text-base">{tab.icon}</span>
+                    <span className="text-sm">{tab.label}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold bg-${tab.color}-500 text-white shadow-md`}>
                       {activeTab === tab.id ? postCounts[tab.id] || 0 : postCounts[tab.id] || '...'}
                     </span>
                   </button>
@@ -654,25 +662,11 @@ export default function Feed() {
               </div>
             </div>
           </div>
-          
-          {/* Admin Controls */}
-          <div className="flex justify-center mt-4">
-            <button
-              onClick={deleteAllPosts}
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-red-500/50 transform hover:scale-105"
-              title="Delete all posts (Admin only)"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              🗑️ Delete All Posts
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Posts Feed */}
-      <div className="max-w-2xl mx-auto px-4 py-8 relative">
+      <div className="max-w-2xl mx-auto px-4 py-4 relative">
         {/* Floating Action Button */}
         <div className="fixed bottom-8 right-8 z-50">
           <a href="/upload" className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-2xl hover:shadow-pink-500/50 transition-all duration-300 transform hover:scale-110 hover:rotate-12 flex items-center justify-center text-white text-2xl animate-bounce">
@@ -820,13 +814,7 @@ export default function Feed() {
                     </button>
                     
                     <button 
-                      onClick={() => {
-                        // Toggle comment input visibility or focus
-                        const commentInput = document.querySelector(`input[name="comment-${p._id}"]`);
-                        if (commentInput) {
-                          commentInput.focus();
-                        }
-                      }}
+                      onClick={() => toggleComments(p._id)}
                       disabled={interactingPosts[`comment-${p._id}`]}
                       className="flex items-center space-x-2 text-gray-700 hover:text-blue-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -888,11 +876,11 @@ export default function Feed() {
                   </div>
                 )}
 
-                {/* Comments */}
-                {p.comments && p.comments.length > 0 && (
-                  <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded-2xl">
-                    <h4 className="font-semibold text-gray-900 text-sm mb-2">💬 Comments</h4>
-                    {p.comments.slice(0, 3).map((c, i) => (
+                {/* Comments - Only show when expanded */}
+                {p.comments && p.comments.length > 0 && expandedComments[p._id] && (
+                  <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded-2xl animate-slide-up">
+                    <h4 className="font-semibold text-gray-900 text-sm mb-2">💬 Comments ({p.comments.length})</h4>
+                    {p.comments.slice(0, 5).map((c, i) => (
                       <div key={i} className="text-sm">
                         <span className="font-bold text-gray-900 mr-2">
                           {c.username || c.user?.username || 'User'}:
@@ -900,9 +888,9 @@ export default function Feed() {
                         <span className="text-gray-700">{c.text}</span>
                       </div>
                     ))}
-                    {p.comments.length > 3 && (
+                    {p.comments.length > 5 && (
                       <p className="text-xs text-gray-500 mt-2">
-                        +{p.comments.length - 3} more comments
+                        +{p.comments.length - 5} more comments
                       </p>
                     )}
                   </div>
