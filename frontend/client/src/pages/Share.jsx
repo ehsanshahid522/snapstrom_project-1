@@ -54,7 +54,7 @@ export default function Share() {
                 <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
                   {post.uploader?.profilePicture ? (
                     <img 
-                      src={`/uploads/${post.uploader.profilePicture}`} 
+                      src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${post.uploader.profilePicture}`} 
                       alt="" 
                       className="w-full h-full object-cover"
                     />

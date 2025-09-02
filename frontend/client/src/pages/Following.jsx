@@ -283,7 +283,7 @@ export default function Following() {
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
                       {p.uploader?.profilePicture ? (
                         <img 
-                          src={`/uploads/${p.uploader.profilePicture}`} 
+                          src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${p.uploader.profilePicture}`} 
                           alt="" 
                           className="w-full h-full object-cover"
                         />
