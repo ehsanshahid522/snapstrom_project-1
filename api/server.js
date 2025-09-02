@@ -2448,6 +2448,53 @@ app.post('/api/test/add-sample-data', async (req, res) => {
   }
 });
 
+// Test endpoint to check profile picture data
+app.get('/api/test/profile-pictures', async (req, res) => {
+  try {
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    // Get all users with their profile pictures
+    const users = await User.find().select('username profilePicture');
+    
+    // Get sample posts with populated uploaders
+    const samplePosts = await File.find().limit(5)
+      .populate('uploadedBy', 'username profilePicture')
+      .select('uploadedBy');
+
+    res.json({
+      users: users.map(user => ({
+        username: user.username,
+        hasProfilePicture: !!user.profilePicture,
+        profilePictureId: user.profilePicture
+      })),
+      samplePosts: samplePosts.map(post => ({
+        postId: post._id,
+        uploader: post.uploadedBy ? {
+          username: post.uploadedBy.username,
+          hasProfilePicture: !!post.uploadedBy.profilePicture,
+          profilePictureId: post.uploadedBy.profilePicture
+        } : null
+      })),
+      totalUsers: users.length,
+      usersWithProfilePictures: users.filter(u => u.profilePicture).length
+    });
+  } catch (error) {
+    console.error('Profile picture test error:', error);
+    res.status(500).json({ message: 'Error testing profile pictures', error: error.message });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
