@@ -292,8 +292,8 @@ export default function Explore() {
         </div>
       </div>
 
-      {/* Navigation Bar */}
-             <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-lg">
+             {/* Navigation Bar */}
+       <div className="sticky top-0 z-50">
          <div className="max-w-7xl mx-auto px-4 py-4 ml-24">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             {/* Search Bar */}
