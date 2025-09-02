@@ -277,42 +277,48 @@ export default function Explore() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white py-8">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center">
-            <h1 className="text-4xl font-bold mb-3">🌍 Explore</h1>
-            <p className="text-xl opacity-90">Discover trending posts, popular creators, and amazing content</p>
+            <h1 className="text-5xl font-bold mb-4 animate-pulse">🌍 Explore</h1>
+            <p className="text-2xl opacity-90 mb-6">Discover trending posts, popular creators, and amazing content</p>
+            <div className="flex items-center justify-center space-x-2 text-sm opacity-75">
+              <span className="bg-white/20 px-3 py-1 rounded-full">🔥 Live</span>
+              <span className="bg-white/20 px-3 py-1 rounded-full">⚡ Real-time</span>
+              <span className="bg-white/20 px-3 py-1 rounded-full">🌟 Trending</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Search and Filters */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4 items-center">
+      {/* Navigation Bar */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             {/* Search Bar */}
-            <div className="flex-1 w-full">
+            <div className="flex-1 w-full max-w-2xl">
               <div className="relative">
                 <input
                   type="text"
                   placeholder="🔍 Search posts, creators, or categories..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pl-12 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-6 py-4 pl-14 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-lg"
                 />
-                <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
             </div>
 
-            {/* Sort Options */}
+            {/* Controls */}
             <div className="flex items-center space-x-4">
+              {/* Sort Options */}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                className="px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-lg font-medium"
               >
                 <option value="trending">🔥 Trending</option>
                 <option value="recent">⏰ Recent</option>
@@ -320,24 +326,24 @@ export default function Explore() {
               </select>
 
               {/* View Mode Toggle */}
-              <div className="flex bg-gray-100 rounded-xl p-1">
+              <div className="flex bg-gray-100 rounded-2xl p-2">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-all duration-200 ${
-                    viewMode === 'grid' ? 'bg-white shadow-md' : 'text-gray-500'
+                  className={`p-3 rounded-xl transition-all duration-300 ${
+                    viewMode === 'grid' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/>
                   </svg>
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-all duration-200 ${
-                    viewMode === 'list' ? 'bg-white shadow-md' : 'text-gray-500'
+                  className={`p-3 rounded-xl transition-all duration-300 ${
+                    viewMode === 'list' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M3 13h18v-2H3v2zm0 6h18v-2H3v2zM3 5v2h18V5H3z"/>
                   </svg>
                 </button>
@@ -345,20 +351,22 @@ export default function Explore() {
             </div>
           </div>
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Categories */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <span className="mr-3">📂</span>
+          <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+            <span className="mr-3 text-4xl">📂</span>
             Categories
           </h2>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-4">
             <button
               onClick={() => setActiveCategory('all')}
-              className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+              className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 ${
                 activeCategory === 'all'
-                  ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
+                  ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xl'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
               }`}
             >
               🌟 All Posts
@@ -367,10 +375,10 @@ export default function Explore() {
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
-                className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 ${
                   activeCategory === category.id
-                    ? `bg-gradient-to-r ${category.color} text-white shadow-lg`
-                    : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
+                    ? `bg-gradient-to-r ${category.color} text-white shadow-xl`
+                    : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
                 }`}
               >
                 {category.name} ({category.count})
@@ -380,55 +388,71 @@ export default function Explore() {
         </div>
 
         {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
+        <div className="mb-8">
+          <p className="text-lg text-gray-600">
             Showing {filteredPosts.length} {filteredPosts.length === 1 ? 'post' : 'posts'} 
             {searchQuery && ` for "${searchQuery}"`}
             {activeCategory !== 'all' && ` in ${categories.find(c => c.id === activeCategory)?.name}`}
           </p>
         </div>
 
+        {/* Upcoming Features Note */}
+        <div className="mb-8 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">🚀</span>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-yellow-800 mb-1">Coming Soon!</h3>
+              <p className="text-yellow-700">
+                Advanced filtering, AI-powered recommendations, and more interactive features are being developed. 
+                Stay tuned for the next big update!
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Trending Posts */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <span className="mr-3">🔥</span>
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center">
+            <span className="mr-4 text-4xl">🔥</span>
             {sortBy === 'trending' ? 'Trending Posts' : sortBy === 'recent' ? 'Recent Posts' : 'Popular Posts'}
           </h2>
           
           {filteredPosts.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center py-16">
+              <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No posts found</h3>
-              <p className="text-gray-600">Try adjusting your search or filters</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">No posts found</h3>
+              <p className="text-gray-600 text-lg">Try adjusting your search or filters</p>
             </div>
           ) : (
-            <div className={`grid gap-6 ${
+            <div className={`grid gap-8 ${
               viewMode === 'grid' 
                 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
                 : 'grid-cols-1'
             }`}>
               {filteredPosts.map((post) => (
-                <div key={post._id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <div key={post._id} className="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:scale-105">
                   {/* Post Image */}
                   <div className="relative group">
                     <img 
                       src={post.image || `https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop`} 
                       alt={post.caption}
-                      className="w-full h-48 object-cover"
+                      className="w-full h-56 object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
                     {/* Floating Action Buttons */}
-                    <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute top-4 right-4 flex space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                       <button 
                         onClick={() => share(post._id, post)}
-                        className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all duration-200 transform hover:scale-110 shadow-lg"
+                        className="w-12 h-12 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all duration-300 transform hover:scale-110 shadow-xl"
                       >
-                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                         </svg>
                       </button>
@@ -436,17 +460,17 @@ export default function Explore() {
                   </div>
 
                   {/* Post Content */}
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                          <span className="text-pink-600 font-bold text-sm">
+                  <div className="p-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center ring-4 ring-pink-100">
+                          <span className="text-pink-600 font-bold text-lg">
                             {post.uploader?.username?.charAt(0).toUpperCase() || 'U'}
                           </span>
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900">@{post.uploader?.username || 'user'}</h3>
-                          <p className="text-xs text-gray-500">
+                          <h3 className="font-bold text-gray-900 text-lg">@{post.uploader?.username || 'user'}</h3>
+                          <p className="text-sm text-gray-500">
                             {post.uploadTime ? new Date(post.uploadTime).toLocaleDateString() : 'Recently'}
                           </p>
                         </div>
@@ -454,7 +478,7 @@ export default function Explore() {
                     </div>
 
                     {post.caption && (
-                      <p className="text-gray-800 text-sm mb-4 line-clamp-2">{post.caption}</p>
+                      <p className="text-gray-800 text-base mb-6 line-clamp-3 leading-relaxed">{post.caption}</p>
                     )}
 
                     {/* Post Actions */}
@@ -462,25 +486,31 @@ export default function Explore() {
                       <button 
                         onClick={() => like(post._id)}
                         disabled={interactingPosts[`like-${post._id}`]}
-                        className="flex items-center space-x-2 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {interactingPosts[`like-${post._id}`] ? (
-                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                           </div>
                         ) : (
-                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors shadow-lg">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
                           </div>
                         )}
-                        <span className="font-semibold text-sm">{post.__likesCount || 0}</span>
+                        <span className="font-bold text-lg">{post.__likesCount || 0}</span>
                       </button>
 
-                      <div className="flex items-center space-x-2 text-xs text-gray-500">
-                        <span>💬 {Math.floor(Math.random() * 20) + 1}</span>
-                        <span>👁️ {Math.floor(Math.random() * 100) + 50}</span>
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <span className="flex items-center space-x-1">
+                          <span className="text-lg">💬</span>
+                          <span>{Math.floor(Math.random() * 20) + 1}</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <span className="text-lg">👁️</span>
+                          <span>{Math.floor(Math.random() * 100) + 50}</span>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -492,23 +522,23 @@ export default function Explore() {
 
         {/* Popular Users */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <span className="mr-3">⭐</span>
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center">
+            <span className="mr-4 text-4xl">⭐</span>
             Popular Creators
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {popularUsers.map((user) => (
-              <div key={user._id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-center">
-                <div className="relative mb-4">
+              <div key={user._id} className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 text-center">
+                <div className="relative mb-6">
                   <img 
                     src={user.profilePicture || `https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop&crop=face`} 
                     alt={user.username}
-                    className="w-20 h-20 rounded-full mx-auto object-cover ring-4 ring-purple-100"
+                    className="w-24 h-24 rounded-full mx-auto object-cover ring-6 ring-purple-100 shadow-lg"
                   />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white"></div>
+                  <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white shadow-lg"></div>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1">@{user.username}</h3>
-                <div className="flex items-center justify-center space-x-4 text-sm text-gray-600 mb-4">
+                <h3 className="font-bold text-gray-900 text-xl mb-2">@{user.username}</h3>
+                <div className="flex items-center justify-center space-x-6 text-base text-gray-600 mb-6">
                   <span>{user.followers.toLocaleString()} followers</span>
                   <span>•</span>
                   <span>{user.posts} posts</span>
@@ -516,15 +546,15 @@ export default function Explore() {
                 <button 
                   onClick={() => followUser(user._id)}
                   disabled={interactingUsers[`follow-${user._id}`]}
-                  className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
                     followingStatus[user._id]
                       ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-lg'
+                      : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {interactingUsers[`follow-${user._id}`] ? (
                     <div className="flex items-center justify-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>Following...</span>
                     </div>
                   ) : followingStatus[user._id] ? (
@@ -538,20 +568,20 @@ export default function Explore() {
           </div>
         </div>
 
-        {/* Call to Action */}
-        <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-3xl p-8 text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">Ready to Share Your Story?</h2>
-          <p className="text-xl opacity-90 mb-6">Join thousands of creators sharing amazing moments</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        {/* Enhanced Call to Action */}
+        <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-3xl p-12 text-center text-white">
+          <h2 className="text-4xl font-bold mb-6">Ready to Share Your Story?</h2>
+          <p className="text-2xl opacity-90 mb-8">Join thousands of creators sharing amazing moments</p>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <a 
               href="/upload"
-              className="bg-white text-purple-600 px-8 py-4 rounded-xl hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg"
+              className="bg-white text-purple-600 px-10 py-5 rounded-2xl hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 font-bold text-xl shadow-2xl"
             >
               📸 Start Sharing
             </a>
             <a 
               href="/"
-              className="bg-white/20 backdrop-blur-sm text-white px-8 py-4 rounded-xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 font-semibold border border-white/30"
+              className="bg-white/20 backdrop-blur-sm text-white px-10 py-5 rounded-2xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 font-bold text-xl border-2 border-white/30"
             >
               🌍 Browse All Posts
             </a>
