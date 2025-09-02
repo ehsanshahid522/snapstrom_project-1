@@ -54,8 +54,14 @@ export default function Profile() {
   const privatePosts = data?.posts?.filter(post => post.isPrivate) || []
   const allPosts = data?.posts || []
 
-  // Get posts based on active tab
+  // Get posts based on active tab and profile ownership
   const getDisplayPosts = () => {
+    // For other users' profiles, only show public posts regardless of tab
+    if (!isOwnProfile) {
+      return publicPosts
+    }
+    
+    // For own profile, show based on selected tab
     switch(activeTab) {
       case 'public': return publicPosts
       case 'private': return privatePosts
@@ -178,10 +184,10 @@ export default function Profile() {
                   <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                   <div className="relative">
                     <div className="text-5xl font-bold text-white mb-2 group-hover:text-yellow-300 transition-colors drop-shadow-lg animate-pulse">
-                      {allPosts.length}
+                      {isOwnProfile ? allPosts.length : publicPosts.length}
                     </div>
                     <div className="text-sm text-yellow-200 font-medium uppercase tracking-wider group-hover:text-yellow-100">
-                      Posts 📸
+                      {isOwnProfile ? 'Posts 📸' : 'Public Posts 📸'}
                     </div>
                   </div>
                 </div>
@@ -267,11 +273,14 @@ export default function Profile() {
         <div className="flex justify-center mb-8">
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-3 shadow-2xl border border-slate-600">
             <div className="flex space-x-3">
-              {[
+              {isOwnProfile ? [
+                // Show all tabs for own profile
                 { id: 'all', label: 'All Posts', count: allPosts.length, color: 'cyan', icon: '🌟' },
                 { id: 'public', label: 'Public', count: publicPosts.length, color: 'emerald', icon: '🌍' },
-                // Only show private tab for own profile
-                ...(isOwnProfile ? [{ id: 'private', label: 'Private', count: privatePosts.length, color: 'violet', icon: '🔒' }] : [])
+                { id: 'private', label: 'Private', count: privatePosts.length, color: 'violet', icon: '🔒' }
+              ] : [
+                // Only show public posts tab for other users
+                { id: 'public', label: 'Public Posts', count: publicPosts.length, color: 'emerald', icon: '🌍' }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -300,15 +309,23 @@ export default function Profile() {
             <div className="mb-8 text-center">
               <div className="inline-block p-6 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-2xl shadow-xl mb-4">
                 <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
-                  {activeTab === 'all' && (isOwnProfile ? '🌟 All Posts' : '🌟 Posts')}
-                  {activeTab === 'public' && '🌍 Public Posts'}
-                  {activeTab === 'private' && '🔒 Private Posts'}
+                  {isOwnProfile ? (
+                    activeTab === 'all' ? '🌟 All Posts' :
+                    activeTab === 'public' ? '🌍 Public Posts' :
+                    '🔒 Private Posts'
+                  ) : (
+                    '🌍 Public Posts'
+                  )}
                 </h2>
               </div>
               <p className="text-lg text-slate-700 font-medium">
-                {activeTab === 'all' && (isOwnProfile ? `✨ Showing all ${allPosts.length} posts` : `✨ Showing ${publicPosts.length} public posts`)}
-                {activeTab === 'public' && `🌍 Showing ${publicPosts.length} public posts`}
-                {activeTab === 'private' && `🔒 Showing ${privatePosts.length} private posts`}
+                {isOwnProfile ? (
+                  activeTab === 'all' ? `✨ Showing all ${allPosts.length} posts` :
+                  activeTab === 'public' ? `🌍 Showing ${publicPosts.length} public posts` :
+                  `🔒 Showing ${privatePosts.length} private posts`
+                ) : (
+                  `🌍 Showing ${publicPosts.length} public posts from @${username}`
+                )}
               </p>
               {!isOwnProfile && (
                 <p className="text-sm text-slate-500 mt-2">
@@ -398,9 +415,13 @@ export default function Profile() {
             </div>
             <h3 className="text-3xl font-bold text-slate-800 mb-3">No posts found</h3>
             <p className="text-slate-600 mb-8 text-lg">
-              {activeTab === 'all' && (isOwnProfile ? `@${username} hasn't shared any photos yet. ✨` : `@${username} hasn't shared any public photos yet. ✨`)}
-              {activeTab === 'public' && `@${username} doesn't have any public posts yet. 🌍`}
-              {activeTab === 'private' && `@${username} doesn't have any private posts yet. 🔒`}
+              {isOwnProfile ? (
+                activeTab === 'all' ? `@${username} hasn't shared any photos yet. ✨` :
+                activeTab === 'public' ? `@${username} doesn't have any public posts yet. 🌍` :
+                `@${username} doesn't have any private posts yet. 🔒`
+              ) : (
+                `@${username} doesn't have any public posts yet. 🌍`
+              )}
             </p>
           </div>
         )}
