@@ -203,7 +203,7 @@ export default function Upload() {
               </div>
 
               {/* Privacy Toggle */}
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg min-w-fit">
+              <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 min-w-fit hover:border-purple-300 transition-all duration-300">
                 <div className="relative">
                   <input
                     id="isPrivate"
@@ -214,20 +214,25 @@ export default function Upload() {
                   />
                   <label 
                     htmlFor="isPrivate" 
-                    className={`block w-10 h-5 rounded-full transition-colors duration-200 cursor-pointer ${
-                      isPrivate ? 'bg-purple-500' : 'bg-gray-300'
+                    className={`block w-12 h-6 rounded-full transition-all duration-300 cursor-pointer shadow-inner ${
+                      isPrivate 
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-purple-300' 
+                        : 'bg-gray-300 shadow-gray-400'
                     }`}
                   >
-                    <span className={`block w-3 h-3 bg-white rounded-full transform transition-transform duration-200 ${
-                      isPrivate ? 'translate-x-5' : 'translate-x-1'
+                    <span className={`block w-4 h-4 bg-white rounded-full transform transition-all duration-300 shadow-lg ${
+                      isPrivate ? 'translate-x-6' : 'translate-x-1'
                     }`}></span>
                   </label>
                 </div>
-                <div>
-                  <label htmlFor="isPrivate" className="text-sm font-medium text-gray-700 cursor-pointer">
-                    🔒 Private Post
+                <div className="text-center">
+                  <label htmlFor="isPrivate" className="text-sm font-bold text-gray-800 cursor-pointer flex items-center">
+                    <span className="mr-2 text-lg">🔒</span>
+                    {isPrivate ? 'Private Post' : 'Public Post'}
                   </label>
-                  <p className="text-xs text-gray-500">Only you can see this post</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {isPrivate ? 'Only you can see this post' : 'Everyone can see this post'}
+                  </p>
                 </div>
               </div>
             </div>
