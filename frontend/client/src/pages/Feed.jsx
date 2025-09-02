@@ -624,8 +624,8 @@ export default function Feed() {
       </div>
 
       {/* Header with Tabs */}
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-2">
+      <div className="bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div className="max-w-2xl mx-auto px-4 py-2">
           <div className="text-center mb-2">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-0">
               Snapstream
