@@ -32,8 +32,12 @@ export default function Feed() {
         // Fetch feed data
         const response = await api('/feed')
         
+        console.log('🔍 Full API response:', response);
+        
         // Handle both direct array response and wrapped response
         const postsData = response.success ? response.data : (Array.isArray(response) ? response : []);
+        
+        console.log('🔍 Posts data:', postsData);
         
         if (!postsData || !Array.isArray(postsData)) {
           throw new Error('Failed to fetch feed data')
@@ -41,20 +45,23 @@ export default function Feed() {
         
         // Map the data to match expected structure
         const mapPosts = (data) => data.map(p => {
+          console.log('🔍 Processing post:', p);
+          
           const mappedPost = {
             ...p,
-            _id: p.id, // Use the correct id field
+            _id: p.id || p._id,
             uploadTime: p.uploadTime || p.createdAt,
             uploader: {
-              username: p.uploaderUsername || 'Unknown User',
-              profilePicture: null,
-              _id: p.uploader || p.uploadedBy
+              username: p.uploaderUsername || p.uploader?.username || 'Unknown User',
+              profilePicture: p.uploader?.profilePicture || null,
+              _id: p.uploader?._id || p.uploader || p.uploadedBy
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
             __likesCount: p.likeCount || p.likes?.length || 0,
             comments: p.comments || []
           };
           
+          console.log('🔍 Mapped post result:', mappedPost);
           return mappedPost;
         });
         
@@ -366,10 +373,15 @@ export default function Feed() {
 
               {/* Post Image */}
               <div className="relative">
+                {console.log('🔍 Image URL:', `/uploads/${p.filename}`, 'for post:', p._id)}
                 <img 
-                  src={`/uploads/${p.filename}`} 
+                  src={`${window.location.origin}/uploads/${p.filename}`} 
                   alt={p.originalName || ''} 
                   className="w-full h-auto object-cover"
+                  onError={(e) => {
+                    console.error('❌ Image failed to load:', e.target.src);
+                    e.target.style.display = 'none';
+                  }}
                 />
                 {/* Image overlay gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
