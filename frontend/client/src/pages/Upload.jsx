@@ -6,6 +6,7 @@ export default function Upload() {
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState(null)
   const [dragActive, setDragActive] = useState(false)
+  const [selectedFile, setSelectedFile] = useState(null)
   const fileRef = useRef()
   const [caption, setCaption] = useState('')
   const [isPrivate, setIsPrivate] = useState(false)
@@ -15,6 +16,10 @@ export default function Upload() {
     const file = e.target.files?.[0]
     if (file) {
       handleFile(file)
+      // Ensure the file is properly set in the ref
+      if (fileRef.current) {
+        fileRef.current.files = e.target.files
+      }
     }
   }
 
@@ -34,6 +39,9 @@ export default function Upload() {
       setMsg('Please select a valid image file (JPG, PNG, GIF, WebP).')
       return
     }
+    
+    // Store the selected file
+    setSelectedFile(file)
     
     const reader = new FileReader()
     reader.onload = (e) => setPreview(e.target.result)
@@ -57,9 +65,15 @@ export default function Upload() {
     setDragActive(false)
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0])
+      const file = e.dataTransfer.files[0]
+      handleFile(file)
+      
+      // Create a new FileList-like object and set it to the ref
       if (fileRef.current) {
-        fileRef.current.files = e.dataTransfer.files
+        // Create a DataTransfer object to simulate file input
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(file)
+        fileRef.current.files = dataTransfer.files
       }
     }
   }
@@ -67,10 +81,35 @@ export default function Upload() {
   async function onSubmit(e) {
     e.preventDefault()
     setMsg('')
-    const file = fileRef.current?.files?.[0]
-    if (!file) { setMsg('Select an image.'); return }
-    if (!file.type.startsWith('image/')) { setMsg('Please select an image file.'); return }
-    if (file.size > 5*1024*1024) { setMsg('File size must be less than 5MB.'); return }
+    
+    // Use selectedFile state as the primary source
+    const file = selectedFile || fileRef.current?.files?.[0]
+    
+    // Debug logging
+    console.log('Selected file:', selectedFile)
+    console.log('File ref:', fileRef.current)
+    console.log('File:', file)
+    console.log('Preview:', preview)
+    
+    if (!file && !preview) { 
+      setMsg('Please select an image first.'); 
+      return 
+    }
+    
+    if (!file) { 
+      setMsg('Image file not found. Please select an image again.'); 
+      return 
+    }
+    
+    if (!file.type.startsWith('image/')) { 
+      setMsg('Please select a valid image file.'); 
+      return 
+    }
+    
+    if (file.size > 5*1024*1024) { 
+      setMsg('File size must be less than 5MB.'); 
+      return 
+    }
     
     // Check if user is authenticated
     const token = localStorage.getItem('token')
@@ -105,6 +144,7 @@ export default function Upload() {
       setCaption('')
       setIsPrivate(false)
       setPreview(null)
+      setSelectedFile(null)
       if (fileRef.current) fileRef.current.value = ''
       
       // Redirect to feed after successful upload
@@ -161,14 +201,15 @@ export default function Upload() {
                         alt="Preview" 
                         className="h-32 w-auto rounded-lg object-cover shadow-md"
                       />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPreview(null)
-                          if (fileRef.current) fileRef.current.value = ''
-                        }}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors text-sm"
-                      >
+                                             <button
+                         type="button"
+                         onClick={() => {
+                           setPreview(null)
+                           setSelectedFile(null)
+                           if (fileRef.current) fileRef.current.value = ''
+                         }}
+                         className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors text-sm"
+                       >
                         ×
                       </button>
                     </div>
