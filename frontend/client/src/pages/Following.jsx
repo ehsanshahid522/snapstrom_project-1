@@ -246,13 +246,13 @@ export default function Following() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Simple Colorful Header */}
-      <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 border-b border-gray-200 shadow-sm">
+      <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 border-b border-gray-200 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-6">
           <div className="text-center">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl font-bold text-white mb-2">
               Following Feed
             </h1>
-            <p className="text-gray-600 text-lg font-medium">
+            <p className="text-white/90 text-lg font-medium">
               Posts from people you follow
             </p>
           </div>

@@ -225,9 +225,9 @@ export default function Upload() {
                 </div>
                 <div>
                   <label htmlFor="isPrivate" className="text-sm font-medium text-gray-700 cursor-pointer">
-                    🔒 Private
+                    🔒 Private Post
                   </label>
-                  <p className="text-xs text-gray-500">Only you can see</p>
+                  <p className="text-xs text-gray-500">Only you can see this post</p>
                 </div>
               </div>
             </div>
