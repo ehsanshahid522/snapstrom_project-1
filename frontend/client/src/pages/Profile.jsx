@@ -273,7 +273,7 @@ export default function Profile() {
         <div className="flex justify-center mb-8">
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-3 shadow-2xl border border-slate-600">
             <div className="flex space-x-3">
-              {isOwnProfile ? [
+              {(isOwnProfile ? [
                 // Show all tabs for own profile
                 { id: 'all', label: 'All Posts', count: allPosts.length, color: 'cyan', icon: '🌟' },
                 { id: 'public', label: 'Public', count: publicPosts.length, color: 'emerald', icon: '🌍' },
@@ -281,7 +281,7 @@ export default function Profile() {
               ] : [
                 // Only show public posts tab for other users
                 { id: 'public', label: 'Public Posts', count: publicPosts.length, color: 'emerald', icon: '🌍' }
-              ].map(tab => (
+              ]).map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
@@ -344,9 +344,9 @@ export default function Profile() {
               
               {displayPosts.map(post => (
                 <div 
-                  key={post._id} 
+                  key={post.id || post._id || `post-${Math.random()}`} 
                   className="group relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-pink-100 to-purple-100 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:rotate-1 cursor-pointer border-2 border-transparent hover:border-pink-300"
-                  onMouseEnter={() => setHoveredPost(post._id)}
+                  onMouseEnter={() => setHoveredPost(post.id || post._id)}
                   onMouseLeave={() => setHoveredPost(null)}
                 >
                   {/* Post Image */}
