@@ -9,6 +9,7 @@ export default function Feed() {
   const [currentUser, setCurrentUser] = useState(null)
   const [followingStatus, setFollowingStatus] = useState({}) // Track follow status for each user
   const [interactingPosts, setInteractingPosts] = useState({}) // Track posts being interacted with
+  const [currentUserId, setCurrentUserId] = useState(null) // Store current user ID
 
   useEffect(() => {
     (async () => {
@@ -30,6 +31,8 @@ export default function Feed() {
             return null
           }
         })()
+        
+        setCurrentUserId(currentUserId) // Store current user ID in state
 
         // Fetch feed data
         const response = await api('/feed')
@@ -72,10 +75,8 @@ export default function Feed() {
         
         const mappedPosts = mapPosts(postsData);
         
-        // Filter out own posts from feed
-        const filteredPosts = mappedPosts.filter(p => p.uploader?._id !== currentUserId);
-        
-        setPosts(filteredPosts);
+        // Show all posts (including own posts)
+        setPosts(mappedPosts);
         
         // Initialize following status for all users in the feed
         const allUsers = mappedPosts
@@ -192,6 +193,34 @@ export default function Feed() {
     } finally {
       // Clear loading state
       setInteractingPosts(prev => ({ ...prev, [`share-${id}`]: false }));
+    }
+  }
+
+  const deletePost = async (id) => {
+    try {
+      console.log('🔍 Deleting post:', id);
+      
+      // Confirm deletion
+      const confirmed = window.confirm('Are you sure you want to delete this post? This action cannot be undone.');
+      if (!confirmed) return;
+      
+      // Set loading state
+      setInteractingPosts(prev => ({ ...prev, [`delete-${id}`]: true }));
+      
+      const response = await api(`/post/${id}`, { method: 'DELETE' })
+      
+      console.log('✅ Delete response:', response);
+      
+      // Remove post from state
+      setPosts(prev => prev.filter(p => p._id !== id));
+      
+      alert('Post deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      alert('Failed to delete post. Please try again.');
+    } finally {
+      // Clear loading state
+      setInteractingPosts(prev => ({ ...prev, [`delete-${id}`]: false }));
     }
   }
 
@@ -410,8 +439,15 @@ export default function Feed() {
                       </div>
                     )}
                     
+                    {/* Your Post Badge */}
+                    {currentUserId && p.uploader?._id === currentUserId && (
+                      <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full">
+                        ✨ Your Post
+                      </div>
+                    )}
+                    
                     {/* Follow Button - Right Side */}
-                    {p.uploader?._id && (
+                    {p.uploader?._id && p.uploader?._id !== currentUserId && (
                       <button
                         onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
                         className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
@@ -521,6 +557,24 @@ export default function Feed() {
                       </svg>
                     )}
                   </button>
+                  
+                  {/* Delete button - only show for post owner */}
+                  {currentUserId && p.uploader?._id === currentUserId && (
+                    <button 
+                      onClick={() => deletePost(p._id)}
+                      disabled={interactingPosts[`delete-${p._id}`]}
+                      className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Delete post"
+                    >
+                      {interactingPosts[`delete-${p._id}`] ? (
+                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* Caption */}

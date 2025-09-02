@@ -1506,6 +1506,63 @@ app.get('/api/post/:postId', async (req, res) => {
   }
 });
 
+// Delete post (only by owner)
+app.delete('/api/post/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const post = await File.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Check if user is the owner of the post
+    if (post.uploadedBy.toString() !== decoded.id) {
+      return res.status(403).json({ message: 'You can only delete your own posts' });
+    }
+
+    // Delete the post
+    await File.findByIdAndDelete(postId);
+    
+    console.log('✅ Post deleted successfully:', postId);
+    
+    res.json({
+      message: 'Post deleted successfully',
+      postId: postId
+    });
+  } catch (error) {
+    console.error('Delete post error:', error);
+    res.status(500).json({ message: 'Error deleting post', error: error.message });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
