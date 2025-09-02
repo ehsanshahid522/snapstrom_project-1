@@ -10,11 +10,6 @@ export default function Feed() {
   const [interactingPosts, setInteractingPosts] = useState({}) // Track posts being interacted with
   const [currentUserId, setCurrentUserId] = useState(null) // Store current user ID
   const [expandedComments, setExpandedComments] = useState({}) // Track which posts have comments expanded
-  const [headerStats, setHeaderStats] = useState({
-    livePosts: Math.floor(Math.random() * 50) + 20,
-    globalUsers: Math.floor(Math.random() * 1000) + 500,
-    realTimeUpdates: Math.floor(Math.random() * 100) + 30
-  })
 
     // Function to fetch posts
   const fetchPosts = async () => {
@@ -538,27 +533,6 @@ export default function Feed() {
     }));
   }
 
-  const updateHeaderStats = () => {
-    setHeaderStats(prev => ({
-      livePosts: prev.livePosts + Math.floor(Math.random() * 5) + 1,
-      globalUsers: prev.globalUsers + Math.floor(Math.random() * 10) + 5,
-      realTimeUpdates: prev.realTimeUpdates + Math.floor(Math.random() * 3) + 1
-    }));
-  }
-
-  const handleLogoClick = () => {
-    // Add a fun interaction when logo is clicked
-    const messages = [
-      "🚀 Welcome to Snapstream!",
-      "✨ Discover amazing moments!",
-      "🌟 Your social media journey starts here!",
-      "💫 Ready to explore?",
-      "🎉 Let's make some memories!"
-    ];
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    alert(randomMessage);
-  }
-
   const getCurrentPosts = () => posts // Posts are already filtered based on active tab
 
   if (loading) {
@@ -627,101 +601,35 @@ export default function Feed() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full blur-3xl"></div>
-        <div className="absolute top-40 right-32 w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-32 left-32 w-28 h-28 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-20 h-20 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full blur-3xl"></div>
-      </div>
-
-      {/* Header with Interactive Design */}
-      <div className="bg-gradient-to-r from-pink-50 via-purple-50 to-blue-50 border-b border-gray-200 shadow-lg relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-1/4 w-32 h-32 bg-gradient-to-r from-pink-300 to-purple-300 rounded-full blur-3xl opacity-20 animate-pulse"></div>
-          <div className="absolute top-0 right-1/4 w-24 h-24 bg-gradient-to-r from-blue-300 to-cyan-300 rounded-full blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
-          <div className="absolute bottom-0 left-1/3 w-28 h-28 bg-gradient-to-r from-yellow-300 to-orange-300 rounded-full blur-3xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
-        </div>
-        
-        <div className="max-w-2xl mx-auto px-4 py-6 relative z-10">
+    <div className="min-h-screen bg-gray-50">
+      {/* Professional Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-2xl mx-auto px-4 py-6">
           <div className="text-center">
-            {/* Interactive Logo */}
-            <div className="inline-block mb-4 group cursor-pointer transform hover:scale-105 transition-all duration-300" onClick={handleLogoClick}>
-              <div className="relative">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-2 group-hover:from-pink-500 group-hover:via-purple-500 group-hover:to-blue-500 transition-all duration-300">
-                  Snapstream
-                </h1>
-                {/* Floating Icons */}
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-bounce">
-                  ✨
-                </div>
-                <div className="absolute -bottom-1 -left-2 w-5 h-5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-bounce" style={{animationDelay: '0.5s'}}>
-                  🚀
-                </div>
-              </div>
-            </div>
-            
-            {/* Interactive Subtitle */}
-            <div className="space-y-3">
-              <p className="text-slate-600 text-lg font-medium animate-fade-in">
-                Discover amazing moments from around the world
-              </p>
-              
-              {/* Interactive Stats */}
-              <div className="flex justify-center space-x-6 mt-4">
-                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 cursor-pointer" onClick={updateHeaderStats}>
-                  <span className="text-2xl">📸</span>
-                  <span className="text-sm font-semibold text-gray-700">Live Posts</span>
-                  <span className="text-xs text-pink-600 font-bold animate-pulse">{headerStats.livePosts}</span>
-                </div>
-                
-                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 cursor-pointer" onClick={updateHeaderStats}>
-                  <span className="text-2xl">🌍</span>
-                  <span className="text-sm font-semibold text-gray-700">Global</span>
-                  <span className="text-xs text-blue-600 font-bold animate-pulse">{headerStats.globalUsers}</span>
-                </div>
-                
-                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 cursor-pointer" onClick={updateHeaderStats}>
-                  <span className="text-2xl">⚡</span>
-                  <span className="text-sm font-semibold text-gray-700">Real-time</span>
-                  <span className="text-xs text-purple-600 font-bold animate-pulse">{headerStats.realTimeUpdates}</span>
-                </div>
-              </div>
-              
-              {/* Welcome Message */}
-              <div className="mt-4 p-3 bg-gradient-to-r from-pink-100 to-purple-100 rounded-xl border border-pink-200">
-                <p className="text-sm text-gray-700 font-medium">
-                  👋 Welcome back! Ready to explore today's amazing content?
-                </p>
-              </div>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Snapstream
+            </h1>
+            <p className="text-gray-600 text-lg">
+              Discover amazing moments from around the world
+            </p>
           </div>
         </div>
       </div>
 
       {/* Posts Feed */}
-      <div className="max-w-2xl mx-auto px-4 py-2 relative">
+      <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Floating Action Button */}
         <div className="fixed bottom-8 right-8 z-50">
-          <a href="/upload" className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-2xl hover:shadow-pink-500/50 transition-all duration-300 transform hover:scale-110 hover:rotate-12 flex items-center justify-center text-white text-2xl animate-bounce">
+          <a href="/upload" className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center text-white text-2xl">
             📸
           </a>
         </div>
-
-        {/* Grid Decorative Elements */}
-        <div className="absolute -top-4 -left-4 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-60 animate-bounce"></div>
-        <div className="absolute -top-4 -right-4 w-6 h-6 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full opacity-60 animate-bounce" style={{animationDelay: '0.5s'}}></div>
-        <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full opacity-60 animate-bounce" style={{animationDelay: '1s'}}></div>
-        <div className="absolute -bottom-4 -right-4 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full opacity-60 animate-bounce" style={{animationDelay: '1.5s'}}></div>
 
         <div className="space-y-8">
           {currentPosts.map((p, index) => (
             <div 
               key={p._id} 
-              className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100 overflow-hidden animate-slide-up"
-              style={{animationDelay: `${index * 0.1}s`}}
+              className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden"
             >
               {/* Post Header */}
               <div className="p-6 pb-4">
