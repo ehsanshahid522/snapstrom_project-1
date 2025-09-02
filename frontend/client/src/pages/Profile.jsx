@@ -93,7 +93,7 @@ export default function Profile() {
       formData.append('profilePicture', file)
 
       const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/profile/picture`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://snapstream-project-1.vercel.app'}/api/profile/picture`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -130,7 +130,7 @@ export default function Profile() {
     setFollowLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/${isFollowing ? 'unfollow' : 'follow'}/${data.user.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://snapstream-project-1.vercel.app'}/auth/${isFollowing ? 'unfollow' : 'follow'}/${data.user.id}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -214,7 +214,7 @@ export default function Profile() {
               <div className="w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 flex-shrink-0 shadow-2xl ring-4 ring-white ring-opacity-50 transform group-hover:scale-110 transition-all duration-300">
                 {data?.user?.profilePicture ? (
                   <img 
-                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/images/${data.user.profilePicture}`} 
+                    src={`${import.meta.env.VITE_API_URL || 'https://snapstream-project-1.vercel.app'}/api/images/${data.user.profilePicture}`} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
                     onError={(e) => {

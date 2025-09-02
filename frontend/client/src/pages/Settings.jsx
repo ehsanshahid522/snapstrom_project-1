@@ -39,7 +39,7 @@ export default function Settings() {
         return
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/profile`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://snapstream-project-1.vercel.app'}/api/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -89,7 +89,7 @@ export default function Settings() {
       formData.append('profilePicture', file)
 
       const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/profile/picture`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://snapstream-project-1.vercel.app'}/api/profile/picture`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -120,7 +120,7 @@ export default function Settings() {
     setUpdatingSettings(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/profile`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://snapstream-project-1.vercel.app'}/api/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ export default function Settings() {
     setChangingPassword(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/change-password`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://snapstream-project-1.vercel.app'}/api/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -262,7 +262,7 @@ export default function Settings() {
                 <div className="w-32 h-32 mx-auto rounded-full overflow-hidden bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 shadow-2xl ring-4 ring-white ring-opacity-50">
                   {userData.profilePicture ? (
                     <img 
-                      src={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/images/${userData.profilePicture}`} 
+                      src={`${import.meta.env.VITE_API_URL || 'https://snapstream-project-1.vercel.app'}/api/images/${userData.profilePicture}`} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
                       onError={(e) => {
