@@ -1740,7 +1740,73 @@ app.get('/api/search/users', async (req, res) => {
   }
 });
 
-// Debug endpoint to check database content
+// Temporary endpoint to fix post ownership (for debugging)
+app.post('/api/fix-post-ownership/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const post = await File.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Get the current user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log('🔧 Fixing post ownership:', {
+      postId,
+      oldOwner: post.uploadedBy.toString(),
+      newOwner: user._id.toString(),
+      username: user.username
+    });
+
+    // Update the post ownership
+    post.uploadedBy = user._id;
+    await post.save();
+
+    console.log('✅ Post ownership fixed successfully');
+
+    res.json({
+      message: 'Post ownership fixed successfully',
+      postId: postId,
+      newOwner: user.username,
+      oldOwner: post.uploadedBy.toString()
+    });
+  } catch (error) {
+    console.error('Fix post ownership error:', error);
+    res.status(500).json({ message: 'Error fixing post ownership', error: error.message });
+  }
+});
 app.get('/api/debug/data', async (req, res) => {
   try {
     // Ensure DB connection

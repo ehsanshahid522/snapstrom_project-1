@@ -196,6 +196,24 @@ export default function Feed() {
     }
   }
 
+  const fixPostOwnership = async (id) => {
+    try {
+      console.log('🔧 Attempting to fix post ownership:', id);
+      
+      const response = await api(`/fix-post-ownership/${id}`, { method: 'POST' });
+      
+      console.log('✅ Post ownership fixed:', response);
+      
+      alert('Post ownership has been fixed! You can now delete this post.');
+      
+      // Refresh the posts to show updated data
+      fetchPosts();
+    } catch (error) {
+      console.error('Error fixing post ownership:', error);
+      alert('Failed to fix post ownership. Please try again.');
+    }
+  }
+
   const deletePost = async (id) => {
     try {
       console.log('🔍 Deleting post:', id);
@@ -224,15 +242,26 @@ export default function Feed() {
       });
       
       let errorMessage = 'Failed to delete post. Please try again.';
+      let shouldFix = false;
+      
       if (error.status === 403) {
-        errorMessage = 'You can only delete your own posts.';
+        errorMessage = 'You can only delete your own posts. This post may have been created before the recent fix. Would you like to fix the ownership?';
+        
+        // Ask user if they want to fix ownership
+        shouldFix = window.confirm(errorMessage);
+        if (shouldFix) {
+          await fixPostOwnership(id);
+          return; // Exit early since we're fixing ownership
+        }
       } else if (error.status === 401) {
         errorMessage = 'Please log in again to delete posts.';
       } else if (error.body && error.body.debug) {
         console.log('Debug info:', error.body.debug);
       }
       
-      alert(errorMessage);
+      if (!shouldFix) {
+        alert(errorMessage);
+      }
     } finally {
       // Clear loading state
       setInteractingPosts(prev => ({ ...prev, [`delete-${id}`]: false }));
