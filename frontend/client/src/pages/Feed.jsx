@@ -769,119 +769,139 @@ export default function Feed() {
               </div>
 
               {/* Post Image */}
-              <div className="relative">
-                {console.log('🔍 Image URL:', `${config.API_BASE_URL}/api/images/${p._id}`, 'for post:', p._id)}
+              <div className="relative group">
                 <img 
                   src={`${config.API_BASE_URL}/api/images/${p._id}`} 
                   alt={p.originalName || ''} 
-                  className="w-full h-auto object-cover"
+                  className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                   onError={(e) => {
                     console.error('❌ Image failed to load:', e.target.src);
                     e.target.style.display = 'none';
                   }}
                 />
-                {/* Image overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                {/* Image overlay with gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                {/* Floating action buttons for user's own posts */}
+                {currentUserId && p.uploader?._id === currentUserId && (
+                  <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <button 
+                      onClick={() => share(p._id, p)}
+                      disabled={interactingPosts[`share-${p._id}`]}
+                      className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all duration-200 transform hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {interactingPosts[`share-${p._id}`] ? (
+                        <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                        </svg>
+                      )}
+                    </button>
+                    
+                    <button 
+                      onClick={() => deletePost(p._id)}
+                      disabled={interactingPosts[`delete-${p._id}`]}
+                      className="w-10 h-10 bg-red-500/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 transition-all duration-200 transform hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Delete post"
+                    >
+                      {interactingPosts[`delete-${p._id}`] ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
 
+              {/* Caption - Now below image */}
+              {p.caption && (
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <p className="text-gray-800 text-base leading-relaxed">
+                    {p.caption}
+                  </p>
+                </div>
+              )}
+
               {/* Post Actions */}
-              <div className="p-6 pt-4">
+              <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-6">
                     <button 
                       onClick={() => like(p._id)}
                       disabled={interactingPosts[`like-${p._id}`]}
-                      className="flex items-center space-x-2 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center space-x-3 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {interactingPosts[`like-${p._id}`] ? (
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                          <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                       ) : p.__liked ? (
-                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors">
-                          <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors shadow-lg">
+                          <svg className="w-7 h-7 text-red-500" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                           </svg>
                         </div>
                       ) : (
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors shadow-lg">
+                          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                           </svg>
                         </div>
                       )}
-                      <span className="font-bold text-lg">{p.__likesCount || 0}</span>
+                      <span className="font-bold text-xl">{p.__likesCount || 0}</span>
                     </button>
                     
                     <button 
                       onClick={() => toggleComments(p._id)}
                       disabled={interactingPosts[`comment-${p._id}`]}
-                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center space-x-3 text-gray-700 hover:text-blue-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {interactingPosts[`comment-${p._id}`] ? (
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                       ) : (
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                          <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors shadow-lg">
+                          <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                           </svg>
                         </div>
                       )}
-                      <span className="font-bold text-lg">{p.comments?.length || 0}</span>
+                      <span className="font-bold text-xl">{p.comments?.length || 0}</span>
                     </button>
                   </div>
                   
-                  <button 
-                    onClick={() => share(p._id, p)}
-                    disabled={interactingPosts[`share-${p._id}`]}
-                    className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {interactingPosts[`share-${p._id}`] ? (
-                      <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                      </svg>
-                    )}
-                  </button>
-                  
-                  {/* Delete button - only show for post owner */}
-                  {currentUserId && p.uploader?._id === currentUserId && (
+                  {/* Share button - only for other users' posts */}
+                  {(!currentUserId || p.uploader?._id !== currentUserId) && (
                     <button 
-                      onClick={() => deletePost(p._id)}
-                      disabled={interactingPosts[`delete-${p._id}`]}
-                      className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Delete post"
+                      onClick={() => share(p._id, p)}
+                      disabled={interactingPosts[`share-${p._id}`]}
+                      className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-all duration-300 transform hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {interactingPosts[`delete-${p._id}`] ? (
-                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                      {interactingPosts[`share-${p._id}`] ? (
+                        <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
                       ) : (
-                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                         </svg>
                       )}
                     </button>
                   )}
                 </div>
 
-                {/* Caption */}
-                {p.caption && (
-                  <div className="mb-4 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl">
-                    <span className="font-bold text-gray-900 mr-2">
-                      {p.uploader?.username || 'Unknown User'}
-                    </span>
-                    <span className="text-gray-700">{p.caption}</span>
-                  </div>
-                )}
-
                 {/* Comments - Only show when expanded */}
                 {p.comments && p.comments.length > 0 && expandedComments[p._id] && (
-                  <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded-2xl animate-slide-up">
-                    <h4 className="font-semibold text-gray-900 text-sm mb-2">💬 Comments ({p.comments.length})</h4>
+                  <div className="space-y-3 mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl animate-slide-up border border-blue-100">
+                    <h4 className="font-semibold text-gray-900 text-sm mb-3 flex items-center">
+                      <span className="mr-2">💬</span>
+                      Comments ({p.comments.length})
+                    </h4>
                     {p.comments.slice(0, 5).map((c, i) => (
-                      <div key={i} className="text-sm">
+                      <div key={i} className="text-sm p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
                         <span className="font-bold text-gray-900 mr-2">
                           {c.username || c.user?.username || 'User'}:
                         </span>
@@ -889,7 +909,7 @@ export default function Feed() {
                       </div>
                     ))}
                     {p.comments.length > 5 && (
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-gray-500 mt-2 text-center">
                         +{p.comments.length - 5} more comments
                       </p>
                     )}
@@ -905,13 +925,13 @@ export default function Feed() {
                     comment(p._id, text)
                     e.currentTarget.reset()
                   }}
-                  className="flex space-x-3"
+                  className="flex space-x-3 mt-4"
                 >
                   <input 
                     name={`comment-${p._id}`}
                     placeholder="💭 Add a comment..." 
                     disabled={interactingPosts[`comment-${p._id}`]}
-                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
                   />
                   <button 
                     type="submit" 
