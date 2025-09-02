@@ -139,19 +139,25 @@ export default function Feed() {
 
   const toggleFollow = async (userId, username) => {
     try {
-      if (!userId || userId === 'undefined' || userId === null) {
-        console.error('Invalid userId:', userId)
+      // Ensure userId is a string
+      const userIdString = typeof userId === 'object' ? userId._id || userId.id : userId;
+      
+      if (!userIdString || userIdString === 'undefined' || userIdString === null) {
+        console.error('Invalid userId:', userIdString)
         return
       }
       
-      const response = await api(`/auth/follow/${userId}`, { method: 'POST' })
+      console.log('🔍 Following user:', userIdString, username);
+      
+      const response = await api(`/auth/follow/${userIdString}`, { method: 'POST' })
       
       // Update following status
       setFollowingStatus(prev => ({
         ...prev,
-        [userId]: response.isFollowing
+        [userIdString]: response.isFollowing
       }))
       
+      console.log('✅ Follow status updated:', response.isFollowing)
     } catch (error) {
       console.error('Error toggling follow:', error)
       alert(`Failed to ${followingStatus[userId] ? 'unfollow' : 'follow'} ${username}. Please try again.`)
