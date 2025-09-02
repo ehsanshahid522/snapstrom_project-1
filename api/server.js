@@ -1004,37 +1004,66 @@ app.post('/upload', async (req, res) => {
   }
 });
 
+// Test endpoint to check server status
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    env: {
+      hasMongoUri: !!process.env.MONGO_URI,
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      nodeEnv: process.env.NODE_ENV
+    }
+  });
+});
+
 // API prefixed upload with memory storage
 app.post('/api/upload', async (req, res) => {
   try {
+    console.log('📤 Upload request received');
+    console.log('🔑 Headers:', req.headers);
+    
     // Check authentication first
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ No auth header or invalid format');
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
+    console.log('🎫 Token received:', token.substring(0, 20) + '...');
+    
     let decoded;
     
     try {
+      if (!process.env.JWT_SECRET) {
+        console.error('❌ JWT_SECRET not configured');
+        return res.status(500).json({ message: 'Server configuration error' });
+      }
       decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('✅ Token verified, user ID:', decoded.id);
     } catch (err) {
+      console.error('❌ Token verification failed:', err.message);
       return res.status(401).json({ message: 'Invalid token' });
     }
 
     // Get the authenticated user
     const user = await User.findById(decoded.id);
     if (!user) {
+      console.log('❌ User not found for ID:', decoded.id);
       return res.status(401).json({ message: 'User not found' });
     }
+    console.log('✅ User found:', user.username);
 
     if (!process.env.MONGO_URI) {
+      console.error('❌ MONGO_URI not configured');
       return res.status(500).json({ message: 'Database not configured' });
     }
 
     // Ensure DB connection with quick retry loop to avoid 504s
     if (mongoose.connection.readyState !== 1) {
+      console.log('🔄 DB not connected, attempting connection...');
       let connected = false;
       for (let attempt = 1; attempt <= 2; attempt++) {
         const ok = await connectDB();
@@ -1042,9 +1071,11 @@ app.post('/api/upload', async (req, res) => {
         await new Promise(r => setTimeout(r, 500));
       }
       if (!connected) {
+        console.error('❌ Failed to connect to database');
         return res.status(503).json({ message: 'Database unavailable, try again' });
       }
     }
+    console.log('✅ Database connected');
 
     const upload = multer({
       storage: multer.memoryStorage(),
@@ -1060,14 +1091,17 @@ app.post('/api/upload', async (req, res) => {
 
     upload.single('image')(req, res, async (err) => {
       if (err) {
-        console.error('Upload error:', err);
+        console.error('❌ Multer error:', err);
         return res.status(400).json({ message: err.message });
       }
       if (!req.file) {
+        console.log('❌ No file in request');
         return res.status(400).json({ message: 'No image file provided' });
       }
+      console.log('✅ File received:', req.file.originalname, 'Size:', req.file.size);
 
       const { isPrivate = false, caption = '', tags = '' } = req.body;
+      console.log('📝 Form data:', { isPrivate, caption: caption.substring(0, 50), tags });
 
       const fileDoc = new File({
         filename: 'image-' + Date.now(),
@@ -1082,6 +1116,7 @@ app.post('/api/upload', async (req, res) => {
       });
 
       await fileDoc.save();
+      console.log('✅ File saved to database');
 
       console.log('✅ Upload successful:', {
         fileId: fileDoc._id,
@@ -1098,7 +1133,7 @@ app.post('/api/upload', async (req, res) => {
       });
     });
   } catch (err) {
-    console.error('Upload error:', err);
+    console.error('❌ Upload error:', err);
     res.status(500).json({ message: 'Upload error', error: err.message });
   }
 });
