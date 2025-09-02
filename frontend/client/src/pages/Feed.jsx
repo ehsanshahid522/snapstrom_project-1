@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api.js'
+import HealthCheck from '../components/HealthCheck.jsx'
 
 export default function Feed() {
   const [posts, setPosts] = useState([])
@@ -225,6 +226,11 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+      {/* Debug Health Check */}
+      <div className="max-w-4xl mx-auto px-4 py-4">
+        <HealthCheck />
+      </div>
+      
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full blur-3xl"></div>
