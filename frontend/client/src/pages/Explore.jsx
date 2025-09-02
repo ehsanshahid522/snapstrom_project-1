@@ -297,7 +297,7 @@ export default function Explore() {
          <div className="max-w-7xl mx-auto px-4 py-4 ml-16">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             {/* Search Bar */}
-            <div className="flex-1 w-full max-w-2xl">
+                         <div className="flex-1 w-full max-w-2xl ml-16">
               <div className="relative">
                 <input
                   type="text"
