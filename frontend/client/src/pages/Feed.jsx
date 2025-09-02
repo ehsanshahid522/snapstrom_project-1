@@ -41,24 +41,20 @@ export default function Feed() {
         
         // Map the data to match expected structure
         const mapPosts = (data) => data.map(p => {
-          console.log('🔍 Raw post data:', p);
-          const uploader = p.uploader || {};
-          
           const mappedPost = {
             ...p,
-            _id: p._id || p.id || p.filename, // Try multiple possible ID fields
+            _id: p.id, // Use the correct id field
             uploadTime: p.uploadTime || p.createdAt,
             uploader: {
-              username: uploader.username || p.uploaderUsername || 'Unknown User',
-              profilePicture: uploader.profilePicture,
-              _id: uploader._id || uploader.id || p.uploader
+              username: p.uploaderUsername || 'Unknown User',
+              profilePicture: null,
+              _id: p.uploader || p.uploadedBy
             },
             __liked: Array.isArray(p.likes) ? p.likes.some(l => (typeof l === 'string' ? l : l._id)?.toString() === currentUserId) : false,
             __likesCount: p.likeCount || p.likes?.length || 0,
             comments: p.comments || []
           };
           
-          console.log('🔍 Mapped post:', mappedPost);
           return mappedPost;
         });
         
@@ -371,7 +367,7 @@ export default function Feed() {
               {/* Post Image */}
               <div className="relative">
                 <img 
-                  src={`/api/upload/${p._id}`} 
+                  src={`/uploads/${p.filename}`} 
                   alt={p.originalName || ''} 
                   className="w-full h-auto object-cover"
                 />
