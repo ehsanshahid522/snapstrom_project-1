@@ -11,6 +11,18 @@ export default function Nav() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [followingStatus, setFollowingStatus] = useState({})
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showAccountMenu && !event.target.closest('.profile-dropdown')) {
+        setShowAccountMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showAccountMenu])
+
   function logout() {
     clearAuth()
     window.location.href = '/login'
@@ -66,10 +78,100 @@ export default function Nav() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
             </button>
-            <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-white/30">
-              <span className="text-white font-bold text-sm">
-                {username?.charAt(0).toUpperCase()}
-              </span>
+            
+            {/* Professional Profile Dropdown */}
+            <div className="relative profile-dropdown">
+              <button 
+                onClick={() => setShowAccountMenu(!showAccountMenu)}
+                className="flex items-center space-x-2 p-2 rounded-xl hover:bg-white/10 transition-all duration-200 backdrop-blur-sm group"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white/50 group-hover:border-white/80 transition-all duration-200 relative overflow-hidden">
+                  <span className="text-white font-bold text-sm z-10">
+                    {username?.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-br from-pink-400/20 to-purple-600/20 rounded-full"></div>
+                </div>
+                <div className="hidden lg:block text-left">
+                  <p className="text-white font-medium text-sm">{username}</p>
+                  <p className="text-pink-100 text-xs">View Profile</p>
+                </div>
+                <svg className={`w-4 h-4 text-white transition-transform duration-200 ${showAccountMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {/* Profile Dropdown Menu */}
+              {showAccountMenu && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+                  {/* Profile Header */}
+                  <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 border-b border-gray-100">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                        <span className="text-white font-bold text-lg">
+                          {username?.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{username}</h3>
+                        <p className="text-sm text-gray-600">@{username}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Menu Items */}
+                  <div className="py-2">
+                    <a 
+                      href={`/profile/${username}`}
+                      className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-pink-600 hover:bg-pink-50 transition-colors duration-200"
+                      onClick={() => setShowAccountMenu(false)}
+                    >
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span>My Profile</span>
+                    </a>
+                    
+                    <a 
+                      href="/settings"
+                      className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-pink-600 hover:bg-pink-50 transition-colors duration-200"
+                      onClick={() => setShowAccountMenu(false)}
+                    >
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span>Settings</span>
+                    </a>
+                    
+                    <a 
+                      href="/upload"
+                      className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-pink-600 hover:bg-pink-50 transition-colors duration-200"
+                      onClick={() => setShowAccountMenu(false)}
+                    >
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span>Upload Post</span>
+                    </a>
+                  </div>
+                  
+                  {/* Divider */}
+                  <div className="border-t border-gray-100"></div>
+                  
+                  {/* Logout */}
+                  <div className="py-2">
+                    <button
+                      onClick={logout}
+                      className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
+                    >
+                      <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           

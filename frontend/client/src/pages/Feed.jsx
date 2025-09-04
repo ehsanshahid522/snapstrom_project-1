@@ -10,6 +10,19 @@ export default function Feed() {
   const [interactingPosts, setInteractingPosts] = useState({}) // Track posts being interacted with
   const [currentUserId, setCurrentUserId] = useState(null) // Store current user ID
   const [expandedComments, setExpandedComments] = useState({}) // Track which posts have comments expanded
+  const [showKebabMenu, setShowKebabMenu] = useState({}) // Track which posts have kebab menu open
+
+  // Close kebab menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.kebab-menu')) {
+        setShowKebabMenu({})
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
     // Function to fetch posts
   const fetchPosts = async () => {
@@ -199,6 +212,29 @@ export default function Feed() {
     } finally {
       // Clear loading state
       setInteractingPosts(prev => ({ ...prev, [`share-${id}`]: false }));
+    }
+  }
+
+  const downloadPost = async (post) => {
+    try {
+      console.log('🔍 Downloading post:', post._id);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = `${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${post.image}`;
+      link.download = `snapstrom-post-${post._id}.jpg`;
+      link.target = '_blank';
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Show success message
+      window.showToast('Post downloaded successfully! 📥', 'success');
+    } catch (error) {
+      console.error('Error downloading post:', error);
+      window.showToast('Failed to download post. Please try again.', 'error');
     }
   }
 
@@ -638,8 +674,11 @@ export default function Feed() {
                 <div className="flex items-center justify-between">
                   {/* Left Side - Username and Profile Info */}
                   <div className="flex items-center space-x-4">
-                    {/* Profile Picture */}
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
+                    {/* Clickable Profile Picture */}
+                    <a 
+                      href={`/profile/${p.uploader?.username}`}
+                      className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200 hover:ring-pink-300 transition-all duration-200 transform hover:scale-105 cursor-pointer"
+                    >
                       {p.uploader?.profilePicture ? (
                         <img 
                           src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${p.uploader.profilePicture}`} 
@@ -647,31 +686,98 @@ export default function Feed() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                          <span className="text-pink-600 font-bold text-lg">
-                            {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
-                          </span>
+                        <div className="w-full h-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                          {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
                         </div>
                       )}
-                    </div>
+                    </a>
                     
-                    {/* Username and Time */}
-                    <div>
-                      <div className="font-bold text-gray-900 text-lg">
-                        {p.uploader?.username || 'Unknown User'}
-                      </div>
-                      <div className="text-sm text-gray-500 flex items-center">
-                        <span className="mr-2">🕐</span>
-                        {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        }) : 'Unknown date'}
-                      </div>
+                    {/* Clickable Username and Info */}
+                    <div className="flex-1">
+                      <a 
+                        href={`/profile/${p.uploader?.username}`}
+                        className="block hover:opacity-80 transition-opacity duration-200"
+                      >
+                        <div className="font-bold text-gray-900 text-lg hover:text-pink-600 transition-colors duration-200">
+                          {p.uploader?.username || 'Unknown User'}
+                        </div>
+                        <div className="text-sm text-gray-500 flex items-center">
+                          <span className="mr-2">🕐</span>
+                          {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          }) : 'Unknown date'}
+                        </div>
+                      </a>
                     </div>
                   </div>
                   
-                  {/* Right Side - Follow Button and Private Badge */}
+                  {/* Right Side - Kebab Menu */}
+                  <div className="relative kebab-menu">
+                    <button
+                      onClick={() => setShowKebabMenu(prev => ({ ...prev, [p._id]: !prev[p._id] }))}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-all duration-200"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                      </svg>
+                    </button>
+                    
+                    {/* Kebab Menu Dropdown */}
+                    {showKebabMenu[p._id] && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+                        {/* Share Option */}
+                        <button
+                          onClick={() => {
+                            share(p._id, p);
+                            setShowKebabMenu(prev => ({ ...prev, [p._id]: false }));
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+                        >
+                          <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                          </svg>
+                          <span>Share Post</span>
+                        </button>
+                        
+                        {/* Download Option */}
+                        <button
+                          onClick={() => {
+                            downloadPost(p);
+                            setShowKebabMenu(prev => ({ ...prev, [p._id]: false }));
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
+                        >
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>Download</span>
+                        </button>
+                        
+                        {/* Delete Option - Only for post owner */}
+                        {currentUserId && p.uploader?._id === currentUserId && (
+                          <>
+                            <div className="border-t border-gray-100"></div>
+                            <button
+                              onClick={() => {
+                                deletePost(p._id);
+                                setShowKebabMenu(prev => ({ ...prev, [p._id]: false }));
+                              }}
+                              className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
+                            >
+                              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              <span>Delete Post</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Right Side - Badges and Follow Button */}
                   <div className="flex items-center space-x-3">
                     {/* Private Badge */}
                     {p.isPrivate && (
@@ -687,7 +793,7 @@ export default function Feed() {
                       </div>
                     )}
                     
-                    {/* Follow Button - Right Side */}
+                    {/* Follow Button */}
                     {p.uploader?._id && p.uploader?._id !== currentUserId && (
                       <button
                         onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
@@ -702,6 +808,15 @@ export default function Feed() {
                             <span>✓</span>
                             <span>Following</span>
                           </span>
+                        ) : (
+                          <span className="flex items-center space-x-1">
+                            <span>+</span>
+                            <span>Follow</span>
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </div>
                         ) : (
                           <span className="flex items-center space-x-1">
                             <span>+</span>
