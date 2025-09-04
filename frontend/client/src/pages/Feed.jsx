@@ -11,12 +11,16 @@ export default function Feed() {
   const [currentUserId, setCurrentUserId] = useState(null) // Store current user ID
   const [expandedComments, setExpandedComments] = useState({}) // Track which posts have comments expanded
   const [showKebabMenu, setShowKebabMenu] = useState({}) // Track which posts have kebab menu open
+  const [overflowMenuOpen, setOverflowMenuOpen] = useState({}) // Track which posts have overflow menu open
 
   // Close kebab menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest('.kebab-menu')) {
         setShowKebabMenu({})
+      }
+      if (!event.target.closest('.overflow-menu')) {
+        setOverflowMenuOpen({})
       }
     }
 
@@ -236,6 +240,38 @@ export default function Feed() {
       console.error('Error downloading post:', error);
       window.showToast('Failed to download post. Please try again.', 'error');
     }
+  }
+
+  const downloadImage = async (postId, originalName) => {
+    try {
+      setInteractingPosts(prev => ({ ...prev, [`download-${postId}`]: true }))
+      
+      const response = await fetch(`${config.API_BASE_URL}/api/images/${postId}`)
+      const blob = await response.blob()
+      
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = originalName || `snapstream-image-${postId}.jpg`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      alert('Image downloaded successfully!')
+    } catch (error) {
+      console.error('Error downloading image:', error)
+      alert('Failed to download image. Please try again.')
+    } finally {
+      setInteractingPosts(prev => ({ ...prev, [`download-${postId}`]: false }))
+    }
+  }
+
+  const toggleOverflowMenu = (postId) => {
+    setOverflowMenuOpen(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }))
   }
 
   const showShareOptions = (shareUrl, post) => {
@@ -913,22 +949,84 @@ export default function Feed() {
                     </button>
                   </div>
                   
-                  {/* Share button - only for other users' posts */}
-                  {(!currentUserId || p.uploader?._id !== currentUserId) && (
+                  {/* Overflow Menu Button */}
+                  <div className="relative overflow-menu">
                     <button 
-                      onClick={() => share(p._id, p)}
-                      disabled={interactingPosts[`share-${p._id}`]}
-                      className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-all duration-300 transform hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => toggleOverflowMenu(p._id)}
+                      className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-all duration-300 transform hover:scale-110 shadow-lg"
                     >
-                      {interactingPosts[`share-${p._id}`] ? (
-                        <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                        </svg>
-                      )}
+                      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                      </svg>
                     </button>
-                  )}
+                    
+                    {/* Overflow Menu Dropdown */}
+                    {overflowMenuOpen[p._id] && (
+                      <div className="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+                        {/* Download Option */}
+                        <button 
+                          onClick={() => {
+                            downloadImage(p._id, p.originalName)
+                            toggleOverflowMenu(p._id)
+                          }}
+                          disabled={interactingPosts[`download-${p._id}`]}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+                        >
+                          {interactingPosts[`download-${p._id}`] ? (
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          )}
+                          <span>Download</span>
+                        </button>
+                        
+                        {/* Share Option */}
+                        <button 
+                          onClick={() => {
+                            share(p._id, p)
+                            toggleOverflowMenu(p._id)
+                          }}
+                          disabled={interactingPosts[`share-${p._id}`]}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
+                        >
+                          {interactingPosts[`share-${p._id}`] ? (
+                            <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                            </svg>
+                          )}
+                          <span>Share</span>
+                        </button>
+                        
+                        {/* Delete Option - Only for post owner */}
+                        {currentUserId && p.uploader?._id === currentUserId && (
+                          <>
+                            <div className="border-t border-gray-100"></div>
+                            <button 
+                              onClick={() => {
+                                deletePost(p._id)
+                                toggleOverflowMenu(p._id)
+                              }}
+                              disabled={interactingPosts[`delete-${p._id}`]}
+                              className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
+                            >
+                              {interactingPosts[`delete-${p._id}`] ? (
+                                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              )}
+                              <span>Delete</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Comments - Only show when expanded */}
