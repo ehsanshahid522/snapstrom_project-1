@@ -340,38 +340,101 @@ export default function Explore() {
           }
         }
         
-        /* Professional animations */
-        .animate-professional {
-          animation: professionalFade 0.3s ease-in-out;
-        }
-        
-        @keyframes professionalFade {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
+                 /* Professional animations */
+         .animate-professional {
+           animation: professionalFade 0.3s ease-in-out;
+         }
+         
+         @keyframes professionalFade {
+           from {
+             opacity: 0;
+             transform: translateY(10px);
+           }
+           to {
+             opacity: 1;
+             transform: translateY(0);
+           }
+         }
+         
+         /* Logo animations */
+         .logo-glow {
+           animation: logoGlow 2s ease-in-out infinite alternate;
+         }
+         
+         @keyframes logoGlow {
+           from {
+             filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.5));
+           }
+           to {
+             filter: drop-shadow(0 0 20px rgba(147, 51, 234, 0.8));
+           }
+         }
+         
+         /* Logo hover effects */
+         .logo-container:hover .logo-icon {
+           transform: scale(1.05);
+           transition: transform 0.3s ease;
+         }
+         
+         .logo-container:hover .logo-text {
+           filter: brightness(1.2);
+           transition: filter 0.3s ease;
+         }
       `}</style>
       
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-        {/* Mobile-Optimized Header */}
-        <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white py-6 sm:py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h1 className="text-3xl sm:text-5xl font-bold mb-2 sm:mb-4 animate-pulse">🌍 Explore</h1>
-              <p className="text-lg sm:text-2xl opacity-90 mb-4 sm:mb-6">Discover trending posts, popular creators, and amazing content</p>
-              <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm opacity-75">
-                <span className="bg-white/20 px-2 sm:px-3 py-1 rounded-full">🔥 Live</span>
-                <span className="bg-white/20 px-2 sm:px-3 py-1 rounded-full">⚡ Real-time</span>
-                <span className="bg-white/20 px-2 sm:px-3 py-1 rounded-full">🌟 Trending</span>
-              </div>
-            </div>
-          </div>
-        </div>
+                 {/* Professional Header with SNAPSTROM Logo */}
+         <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white py-6 sm:py-12">
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+             <div className="text-center">
+               {/* SNAPSTROM Logo */}
+               <div className="flex items-center justify-center mb-4 sm:mb-6 logo-container">
+                 <div className="relative">
+                   {/* Logo Icon */}
+                   <div className="w-16 h-16 sm:w-20 sm:h-20 relative logo-icon logo-glow">
+                     {/* Camera Body */}
+                     <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-500 to-yellow-400 rounded-lg shadow-2xl">
+                       {/* Camera Top */}
+                       <div className="absolute -top-2 -left-2 w-6 h-4 bg-gradient-to-r from-orange-400 to-pink-500 rounded-md"></div>
+                       {/* Flash/Lens */}
+                       <div className="absolute left-2 top-3 w-3 h-3 bg-gradient-to-r from-orange-400 to-pink-500 rounded-full"></div>
+                       {/* Main Lens */}
+                       <div className="absolute inset-0 flex items-center justify-center">
+                         <div className="w-8 h-8 sm:w-10 sm:h-10 relative">
+                           {/* Outer Ring */}
+                           <div className="absolute inset-0 bg-purple-400 rounded-full animate-pulse"></div>
+                           {/* Middle Ring */}
+                           <div className="absolute inset-1 bg-purple-600 rounded-full"></div>
+                           {/* Inner Ring */}
+                           <div className="absolute inset-2 bg-magenta-400 rounded-full"></div>
+                         </div>
+                       </div>
+                       {/* Speech Bubble Tail */}
+                       <div className="absolute -bottom-1 -right-1 w-0 h-0 border-l-[12px] border-l-yellow-400 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent"></div>
+                     </div>
+                     {/* Glow Effect */}
+                     <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-500 to-yellow-400 rounded-lg blur-sm opacity-50"></div>
+                   </div>
+                   
+                   {/* Logo Text */}
+                   <div className="ml-4 sm:ml-6">
+                     <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent drop-shadow-lg logo-text">
+                       SNAPSTROM
+                     </h1>
+                   </div>
+                 </div>
+               </div>
+               
+               <h2 className="text-3xl sm:text-5xl font-bold mb-2 sm:mb-4 animate-pulse">🌍 Explore</h2>
+               <p className="text-lg sm:text-2xl opacity-90 mb-4 sm:mb-6">Discover trending posts, popular creators, and amazing content</p>
+               <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm opacity-75">
+                 <span className="bg-white/20 px-2 sm:px-3 py-1 rounded-full">🔥 Live</span>
+                 <span className="bg-white/20 px-2 sm:px-3 py-1 rounded-full">⚡ Real-time</span>
+                 <span className="bg-white/20 px-2 sm:px-3 py-1 rounded-full">🌟 Trending</span>
+               </div>
+             </div>
+           </div>
+         </div>
 
               {/* Professional Mobile Navigation Bar */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
