@@ -817,15 +817,6 @@ export default function Feed() {
                       </button>
                     )}
                   </div>
-                        ) : (
-                          <span className="flex items-center space-x-1">
-                            <span>+</span>
-                            <span>Follow</span>
-                          </span>
-                        )}
-                      </button>
-                    )}
-                  </div>
                 </div>
               </div>
 
