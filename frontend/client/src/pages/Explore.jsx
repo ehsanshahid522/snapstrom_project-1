@@ -16,6 +16,8 @@ export default function Explore() {
   const [interactingUsers, setInteractingUsers] = useState({})
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
   const [sortBy, setSortBy] = useState('trending') // 'trending', 'recent', 'popular'
+  const [showFilters, setShowFilters] = useState(false) // Mobile filter toggle
+  const [showSearch, setShowSearch] = useState(false) // Mobile search toggle
 
   useEffect(() => {
     fetchExploreData()
@@ -266,7 +268,7 @@ export default function Explore() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Exploring amazing content...</p>
@@ -276,318 +278,508 @@ export default function Explore() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Enhanced Header */}
-             <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white py-12">
-         <div className="max-w-7xl mx-auto px-4 ml-24">
-          <div className="text-center">
-            <h1 className="text-5xl font-bold mb-4 animate-pulse">🌍 Explore</h1>
-            <p className="text-2xl opacity-90 mb-6">Discover trending posts, popular creators, and amazing content</p>
-            <div className="flex items-center justify-center space-x-2 text-sm opacity-75">
-              <span className="bg-white/20 px-3 py-1 rounded-full">🔥 Live</span>
-              <span className="bg-white/20 px-3 py-1 rounded-full">⚡ Real-time</span>
-              <span className="bg-white/20 px-3 py-1 rounded-full">🌟 Trending</span>
+    <>
+      {/* Mobile-specific CSS utilities */}
+      <style jsx>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        
+        /* Touch-friendly button sizes */
+        @media (max-width: 640px) {
+          button, a {
+            min-height: 44px;
+            min-width: 44px;
+          }
+        }
+        
+        /* Prevent text selection on mobile */
+        .no-select {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+        
+        /* Smooth scrolling for mobile */
+        .smooth-scroll {
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
+        }
+      `}</style>
+      
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+        {/* Mobile-Optimized Header */}
+        <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white py-6 sm:py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <h1 className="text-3xl sm:text-5xl font-bold mb-2 sm:mb-4 animate-pulse">🌍 Explore</h1>
+              <p className="text-lg sm:text-2xl opacity-90 mb-4 sm:mb-6">Discover trending posts, popular creators, and amazing content</p>
+              <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm opacity-75">
+                <span className="bg-white/20 px-2 sm:px-3 py-1 rounded-full">🔥 Live</span>
+                <span className="bg-white/20 px-2 sm:px-3 py-1 rounded-full">⚡ Real-time</span>
+                <span className="bg-white/20 px-2 sm:px-3 py-1 rounded-full">🌟 Trending</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-             {/* Navigation Bar */}
-       <div className="sticky top-0 z-50">
-         <div className="max-w-7xl mx-auto px-4 py-4 ml-24">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            {/* Search Bar */}
-                         <div className="flex-1 w-full max-w-md ml-16">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="🔍 Search posts, creators, or categories..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                                     className="w-full px-6 py-4 pl-14 bg-transparent border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-lg"
-                />
-                <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {/* Mobile-Optimized Navigation Bar */}
+        <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+            {/* Mobile Search Toggle */}
+            <div className="flex items-center justify-between mb-3 sm:hidden">
+              <button
+                onClick={() => setShowSearch(!showSearch)}
+                className="flex-1 bg-gray-100 rounded-2xl px-4 py-3 text-left text-gray-500 flex items-center no-select"
+              >
+                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-              </div>
+                Search posts, creators...
+              </button>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="ml-3 p-3 bg-gray-100 rounded-2xl no-select"
+              >
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                </svg>
+              </button>
             </div>
 
-            {/* Controls */}
-            <div className="flex items-center space-x-4">
-              {/* Sort Options */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-lg font-medium"
-              >
-                <option value="trending">🔥 Trending</option>
-                <option value="recent">⏰ Recent</option>
-                <option value="popular">⭐ Popular</option>
-              </select>
+            {/* Mobile Search Bar */}
+            {showSearch && (
+              <div className="mb-3 sm:hidden">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="🔍 Search posts, creators, or categories..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-3 pl-12 bg-gray-100 border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-base"
+                  />
+                  <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+            )}
 
-              {/* View Mode Toggle */}
-              <div className="flex bg-gray-100 rounded-2xl p-2">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-3 rounded-xl transition-all duration-300 ${
-                    viewMode === 'grid' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
-                  }`}
+            {/* Mobile Filters */}
+            {showFilters && (
+              <div className="mb-3 sm:hidden space-y-3">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-base font-medium"
                 >
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/>
+                  <option value="trending">🔥 Trending</option>
+                  <option value="recent">⏰ Recent</option>
+                  <option value="popular">⭐ Popular</option>
+                </select>
+
+                <div className="flex bg-gray-100 rounded-2xl p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`flex-1 p-3 rounded-xl transition-all duration-300 no-select ${
+                      viewMode === 'grid' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <svg className="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`flex-1 p-3 rounded-xl transition-all duration-300 no-select ${
+                      viewMode === 'list' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <svg className="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 13h18v-2H3v2zm0 6h18v-2H3v2zM3 5v2h18V5H3z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Desktop Search and Controls */}
+            <div className="hidden sm:flex flex-col lg:flex-row gap-4 items-center justify-between">
+              {/* Search Bar */}
+              <div className="flex-1 w-full max-w-md">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="🔍 Search posts, creators, or categories..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-6 py-4 pl-14 bg-transparent border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-lg"
+                  />
+                  <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-3 rounded-xl transition-all duration-300 ${
-                    viewMode === 'list' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="flex items-center space-x-4">
+                {/* Sort Options */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-lg font-medium"
                 >
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 13h18v-2H3v2zm0 6h18v-2H3v2zM3 5v2h18V5H3z"/>
-                  </svg>
-                </button>
+                  <option value="trending">🔥 Trending</option>
+                  <option value="recent">⏰ Recent</option>
+                  <option value="popular">⭐ Popular</option>
+                </select>
+
+                {/* View Mode Toggle */}
+                <div className="flex bg-gray-100 rounded-2xl p-2">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-3 rounded-xl transition-all duration-300 ${
+                      viewMode === 'grid' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-3 rounded-xl transition-all duration-300 ${
+                      viewMode === 'list' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 13h18v-2H3v2zm0 6h18v-2H3v2zM3 5v2h18V5H3z"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-             <div className="max-w-7xl mx-auto px-4 py-16 ml-24">
-        {/* Categories */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
-            <span className="mr-3 text-4xl">📂</span>
-            Categories
-          </h2>
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={() => setActiveCategory('all')}
-              className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 ${
-                activeCategory === 'all'
-                  ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xl'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
-              }`}
-            >
-              🌟 All Posts
-            </button>
-            {categories.map((category) => (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+          {/* Mobile-Optimized Categories */}
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
+              <span className="mr-2 sm:mr-3 text-3xl sm:text-4xl">📂</span>
+              Categories
+            </h2>
+            
+            {/* Mobile Horizontal Scroll Categories */}
+            <div className="sm:hidden">
+              <div className="flex space-x-3 overflow-x-auto pb-4 scrollbar-hide smooth-scroll">
+                <button
+                  onClick={() => setActiveCategory('all')}
+                  className={`px-6 py-3 rounded-2xl text-base font-bold transition-all duration-300 whitespace-nowrap flex-shrink-0 no-select ${
+                    activeCategory === 'all'
+                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xl'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
+                  }`}
+                >
+                  🌟 All
+                </button>
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setActiveCategory(category.id)}
+                    className={`px-6 py-3 rounded-2xl text-base font-bold transition-all duration-300 whitespace-nowrap flex-shrink-0 no-select ${
+                      activeCategory === category.id
+                        ? `bg-gradient-to-r ${category.color} text-white shadow-xl`
+                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop Categories Grid */}
+            <div className="hidden sm:flex flex-wrap gap-4">
               <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
+                onClick={() => setActiveCategory('all')}
                 className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 ${
-                  activeCategory === category.id
-                    ? `bg-gradient-to-r ${category.color} text-white shadow-xl`
+                  activeCategory === 'all'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xl'
                     : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
                 }`}
               >
-                {category.name} ({category.count})
+                🌟 All Posts
               </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Results Count */}
-        <div className="mb-8">
-          <p className="text-lg text-gray-600">
-            Showing {filteredPosts.length} {filteredPosts.length === 1 ? 'post' : 'posts'} 
-            {searchQuery && ` for "${searchQuery}"`}
-            {activeCategory !== 'all' && ` in ${categories.find(c => c.id === activeCategory)?.name}`}
-          </p>
-        </div>
-
-        {/* Upcoming Features Note */}
-        <div className="mb-8 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">🚀</span>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-yellow-800 mb-1">Coming Soon!</h3>
-              <p className="text-yellow-700">
-                Advanced filtering, AI-powered recommendations, and more interactive features are being developed. 
-                Stay tuned for the next big update!
-              </p>
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 ${
+                    activeCategory === category.id
+                      ? `bg-gradient-to-r ${category.color} text-white shadow-xl`
+                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
+                  }`}
+                >
+                  {category.name} ({category.count})
+                </button>
+              ))}
             </div>
           </div>
-        </div>
 
-        {/* Trending Posts */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center">
-            <span className="mr-4 text-4xl">🔥</span>
-            {sortBy === 'trending' ? 'Trending Posts' : sortBy === 'recent' ? 'Recent Posts' : 'Popular Posts'}
-          </h2>
-          
-          {filteredPosts.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+          {/* Results Count */}
+          <div className="mb-6 sm:mb-8">
+            <p className="text-base sm:text-lg text-gray-600">
+              Showing {filteredPosts.length} {filteredPosts.length === 1 ? 'post' : 'posts'} 
+              {searchQuery && ` for "${searchQuery}"`}
+              {activeCategory !== 'all' && ` in ${categories.find(c => c.id === activeCategory)?.name}`}
+            </p>
+          </div>
+
+          {/* Upcoming Features Note - Mobile Optimized */}
+          <div className="mb-6 sm:mb-8 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-4 sm:p-6">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-xl sm:text-2xl">🚀</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">No posts found</h3>
-              <p className="text-gray-600 text-lg">Try adjusting your search or filters</p>
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-yellow-800 mb-1">Coming Soon!</h3>
+                <p className="text-sm sm:text-base text-yellow-700">
+                  Advanced filtering, AI-powered recommendations, and more interactive features are being developed. 
+                  Stay tuned for the next big update!
+                </p>
+              </div>
             </div>
-          ) : (
-            <div className={`grid gap-8 ${
-              viewMode === 'grid' 
-                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-                : 'grid-cols-1'
-            }`}>
-              {filteredPosts.map((post) => (
-                <div key={post._id} className="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:scale-105">
-                  {/* Post Image */}
-                  <div className="relative group">
-                    <img 
-                      src={post.image || `https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop`} 
-                      alt={post.caption}
-                      className="w-full h-56 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    
-                    {/* Floating Action Buttons */}
-                    <div className="absolute top-4 right-4 flex space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      <button 
-                        onClick={() => share(post._id, post)}
-                        className="w-12 h-12 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all duration-300 transform hover:scale-110 shadow-xl"
-                      >
-                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+          </div>
 
-                  {/* Post Content */}
-                  <div className="p-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center ring-4 ring-pink-100">
-                          <span className="text-pink-600 font-bold text-lg">
-                            {post.uploader?.username?.charAt(0).toUpperCase() || 'U'}
+          {/* Mobile-Optimized Trending Posts */}
+          <div className="mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 flex items-center">
+              <span className="mr-3 sm:mr-4 text-3xl sm:text-4xl">🔥</span>
+              {sortBy === 'trending' ? 'Trending Posts' : sortBy === 'recent' ? 'Recent Posts' : 'Popular Posts'}
+            </h2>
+            
+            {filteredPosts.length === 0 ? (
+              <div className="text-center py-12 sm:py-16">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                  <svg className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">No posts found</h3>
+                <p className="text-gray-600 text-base sm:text-lg">Try adjusting your search or filters</p>
+              </div>
+            ) : (
+              <div className={`grid gap-4 sm:gap-8 ${
+                viewMode === 'grid' 
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                  : 'grid-cols-1'
+              }`}>
+                {filteredPosts.map((post) => (
+                  <div key={post._id} className="bg-white rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-xl overflow-hidden hover:shadow-xl sm:hover:shadow-2xl transition-all duration-500 transform hover:scale-105">
+                    {/* Post Image */}
+                    <div className="relative group">
+                      <img 
+                        src={post.image || `https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop`} 
+                        alt={post.caption}
+                        className="w-full h-48 sm:h-56 object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      
+                      {/* Floating Action Buttons */}
+                      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex space-x-2 sm:space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                        <button 
+                          onClick={() => share(post._id, post)}
+                          className="w-10 h-10 sm:w-12 sm:h-12 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all duration-300 transform hover:scale-110 shadow-xl no-select"
+                        >
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Post Content */}
+                    <div className="p-4 sm:p-8">
+                      <div className="flex items-center justify-between mb-3 sm:mb-4">
+                        <div className="flex items-center space-x-3 sm:space-x-4">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center ring-3 sm:ring-4 ring-pink-100">
+                            <span className="text-pink-600 font-bold text-sm sm:text-lg">
+                              {post.uploader?.username?.charAt(0).toUpperCase() || 'U'}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-gray-900 text-base sm:text-lg">@{post.uploader?.username || 'user'}</h3>
+                            <p className="text-xs sm:text-sm text-gray-500">
+                              {post.uploadTime ? new Date(post.uploadTime).toLocaleDateString() : 'Recently'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {post.caption && (
+                        <p className="text-gray-800 text-sm sm:text-base mb-4 sm:mb-6 line-clamp-3 leading-relaxed">{post.caption}</p>
+                      )}
+
+                      {/* Post Actions */}
+                      <div className="flex items-center justify-between">
+                        <button 
+                          onClick={() => like(post._id)}
+                          disabled={interactingPosts[`like-${post._id}`]}
+                          className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed no-select"
+                        >
+                          {interactingPosts[`like-${post._id}`] ? (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors shadow-lg">
+                              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                              </svg>
+                            </div>
+                          )}
+                          <span className="font-bold text-base sm:text-lg">{post.__likesCount || 0}</span>
+                        </button>
+
+                        <div className="flex items-center space-x-3 sm:space-x-4 text-xs sm:text-sm text-gray-500">
+                          <span className="flex items-center space-x-1">
+                            <span className="text-base sm:text-lg">💬</span>
+                            <span>{Math.floor(Math.random() * 20) + 1}</span>
+                          </span>
+                          <span className="flex items-center space-x-1">
+                            <span className="text-base sm:text-lg">👁️</span>
+                            <span>{Math.floor(Math.random() * 100) + 50}</span>
                           </span>
                         </div>
-                        <div>
-                          <h3 className="font-bold text-gray-900 text-lg">@{post.uploader?.username || 'user'}</h3>
-                          <p className="text-sm text-gray-500">
-                            {post.uploadTime ? new Date(post.uploadTime).toLocaleDateString() : 'Recently'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {post.caption && (
-                      <p className="text-gray-800 text-base mb-6 line-clamp-3 leading-relaxed">{post.caption}</p>
-                    )}
-
-                    {/* Post Actions */}
-                    <div className="flex items-center justify-between">
-                      <button 
-                        onClick={() => like(post._id)}
-                        disabled={interactingPosts[`like-${post._id}`]}
-                        className="flex items-center space-x-3 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {interactingPosts[`like-${post._id}`] ? (
-                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                            <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                          </div>
-                        ) : (
-                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors shadow-lg">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                          </div>
-                        )}
-                        <span className="font-bold text-lg">{post.__likesCount || 0}</span>
-                      </button>
-
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span className="flex items-center space-x-1">
-                          <span className="text-lg">💬</span>
-                          <span>{Math.floor(Math.random() * 20) + 1}</span>
-                        </span>
-                        <span className="flex items-center space-x-1">
-                          <span className="text-lg">👁️</span>
-                          <span>{Math.floor(Math.random() * 100) + 50}</span>
-                        </span>
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile-Optimized Popular Users */}
+          <div className="mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 flex items-center">
+              <span className="mr-3 sm:mr-4 text-3xl sm:text-4xl">⭐</span>
+              Popular Creators
+            </h2>
+            
+            {/* Mobile Horizontal Scroll Users */}
+            <div className="sm:hidden">
+              <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide smooth-scroll">
+                {popularUsers.map((user) => (
+                  <div key={user._id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-500 transform hover:scale-105 text-center min-w-[200px] flex-shrink-0">
+                    <div className="relative mb-4">
+                      <img 
+                        src={user.profilePicture || `https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop&crop=face`} 
+                        alt={user.username}
+                        className="w-16 h-16 rounded-full mx-auto object-cover ring-4 ring-purple-100 shadow-lg"
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-3 border-white shadow-lg"></div>
+                    </div>
+                    <h3 className="font-bold text-gray-900 text-base mb-2">@{user.username}</h3>
+                    <div className="flex items-center justify-center space-x-4 text-xs text-gray-600 mb-4">
+                      <span>{user.followers.toLocaleString()} followers</span>
+                      <span>•</span>
+                      <span>{user.posts} posts</span>
+                    </div>
+                    <button 
+                      onClick={() => followUser(user._id)}
+                      disabled={interactingUsers[`follow-${user._id}`]}
+                      className={`w-full py-3 px-4 rounded-2xl font-bold text-sm transition-all duration-300 transform hover:scale-105 no-select ${
+                        followingStatus[user._id]
+                          ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {interactingUsers[`follow-${user._id}`] ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Following...</span>
+                        </div>
+                      ) : followingStatus[user._id] ? (
+                        '✓ Following'
+                      ) : (
+                        'Follow'
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop Users Grid */}
+            <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {popularUsers.map((user) => (
+                <div key={user._id} className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 text-center">
+                  <div className="relative mb-6">
+                    <img 
+                      src={user.profilePicture || `https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop&crop=face`} 
+                      alt={user.username}
+                      className="w-24 h-24 rounded-full mx-auto object-cover ring-6 ring-purple-100 shadow-lg"
+                    />
+                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white shadow-lg"></div>
+                  </div>
+                  <h3 className="font-bold text-gray-900 text-xl mb-2">@{user.username}</h3>
+                  <div className="flex items-center justify-center space-x-6 text-base text-gray-600 mb-6">
+                    <span>{user.followers.toLocaleString()} followers</span>
+                    <span>•</span>
+                    <span>{user.posts} posts</span>
+                  </div>
+                  <button 
+                    onClick={() => followUser(user._id)}
+                    disabled={interactingUsers[`follow-${user._id}`]}
+                    className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
+                      followingStatus[user._id]
+                        ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {interactingUsers[`follow-${user._id}`] ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Following...</span>
+                      </div>
+                    ) : followingStatus[user._id] ? (
+                      '✓ Following'
+                    ) : (
+                      'Follow'
+                    )}
+                  </button>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Popular Users */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center">
-            <span className="mr-4 text-4xl">⭐</span>
-            Popular Creators
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {popularUsers.map((user) => (
-              <div key={user._id} className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 text-center">
-                <div className="relative mb-6">
-                  <img 
-                    src={user.profilePicture || `https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop&crop=face`} 
-                    alt={user.username}
-                    className="w-24 h-24 rounded-full mx-auto object-cover ring-6 ring-purple-100 shadow-lg"
-                  />
-                  <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white shadow-lg"></div>
-                </div>
-                <h3 className="font-bold text-gray-900 text-xl mb-2">@{user.username}</h3>
-                <div className="flex items-center justify-center space-x-6 text-base text-gray-600 mb-6">
-                  <span>{user.followers.toLocaleString()} followers</span>
-                  <span>•</span>
-                  <span>{user.posts} posts</span>
-                </div>
-                <button 
-                  onClick={() => followUser(user._id)}
-                  disabled={interactingUsers[`follow-${user._id}`]}
-                  className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
-                    followingStatus[user._id]
-                      ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {interactingUsers[`follow-${user._id}`] ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Following...</span>
-                    </div>
-                  ) : followingStatus[user._id] ? (
-                    '✓ Following'
-                  ) : (
-                    'Follow'
-                  )}
-                </button>
-              </div>
-            ))}
           </div>
-        </div>
 
-        {/* Enhanced Call to Action */}
-        <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-3xl p-12 text-center text-white">
-          <h2 className="text-4xl font-bold mb-6">Ready to Share Your Story?</h2>
-          <p className="text-2xl opacity-90 mb-8">Join thousands of creators sharing amazing moments</p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <a 
-              href="/upload"
-              className="bg-white text-purple-600 px-10 py-5 rounded-2xl hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 font-bold text-xl shadow-2xl"
-            >
-              📸 Start Sharing
-            </a>
-            <a 
-              href="/"
-              className="bg-white/20 backdrop-blur-sm text-white px-10 py-5 rounded-2xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 font-bold text-xl border-2 border-white/30"
-            >
-              🌍 Browse All Posts
-            </a>
+          {/* Mobile-Optimized Call to Action */}
+          <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-2xl sm:rounded-3xl p-6 sm:p-12 text-center text-white">
+            <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6">Ready to Share Your Story?</h2>
+            <p className="text-lg sm:text-2xl opacity-90 mb-6 sm:mb-8">Join thousands of creators sharing amazing moments</p>
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center">
+              <a 
+                href="/upload"
+                className="bg-white text-purple-600 px-8 sm:px-10 py-4 sm:py-5 rounded-2xl hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 font-bold text-lg sm:text-xl shadow-2xl no-select"
+              >
+                📸 Start Sharing
+              </a>
+              <a 
+                href="/"
+                className="bg-white/20 backdrop-blur-sm text-white px-8 sm:px-10 py-4 sm:py-5 rounded-2xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 font-bold text-lg sm:text-xl border-2 border-white/30 no-select"
+              >
+                🌍 Browse All Posts
+              </a>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
