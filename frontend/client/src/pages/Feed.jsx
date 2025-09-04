@@ -735,7 +735,7 @@ export default function Feed() {
                     </div>
                   </div>
                   
-                  {/* Right Side - Badges and Follow Button */}
+                  {/* Right Side - Badges Only */}
                   <div className="flex items-center space-x-2 sm:space-x-3">
                     {/* Private Badge */}
                     {p.isPrivate && (
@@ -749,30 +749,6 @@ export default function Feed() {
                       <div className="px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full">
                         ✨ Your Post
                       </div>
-                    )}
-                    
-                    {/* Follow Button */}
-                    {p.uploader?._id && p.uploader?._id !== currentUserId && (
-                      <button
-                        onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
-                        className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-300 transform hover:scale-105 ${
-                          followingStatus[p.uploader._id]
-                            ? 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-600'
-                            : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-lg'
-                        }`}
-                      >
-                        {followingStatus[p.uploader._id] ? (
-                          <span className="flex items-center space-x-1">
-                            <span>✓</span>
-                            <span className="hidden sm:inline">Following</span>
-                          </span>
-                        ) : (
-                          <span className="flex items-center space-x-1">
-                            <span>+</span>
-                            <span className="hidden sm:inline">Follow</span>
-                          </span>
-                        )}
-                      </button>
                     )}
                   </div>
                   

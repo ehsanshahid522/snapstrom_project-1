@@ -426,19 +426,7 @@ export default function Trending() {
                       </span>
                     </div>
                     
-                    {/* Follow Button */}
-                    {post.uploader?._id !== currentUserId && (
-                      <button
-                        onClick={() => follow(post.uploader._id, post.uploader.username)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          followingStatus[post.uploader._id]
-                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700'
-                        }`}
-                      >
-                        {followingStatus[post.uploader._id] ? 'Following' : 'Follow'}
-                      </button>
-                    )}
+
                     
                     {/* Kebab Menu */}
                     {post.uploader?._id === currentUserId && (
