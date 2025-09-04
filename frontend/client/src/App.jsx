@@ -22,7 +22,7 @@ function WithNav({ children }) {
   return (
     <div className="flex">
       <Nav />
-      <main className="flex-1 md:ml-64 min-h-screen bg-gray-50">
+      <main className="flex-1 md:ml-64 min-h-screen bg-gray-50 md:pt-0 pt-32">
         {children}
       </main>
     </div>

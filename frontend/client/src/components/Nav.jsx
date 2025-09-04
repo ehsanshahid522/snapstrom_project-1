@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { clearAuth, getUsername, api } from '../lib/api.js'
+import Logo from './Logo.jsx'
 
 export default function Nav() {
   const username = getUsername()
@@ -106,91 +107,134 @@ export default function Nav() {
       <div className={`fixed left-0 top-0 h-full w-80 bg-gradient-to-b from-white via-pink-50 to-purple-50 shadow-2xl border-r border-pink-200 z-50 transform transition-transform duration-300 ease-in-out ${
         isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
-        {/* Logo and Brand Section */}
-        <div className="p-6 border-b border-pink-100 bg-gradient-to-r from-pink-500 to-purple-600">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg border border-white/30">
-              {/* Camera Icon */}
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">
-                SNAPSTROM
-              </h1>
-              <p className="text-xs text-pink-100 font-medium">Social Media Platform</p>
-            </div>
-          </div>
-        </div>
+                 {/* Logo and Brand Section */}
+         <div className="p-6 border-b border-pink-100 bg-gradient-to-r from-pink-500 to-purple-600">
+           <Logo size="lg" showText={true} className="text-white" />
+         </div>
 
-        {/* Search Section */}
-        <div className="p-4 border-b border-pink-100 bg-white/50 backdrop-blur-sm">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search users..."
-              className="w-full pl-10 pr-4 py-3 bg-white/80 border border-pink-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 shadow-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            {searchLoading ? (
-              <svg className="absolute left-3 top-3 w-4 h-4 text-pink-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            ) : (
-              <svg className="absolute left-3 top-3 w-4 h-4 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            )}
-          </div>
-          
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="mt-3 bg-white rounded-lg shadow-lg border border-gray-200 max-h-48 overflow-y-auto">
-              {searchResults.map((user) => (
-                <div key={user._id} className="p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">
-                        {user.username?.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">@{user.username}</p>
-                      {user.bio && <p className="text-xs text-gray-500 truncate">{user.bio}</p>}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => toggleFollow(user._id, user.username)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                          followingStatus[user._id]
-                            ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                            : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
-                        }`}
-                      >
-                        {followingStatus[user._id] ? 'Unfollow' : 'Follow'}
-                      </button>
-                      <a 
-                        href={`/profile/${user.username}`}
-                        className="text-xs text-pink-600 hover:text-pink-700 font-medium"
-                        onClick={() => {
-                          setIsMobileOpen(false)
-                          setSearchQuery('')
-                          setSearchResults([])
-                        }}
-                      >
-                        View
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                 {/* Search Section */}
+         <div className="p-4 border-b border-pink-100 bg-white/50 backdrop-blur-sm">
+           <div className="relative">
+             <input
+               type="text"
+               placeholder="Search users..."
+               className="w-full pl-10 pr-4 py-3 bg-white/80 border border-pink-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 shadow-sm"
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+             />
+             {searchLoading ? (
+               <svg className="absolute left-3 top-3 w-4 h-4 text-pink-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+               </svg>
+             ) : (
+               <svg className="absolute left-3 top-3 w-4 h-4 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+               </svg>
+             )}
+           </div>
+           
+           {/* Search Results */}
+           {searchResults.length > 0 && (
+             <div className="mt-3 bg-white rounded-lg shadow-lg border border-gray-200 max-h-48 overflow-y-auto">
+               {searchResults.map((user) => (
+                 <div key={user._id} className="p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
+                   <div className="flex items-center space-x-3">
+                     <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center">
+                       <span className="text-white text-xs font-bold">
+                         {user.username?.charAt(0).toUpperCase()}
+                       </span>
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <p className="text-sm font-medium text-gray-900 truncate">@{user.username}</p>
+                       {user.bio && <p className="text-xs text-gray-500 truncate">{user.bio}</p>}
+                     </div>
+                     <div className="flex items-center space-x-2">
+                       <button
+                         onClick={() => toggleFollow(user._id, user.username)}
+                         className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                           followingStatus[user._id]
+                             ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                             : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                         }`}
+                       >
+                         {followingStatus[user._id] ? 'Unfollow' : 'Follow'}
+                       </button>
+                       <a 
+                         href={`/profile/${user.username}`}
+                         className="text-xs text-pink-600 hover:text-pink-700 font-medium"
+                         onClick={() => {
+                           setIsMobileOpen(false)
+                           setSearchQuery('')
+                           setSearchResults([])
+                         }}
+                       >
+                         View
+                       </a>
+                     </div>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           )}
+         </div>
+
+         {/* Horizontal Scrollable Quick Actions */}
+         <div className="p-4 border-b border-pink-100 bg-gradient-to-r from-pink-50 to-purple-50">
+           <div className="mb-3">
+             <h3 className="text-xs font-semibold text-pink-600 uppercase tracking-wider px-1 mb-2 flex items-center">
+               <span className="w-2 h-2 bg-pink-500 rounded-full mr-2"></span>
+               Quick Actions
+             </h3>
+           </div>
+           <div className="flex space-x-3 overflow-x-auto scrollbar-hide smooth-scroll pb-2">
+             <a href="/" className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-white rounded-full shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 group">
+               <div className="w-6 h-6 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                 <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                 </svg>
+               </div>
+               <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Home</span>
+             </a>
+             
+             <a href="/following" className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-white rounded-full shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 group">
+               <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                 <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                 </svg>
+               </div>
+               <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Following</span>
+             </a>
+             
+             <a href="/upload" className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-white rounded-full shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 group">
+               <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                 <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                 </svg>
+               </div>
+               <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Upload</span>
+             </a>
+             
+             <a href={`/profile/${username}`} className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-white rounded-full shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 group">
+               <div className="w-6 h-6 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                 <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                 </svg>
+               </div>
+               <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Profile</span>
+             </a>
+             
+             <a href="/settings" className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-white rounded-full shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 group">
+               <div className="w-6 h-6 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                 <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                 </svg>
+               </div>
+               <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Settings</span>
+             </a>
+           </div>
+         </div>
 
         {/* Navigation Links */}
         <nav className="p-4 space-y-2">
@@ -295,16 +339,105 @@ export default function Nav() {
         </button>
       </div>
 
-      {/* Mobile Menu Button - Only visible on small screens */}
-      <button 
-        className="md:hidden fixed top-4 left-4 p-3 bg-white rounded-xl shadow-lg text-gray-700 hover:text-pink-600 hover:bg-pink-50 transition-all duration-200 z-30"
-        onClick={() => setIsMobileOpen(true)}
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-    </>
-  )
-}
+             {/* Mobile Menu Button - Only visible on small screens */}
+       <button 
+         className="md:hidden fixed top-4 left-4 p-3 bg-white rounded-xl shadow-lg text-gray-700 hover:text-pink-600 hover:bg-pink-50 transition-all duration-200 z-30"
+         onClick={() => setIsMobileOpen(true)}
+       >
+         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+         </svg>
+       </button>
+
+       {/* Mobile Header with Logo and Horizontal Navigation */}
+       <div className="md:hidden fixed top-0 left-0 right-0 bg-white shadow-lg border-b border-pink-200 z-20">
+         <div className="flex items-center justify-between px-4 py-3">
+           {/* Logo */}
+           <Logo size="md" showText={true} />
+           
+           {/* Search and Actions */}
+           <div className="flex items-center space-x-2">
+             <button className="p-2 text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-all duration-200">
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+               </svg>
+             </button>
+             <button className="p-2 text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-all duration-200">
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+               </svg>
+             </button>
+           </div>
+         </div>
+         
+         {/* Horizontal Scrollable Navigation */}
+         <div className="px-4 pb-3">
+           <div className="flex space-x-3 overflow-x-auto scrollbar-hide smooth-scroll">
+             <a href="/" className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full shadow-sm hover:shadow-md transition-all duration-200 group">
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+               </svg>
+               <span className="text-sm font-medium whitespace-nowrap">Home</span>
+             </a>
+             
+             <a href="/following" className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-full shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 group">
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+               </svg>
+               <span className="text-sm font-medium whitespace-nowrap">Following</span>
+             </a>
+             
+             <a href="/upload" className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-full shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 group">
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+               </svg>
+               <span className="text-sm font-medium whitespace-nowrap">Upload</span>
+             </a>
+             
+             <a href={`/profile/${username}`} className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-full shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 group">
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+               </svg>
+               <span className="text-sm font-medium whitespace-nowrap">Profile</span>
+             </a>
+             
+             <a href="/settings" className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-full shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 group">
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+               </svg>
+               <span className="text-sm font-medium whitespace-nowrap">Settings</span>
+             </a>
+           </div>
+         </div>
+       </div>
+     </>
+   )
+ }
+
+ <style jsx>{`
+   .scrollbar-hide {
+     -ms-overflow-style: none;
+     scrollbar-width: none;
+   }
+   .scrollbar-hide::-webkit-scrollbar {
+     display: none;
+   }
+   .smooth-scroll {
+     scroll-behavior: smooth;
+     -webkit-overflow-scrolling: touch;
+   }
+   .no-select {
+     -webkit-user-select: none;
+     -moz-user-select: none;
+     -ms-user-select: none;
+     user-select: none;
+   }
+   @media (max-width: 640px) {
+     button, a {
+       min-height: 44px;
+       min-width: 44px;
+     }
+   }
+ `}</style>
 
