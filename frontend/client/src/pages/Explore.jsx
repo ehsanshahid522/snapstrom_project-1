@@ -279,7 +279,7 @@ export default function Explore() {
 
   return (
     <>
-      {/* Mobile-specific CSS utilities */}
+      {/* Professional Mobile-specific CSS utilities */}
       <style jsx>{`
         .scrollbar-hide {
           -ms-overflow-style: none;
@@ -310,6 +310,51 @@ export default function Explore() {
           scroll-behavior: smooth;
           -webkit-overflow-scrolling: touch;
         }
+        
+        /* Professional mobile enhancements */
+        @media (max-width: 640px) {
+          /* Enhanced shadows for depth */
+          .shadow-professional {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          }
+          
+          /* Better touch feedback */
+          button:active {
+            transform: scale(0.98);
+            transition: transform 0.1s ease;
+          }
+          
+          /* Improved focus states */
+          input:focus, select:focus {
+            box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+          }
+          
+          /* Professional gradients */
+          .gradient-professional {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+          
+          /* Enhanced card shadows */
+          .card-shadow {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          }
+        }
+        
+        /* Professional animations */
+        .animate-professional {
+          animation: professionalFade 0.3s ease-in-out;
+        }
+        
+        @keyframes professionalFade {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
       `}</style>
       
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
@@ -328,40 +373,49 @@ export default function Explore() {
           </div>
         </div>
 
-        {/* Mobile-Optimized Navigation Bar */}
-        <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-            {/* Mobile Search Toggle */}
-            <div className="flex items-center justify-between mb-3 sm:hidden">
+              {/* Professional Mobile Navigation Bar */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          {/* Mobile Professional Navigation */}
+          <div className="sm:hidden">
+            {/* Top Row - Search and Actions */}
+            <div className="flex items-center justify-between mb-3">
               <button
                 onClick={() => setShowSearch(!showSearch)}
-                className="flex-1 bg-gray-100 rounded-2xl px-4 py-3 text-left text-gray-500 flex items-center no-select"
+                className="flex-1 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl px-4 py-3 text-left text-gray-600 flex items-center no-select shadow-sm border border-gray-200"
               >
-                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                Search posts, creators...
+                <span className="text-sm font-medium">Search posts, creators...</span>
               </button>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="ml-3 p-3 bg-gray-100 rounded-2xl no-select"
-              >
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                </svg>
-              </button>
+              <div className="flex items-center space-x-2 ml-3">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl no-select shadow-sm border border-purple-200"
+                >
+                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                  </svg>
+                </button>
+                <button className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl no-select shadow-sm border border-blue-200">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4 19h6v-6H4v6zM4 5h6V4a1 1 0 00-1-1H5a1 1 0 00-1 1v1zM14 5h6V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v1zM4 13h6v-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1z" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Mobile Search Bar */}
             {showSearch && (
-              <div className="mb-3 sm:hidden">
+              <div className="mb-3">
                 <div className="relative">
                   <input
                     type="text"
                     placeholder="🔍 Search posts, creators, or categories..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-3 pl-12 bg-gray-100 border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-base"
+                    className="w-full px-4 py-3 pl-12 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 transition-all duration-300 text-base shadow-sm"
                   />
                   <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -372,22 +426,22 @@ export default function Explore() {
 
             {/* Mobile Filters */}
             {showFilters && (
-              <div className="mb-3 sm:hidden space-y-3">
+              <div className="mb-3 space-y-3">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-base font-medium"
+                  className="w-full px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 transition-all duration-300 text-base font-medium shadow-sm"
                 >
                   <option value="trending">🔥 Trending</option>
                   <option value="recent">⏰ Recent</option>
                   <option value="popular">⭐ Popular</option>
                 </select>
 
-                <div className="flex bg-gray-100 rounded-2xl p-1">
+                <div className="flex bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-1 shadow-sm border border-gray-200">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`flex-1 p-3 rounded-xl transition-all duration-300 no-select ${
-                      viewMode === 'grid' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
+                      viewMode === 'grid' ? 'bg-white shadow-md text-purple-600 border border-purple-200' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     <svg className="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 24 24">
@@ -397,7 +451,7 @@ export default function Explore() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={`flex-1 p-3 rounded-xl transition-all duration-300 no-select ${
-                      viewMode === 'list' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
+                      viewMode === 'list' ? 'bg-white shadow-md text-purple-600 border border-purple-200' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     <svg className="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 24 24">
@@ -408,94 +462,117 @@ export default function Explore() {
               </div>
             )}
 
-            {/* Desktop Search and Controls */}
-            <div className="hidden sm:flex flex-col lg:flex-row gap-4 items-center justify-between">
-              {/* Search Bar */}
-              <div className="flex-1 w-full max-w-md">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="🔍 Search posts, creators, or categories..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-6 py-4 pl-14 bg-transparent border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-lg"
-                  />
-                  <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
+            {/* Horizontal Scrollable Quick Actions */}
+            <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide smooth-scroll">
+              <button className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full text-sm font-medium shadow-lg no-select flex-shrink-0 border border-pink-400">
+                🌟 All Posts
+              </button>
+              <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium shadow-sm no-select flex-shrink-0 border border-gray-200">
+                📸 Photography
+              </button>
+              <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium shadow-sm no-select flex-shrink-0 border border-gray-200">
+                ✈️ Travel
+              </button>
+              <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium shadow-sm no-select flex-shrink-0 border border-gray-200">
+                🍕 Food
+              </button>
+              <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium shadow-sm no-select flex-shrink-0 border border-gray-200">
+                🎨 Art
+              </button>
+              <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium shadow-sm no-select flex-shrink-0 border border-gray-200">
+                💻 Tech
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop Search and Controls */}
+          <div className="hidden sm:flex flex-col lg:flex-row gap-4 items-center justify-between">
+            {/* Search Bar */}
+            <div className="flex-1 w-full max-w-md">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="🔍 Search posts, creators, or categories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-6 py-4 pl-14 bg-transparent border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-lg"
+                />
+                <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
+            </div>
 
-              {/* Controls */}
-              <div className="flex items-center space-x-4">
-                {/* Sort Options */}
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-lg font-medium"
+            {/* Controls */}
+            <div className="flex items-center space-x-4">
+              {/* Sort Options */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-lg font-medium"
+              >
+                <option value="trending">🔥 Trending</option>
+                <option value="recent">⏰ Recent</option>
+                <option value="popular">⭐ Popular</option>
+              </select>
+
+              {/* View Mode Toggle */}
+              <div className="flex bg-gray-100 rounded-2xl p-2">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-3 rounded-xl transition-all duration-300 ${
+                    viewMode === 'grid' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
+                  }`}
                 >
-                  <option value="trending">🔥 Trending</option>
-                  <option value="recent">⏰ Recent</option>
-                  <option value="popular">⭐ Popular</option>
-                </select>
-
-                {/* View Mode Toggle */}
-                <div className="flex bg-gray-100 rounded-2xl p-2">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-3 rounded-xl transition-all duration-300 ${
-                      viewMode === 'grid' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/>
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-3 rounded-xl transition-all duration-300 ${
-                      viewMode === 'list' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M3 13h18v-2H3v2zm0 6h18v-2H3v2zM3 5v2h18V5H3z"/>
-                    </svg>
-                  </button>
-                </div>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-3 rounded-xl transition-all duration-300 ${
+                    viewMode === 'list' ? 'bg-white shadow-lg text-purple-600' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 13h18v-2H3v2zm0 6h18v-2H3v2zM3 5v2h18V5H3z"/>
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
-          {/* Mobile-Optimized Categories */}
+          {/* Professional Mobile Categories */}
           <div className="mb-6 sm:mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
               <span className="mr-2 sm:mr-3 text-3xl sm:text-4xl">📂</span>
               Categories
             </h2>
             
-            {/* Mobile Horizontal Scroll Categories */}
+            {/* Mobile Professional Horizontal Scroll Categories */}
             <div className="sm:hidden">
               <div className="flex space-x-3 overflow-x-auto pb-4 scrollbar-hide smooth-scroll">
                 <button
                   onClick={() => setActiveCategory('all')}
-                  className={`px-6 py-3 rounded-2xl text-base font-bold transition-all duration-300 whitespace-nowrap flex-shrink-0 no-select ${
+                  className={`px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap flex-shrink-0 shadow-sm border ${
                     activeCategory === 'all'
-                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xl'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
+                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg border-pink-400'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm border-gray-200'
                   }`}
                 >
-                  🌟 All
+                  🌟 All Posts
                 </button>
                 {categories.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => setActiveCategory(category.id)}
-                    className={`px-6 py-3 rounded-2xl text-base font-bold transition-all duration-300 whitespace-nowrap flex-shrink-0 no-select ${
+                    className={`px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap flex-shrink-0 shadow-sm border ${
                       activeCategory === category.id
-                        ? `bg-gradient-to-r ${category.color} text-white shadow-xl`
-                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
+                        ? `bg-gradient-to-r ${category.color} text-white shadow-lg`
+                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm border-gray-200'
                     }`}
                   >
                     {category.name}
@@ -504,14 +581,14 @@ export default function Explore() {
               </div>
             </div>
 
-            {/* Desktop Categories Grid */}
+            {/* Desktop Professional Categories Grid */}
             <div className="hidden sm:flex flex-wrap gap-4">
               <button
                 onClick={() => setActiveCategory('all')}
-                className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 ${
+                className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-sm border ${
                   activeCategory === 'all'
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xl'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xl border-pink-400'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm border-gray-200'
                 }`}
               >
                 🌟 All Posts
@@ -520,10 +597,10 @@ export default function Explore() {
                 <button
                   key={category.id}
                   onClick={() => setActiveCategory(category.id)}
-                  className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 ${
+                  className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-sm border ${
                     activeCategory === category.id
                       ? `bg-gradient-to-r ${category.color} text-white shadow-xl`
-                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm border-gray-200'
                   }`}
                 >
                   {category.name} ({category.count})
