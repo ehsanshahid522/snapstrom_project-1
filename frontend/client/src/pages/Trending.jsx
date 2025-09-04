@@ -356,7 +356,7 @@ export default function Trending() {
                       <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
                         {post.uploader?.profilePicture ? (
                           <img
-                            src={`${config.apiUrl}/api/profile-pictures/${post.uploader.profilePicture}`}
+                            src={`${config.API_BASE_URL}/api/images/${post.uploader.profilePicture}`}
                             alt={post.uploader.username}
                             className="w-12 h-12 rounded-full object-cover"
                           />
@@ -438,11 +438,12 @@ export default function Trending() {
               {/* Post Image */}
               <div className="relative">
                 <img
-                  src={`${config.apiUrl}${post.imageUrl}`}
+                  src={`${config.API_BASE_URL}/api/images/${post._id}`}
                   alt={post.caption}
                   className="w-full h-auto object-cover"
                   onError={(e) => {
-                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMjAwTDMwMCAyMDAiIHN0cm9rZT0iIzlDQTNBRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPHBhdGggZD0iTTIwMCAxMDBMMjAwIDMwMCIgc3Ryb2tlPSIjOUNBM0FGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K'
+                    console.error('❌ Image failed to load:', e.target.src);
+                    e.target.style.display = 'none';
                   }}
                 />
               </div>
