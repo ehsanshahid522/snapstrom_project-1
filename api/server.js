@@ -141,6 +141,11 @@ async function connectDB() {
     
     if (!mongoURI) {
       console.error('❌ MONGO_URI environment variable is not set');
+      // For development, return true to allow server to start
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⚠️ Running in development mode without database');
+        return true;
+      }
       return false;
     }
 
@@ -289,165 +294,18 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Test endpoints
-app.get('/test/ping', (req, res) => {
-  res.json({
-    message: 'API is working!',
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-app.get('/test/env', (req, res) => {
-  res.json({
-    nodeEnv: process.env.NODE_ENV || 'development',
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    uptime: process.uptime(),
+    version: process.version,
     hasMongoUri: !!process.env.MONGO_URI,
-    hasJwtSecret: !!process.env.JWT_SECRET,
-    port: process.env.PORT || '3000',
-    timestamp: new Date().toISOString()
+    hasJwtSecret: !!process.env.JWT_SECRET
   });
-});
-
-app.get('/test/db', async (req, res) => {
-  try {
-    const isConnected = mongoose.connection.readyState === 1;
-    res.json({
-      connected: isConnected,
-      readyState: mongoose.connection.readyState,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({
-      connected: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Also handle /api prefixed routes
-app.get('/api/test/ping', (req, res) => {
-  res.json({
-    message: 'API is working!',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-app.get('/api/test/env', (req, res) => {
-  const mongoURI = process.env.MONGO_URI;
-  res.json({
-    nodeEnv: process.env.NODE_ENV,
-    hasMongoUri: !!mongoURI,
-    hasJwtSecret: !!process.env.JWT_SECRET,
-    port: process.env.PORT,
-    mongoUriLength: mongoURI ? mongoURI.length : 0,
-    hasAtSymbol: mongoURI ? mongoURI.includes('@') : false,
-    hasPercent40: mongoURI ? mongoURI.includes('%40') : false,
-    mongoUriStartsWithSrv: mongoURI ? mongoURI.startsWith('mongodb+srv://') : false,
-    mongoUriContainsNet: mongoURI ? mongoURI.includes('.mongodb.net') : false,
-    mongoUriHasUsername: mongoURI ? mongoURI.includes('://') && mongoURI.includes('@') : false,
-    mongoUriHasDatabase: mongoURI ? mongoURI.includes('/?') || mongoURI.includes('/snapstream') : false,
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.get('/api/test/db', async (req, res) => {
-  try {
-    console.log('🔍 Database test requested');
-    
-    const hasMongoUri = !!process.env.MONGO_URI;
-    const hasJwtSecret = !!process.env.JWT_SECRET;
-    const currentState = mongoose.connection.readyState;
-    
-    console.log('📊 Current state:', {
-      hasMongoUri,
-      hasJwtSecret,
-      currentState,
-      mongoUriLength: hasMongoUri ? process.env.MONGO_URI.length : 0
-    });
-    
-    // Try to connect if not already connected
-    let connectionAttempted = false;
-    let connectionResult = false;
-    
-    if (currentState !== 1) {
-      console.log('🔄 Attempting to connect to database...');
-      connectionAttempted = true;
-      connectionResult = await connectDB();
-      console.log('📊 Connection result:', connectionResult);
-    }
-    
-    const finalState = mongoose.connection.readyState;
-    
-    res.json({
-      connected: finalState === 1,
-      readyState: finalState,
-      connectionAttempted,
-      connectionResult,
-      hasMongoUri,
-      hasJwtSecret,
-      mongoUriLength: hasMongoUri ? process.env.MONGO_URI.length : 0,
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development'
-    });
-    
-  } catch (error) {
-    console.error('❌ Database test error:', error);
-    res.status(500).json({
-      error: error.message,
-      connected: false,
-      readyState: mongoose.connection.readyState,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Test feed endpoint
-app.get('/api/test/feed', async (req, res) => {
-  try {
-    console.log('🧪 Testing feed endpoint...');
-    
-    // Check DB connection
-    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-    
-    // Ensure DB connection before counting documents
-    if (mongoose.connection.readyState !== 1) {
-      let connected = false;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        console.log(`🔄 Feed test: Connection attempt ${attempt}/2...`);
-        const ok = await connectDB();
-        if (ok) { connected = true; break; }
-        await new Promise(r => setTimeout(r, 500));
-      }
-      if (!connected) {
-        return res.status(503).json({
-          status: 'error',
-          error: 'Database connection failed',
-          timestamp: new Date().toISOString()
-        });
-      }
-    }
-    
-    // Count total files
-    const totalFiles = await File.countDocuments();
-    const publicFiles = await File.countDocuments({ isPrivate: false });
-    
-    res.json({
-      status: 'ok',
-      dbStatus: 'connected',
-      totalFiles,
-      publicFiles,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('❌ Feed test error:', error);
-    res.status(500).json({
-      status: 'error',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
 });
 
 // Serve uploaded images
@@ -672,72 +530,169 @@ app.get('/api/feed/following', async (req, res) => {
   }
 });
 
-// Simple auth routes (without database dependency)
-app.post('/auth/register', async (req, res) => {
+// Get trending posts (most liked and commented posts in the last 7 days)
+app.get('/api/trending', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
+    // Ensure DB connection with retry logic
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable, try again' });
+      }
     }
     
-    if (!process.env.MONGO_URI) {
-      return res.status(500).json({ message: 'Database not configured' });
-    }
+    // Calculate date 7 days ago
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Username or email already exists' });
-    }
+    // Get trending posts using aggregation pipeline
+    const trendingPosts = await File.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sevenDaysAgo },
+          $or: [
+            { isPrivate: false },
+            { isPrivate: { $exists: false } }
+          ]
+        }
+      },
+      {
+        $addFields: {
+          likeCount: { $size: { $ifNull: ['$likes', []] } },
+          commentCount: { $size: { $ifNull: ['$comments', []] } },
+          engagementScore: {
+            $add: [
+              { $multiply: [{ $size: { $ifNull: ['$likes', []] } }, 2] },
+              { $size: { $ifNull: ['$comments', []] } }
+            ]
+          }
+        }
+      },
+      {
+        $sort: { engagementScore: -1, createdAt: -1 }
+      },
+      {
+        $limit: 20
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'uploadedBy',
+          foreignField: '_id',
+          as: 'uploadedBy'
+        }
+      },
+      {
+        $unwind: {
+          path: '$uploadedBy',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'likes',
+          foreignField: '_id',
+          as: 'likes'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'comments.user',
+          foreignField: '_id',
+          as: 'commentsUsers'
+        }
+      },
+      {
+        $addFields: {
+          comments: {
+            $map: {
+              input: { $ifNull: ['$comments', []] },
+              as: 'comment',
+              in: {
+                $mergeObjects: [
+                  '$$comment',
+                  {
+                    user: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: '$commentsUsers',
+                            cond: { $eq: ['$$this._id', '$$comment.user'] }
+                          }
+                        },
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          id: '$_id',
+          filename: 1,
+          caption: 1,
+          tags: 1,
+          uploadedBy: {
+            id: '$uploadedBy._id',
+            username: '$uploadedBy.username',
+            profilePicture: '$uploadedBy.profilePicture',
+            bio: '$uploadedBy.bio'
+          },
+          likes: {
+            $map: {
+              input: '$likes',
+              as: 'like',
+              in: {
+                id: '$$like._id',
+                username: '$$like.username'
+              }
+            }
+          },
+          comments: {
+            $map: {
+              input: '$comments',
+              as: 'comment',
+              in: {
+                id: '$$comment._id',
+                text: '$$comment.text',
+                user: {
+                  id: '$$comment.user._id',
+                  username: '$$comment.user.username',
+                  profilePicture: '$$comment.user.profilePicture'
+                },
+                createdAt: '$$comment.createdAt'
+              }
+            }
+          },
+          isPrivate: 1,
+          createdAt: 1,
+          likeCount: 1,
+          commentCount: 1,
+          engagementScore: 1,
+          imageUrl: { $concat: ['/api/images/', { $toString: '$_id' }] }
+        }
+      }
+    ]);
     
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    const user = new User({
-      username,
-      email,
-      password: hashedPassword
+    res.json(trendingPosts);
+  } catch (error) {
+    console.error('❌ Trending posts error:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch trending posts', 
+      error: error.message,
+      timestamp: new Date().toISOString()
     });
-    
-    await user.save();
-    res.status(201).json({ message: 'Registration successful.' });
-  } catch (err) {
-    console.error('Registration error:', err);
-    res.status(500).json({ message: 'Registration error', error: err.message });
-  }
-});
-
-app.post('/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-    
-    if (!process.env.MONGO_URI) {
-      return res.status(500).json({ message: 'Database not configured' });
-    }
-    
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-    
-    const token = jwt.sign(
-      { id: user._id, username: user.username }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '7d' }
-    );
-    
-    res.json({ token, username: user.username });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'Login error', error: err.message });
   }
 });
 
@@ -907,114 +862,6 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Simple upload route (without database dependency)
-app.post('/upload', async (req, res) => {
-  try {
-    // Check authentication first
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    const token = authHeader.substring(7);
-    let decoded;
-    
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-
-    // Get the authenticated user
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-
-    if (!process.env.MONGO_URI) {
-      return res.status(500).json({ message: 'Database not configured' });
-    }
-
-    // Ensure DB connection with quick retry loop to avoid 504s
-    if (mongoose.connection.readyState !== 1) {
-      let connected = false;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const ok = await connectDB();
-        if (ok) { connected = true; break; }
-        await new Promise(r => setTimeout(r, 500));
-      }
-      if (!connected) {
-        return res.status(503).json({ message: 'Database unavailable, try again' });
-      }
-    }
-
-    // Configure multer
-    const storage = multer.diskStorage({
-      destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-      },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'image-' + uniqueSuffix + path.extname(file.originalname));
-      }
-    });
-
-    const upload = multer({
-      storage: storage,
-      limits: { fileSize: 5 * 1024 * 1024 },
-      fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-          cb(null, true);
-        } else {
-          cb(new Error('Only image files are allowed'));
-        }
-      }
-    });
-
-    upload.single('image')(req, res, async (err) => {
-      if (err) {
-        return res.status(400).json({ message: err.message });
-      }
-      if (!req.file) {
-        return res.status(400).json({ message: 'No image file provided' });
-      }
-
-      const { isPrivate = false, caption = '', tags = '' } = req.body;
-
-      const fileDoc = new File({
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        contentType: req.file.mimetype,
-        size: req.file.size,
-        caption: caption.trim(),
-        tags: tags ? tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [],
-        isPrivate: isPrivate === 'true',
-        uploadedBy: user._id, // Use the authenticated user's ID
-        fileData: Buffer.from(await fs.promises.readFile(req.file.path))
-      });
-
-      await fileDoc.save();
-
-      console.log('✅ Upload successful:', {
-        fileId: fileDoc._id,
-        uploadedBy: user._id,
-        username: user.username,
-        filename: fileDoc.filename
-      });
-
-      res.json({
-        message: 'Upload successful',
-        filename: req.file.filename,
-        fileId: fileDoc._id
-      });
-    });
-  } catch (err) {
-    console.error('Upload error:', err);
-    res.status(500).json({ message: 'Upload error', error: err.message });
-  }
-});
-
 // Test endpoint to check server status
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -1026,184 +873,6 @@ app.get('/api/health', (req, res) => {
       nodeEnv: process.env.NODE_ENV
     }
   });
-});
-
-// Test endpoint to check server status
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    env: {
-      hasMongoUri: !!process.env.MONGO_URI,
-      hasJwtSecret: !!process.env.JWT_SECRET,
-      nodeEnv: process.env.NODE_ENV
-    }
-  });
-});
-
-// Simple test upload endpoint (for debugging)
-app.post('/api/test-upload', async (req, res) => {
-  try {
-    console.log('🧪 Test upload request received');
-    console.log('🔑 Headers:', req.headers);
-    
-    // Skip authentication for testing
-    console.log('⚠️ Skipping authentication for test');
-    
-    // Check if we have basic environment
-    const hasMongoUri = !!process.env.MONGO_URI;
-    const hasJwtSecret = !!process.env.JWT_SECRET;
-    
-    console.log('📊 Environment check:', { hasMongoUri, hasJwtSecret });
-    
-    if (!hasMongoUri) {
-      return res.status(500).json({ 
-        message: 'MONGO_URI not configured',
-        error: 'Please set MONGO_URI environment variable in Vercel'
-      });
-    }
-    
-    // Try to connect to database
-    if (mongoose.connection.readyState !== 1) {
-      console.log('🔄 Attempting database connection...');
-      const connected = await connectDB();
-      if (!connected) {
-        return res.status(503).json({ 
-          message: 'Database connection failed',
-          error: 'Unable to connect to MongoDB'
-        });
-      }
-    }
-    
-    console.log('✅ Database connected successfully');
-    
-    // Test file upload
-    const upload = multer({
-      storage: multer.memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024 },
-      fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-          cb(null, true);
-        } else {
-          cb(new Error('Only image files are allowed'));
-        }
-      }
-    });
-
-    upload.single('image')(req, res, async (err) => {
-      if (err) {
-        console.error('❌ Multer error:', err);
-        return res.status(400).json({ message: err.message });
-      }
-      if (!req.file) {
-        console.log('❌ No file in request');
-        return res.status(400).json({ message: 'No image file provided' });
-      }
-      
-      console.log('✅ Test file received:', req.file.originalname, 'Size:', req.file.size);
-      
-      res.json({
-        message: 'Test upload successful',
-        filename: req.file.originalname,
-        size: req.file.size,
-        environment: {
-          hasMongoUri,
-          hasJwtSecret,
-          dbConnected: mongoose.connection.readyState === 1
-        }
-      });
-    });
-  } catch (err) {
-    console.error('❌ Test upload error:', err);
-    res.status(500).json({ 
-      message: 'Test upload error', 
-      error: err.message,
-      stack: err.stack
-    });
-  }
-});
-
-// Simple test upload endpoint (for debugging)
-app.post('/api/test-upload', async (req, res) => {
-  try {
-    console.log('🧪 Test upload request received');
-    
-    // Skip authentication for testing
-    console.log('⚠️ Skipping authentication for test');
-    
-    // Check if we have basic environment
-    const hasMongoUri = !!process.env.MONGO_URI;
-    const hasJwtSecret = !!process.env.JWT_SECRET;
-    
-    console.log('📊 Environment check:', { hasMongoUri, hasJwtSecret });
-    
-    if (!hasMongoUri) {
-      return res.status(500).json({ 
-        message: 'MONGO_URI not configured',
-        error: 'Please set MONGO_URI environment variable in Vercel dashboard',
-        instructions: 'Go to Vercel dashboard > Your project > Settings > Environment Variables > Add MONGO_URI'
-      });
-    }
-    
-    // Try to connect to database
-    if (mongoose.connection.readyState !== 1) {
-      console.log('🔄 Attempting database connection...');
-      const connected = await connectDB();
-      if (!connected) {
-        return res.status(503).json({ 
-          message: 'Database connection failed',
-          error: 'Unable to connect to MongoDB',
-          check: 'Verify your MONGO_URI is correct and MongoDB Atlas is accessible'
-        });
-      }
-    }
-    
-    console.log('✅ Database connected successfully');
-    
-    // Test file upload
-    const upload = multer({
-      storage: multer.memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024 },
-      fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-          cb(null, true);
-        } else {
-          cb(new Error('Only image files are allowed'));
-        }
-      }
-    });
-
-    upload.single('image')(req, res, async (err) => {
-      if (err) {
-        console.error('❌ Multer error:', err);
-        return res.status(400).json({ message: err.message });
-      }
-      if (!req.file) {
-        console.log('❌ No file in request');
-        return res.status(400).json({ message: 'No image file provided' });
-      }
-      
-      console.log('✅ Test file received:', req.file.originalname, 'Size:', req.file.size);
-      
-      res.json({
-        message: 'Test upload successful',
-        filename: req.file.originalname,
-        size: req.file.size,
-        environment: {
-          hasMongoUri,
-          hasJwtSecret,
-          dbConnected: mongoose.connection.readyState === 1
-        }
-      });
-    });
-  } catch (err) {
-    console.error('❌ Test upload error:', err);
-    res.status(500).json({ 
-      message: 'Test upload error', 
-      error: err.message,
-      stack: err.stack
-    });
-  }
 });
 
 // API prefixed upload with memory storage
@@ -2279,221 +1948,6 @@ app.delete('/api/admin/delete-all-posts', async (req, res) => {
     res.status(500).json({ message: 'Error deleting all posts', error: error.message });
   }
 });
-app.post('/api/fix-post-ownership/:postId', async (req, res) => {
-  try {
-    const { postId } = req.params;
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    const token = authHeader.substring(7);
-    let decoded;
-    
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-
-    // Ensure DB connection
-    if (mongoose.connection.readyState !== 1) {
-      let connected = false;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const ok = await connectDB();
-        if (ok) { connected = true; break; }
-        await new Promise(r => setTimeout(r, 500));
-      }
-      if (!connected) {
-        return res.status(503).json({ message: 'Database unavailable' });
-      }
-    }
-
-    const post = await File.findById(postId);
-    if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
-    }
-
-    // Get the current user
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    console.log('🔧 Fixing post ownership:', {
-      postId,
-      oldOwner: post.uploadedBy.toString(),
-      newOwner: user._id.toString(),
-      username: user.username
-    });
-
-    // Update the post ownership
-    post.uploadedBy = user._id;
-    await post.save();
-
-    console.log('✅ Post ownership fixed successfully');
-
-    res.json({
-      message: 'Post ownership fixed successfully',
-      postId: postId,
-      newOwner: user.username,
-      oldOwner: post.uploadedBy.toString()
-    });
-  } catch (error) {
-    console.error('Fix post ownership error:', error);
-    res.status(500).json({ message: 'Error fixing post ownership', error: error.message });
-  }
-});
-app.get('/api/debug/data', async (req, res) => {
-  try {
-    // Ensure DB connection
-    if (mongoose.connection.readyState !== 1) {
-      let connected = false;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const ok = await connectDB();
-        if (ok) { connected = true; break; }
-        await new Promise(r => setTimeout(r, 500));
-      }
-      if (!connected) {
-        return res.status(503).json({ message: 'Database unavailable' });
-      }
-    }
-
-    // Count users and files
-    const userCount = await User.countDocuments();
-    const fileCount = await File.countDocuments();
-    const publicFileCount = await File.countDocuments({ isPrivate: false });
-    const privateFileCount = await File.countDocuments({ isPrivate: true });
-
-    // Get sample data
-    const sampleUsers = await User.find().select('username email createdAt').limit(5);
-    const sampleFiles = await File.find().select('filename caption uploadedBy isPrivate createdAt').limit(5);
-
-    res.json({
-      summary: {
-        userCount,
-        fileCount,
-        publicFileCount,
-        privateFileCount,
-        dbConnected: mongoose.connection.readyState === 1
-      },
-      sampleUsers,
-      sampleFiles,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Debug error:', error);
-    res.status(500).json({ message: 'Error getting debug data', error: error.message });
-  }
-});
-
-// Test endpoint to add sample data
-app.post('/api/test/add-sample-data', async (req, res) => {
-  try {
-    // Ensure DB connection
-    if (mongoose.connection.readyState !== 1) {
-      let connected = false;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const ok = await connectDB();
-        if (ok) { connected = true; break; }
-        await new Promise(r => setTimeout(r, 500));
-      }
-      if (!connected) {
-        return res.status(503).json({ message: 'Database unavailable' });
-      }
-    }
-
-    // Create a test user if none exists
-    let testUser = await User.findOne({ username: 'testuser' });
-    if (!testUser) {
-      testUser = new User({
-        username: 'testuser',
-        email: 'test@example.com',
-        password: await bcrypt.hash('password123', 10)
-      });
-      await testUser.save();
-    }
-
-    // Create a test post if none exists
-    let testPost = await File.findOne({ uploadedBy: testUser._id });
-    if (!testPost) {
-      testPost = new File({
-        filename: 'test-image.jpg',
-        originalName: 'test-image.jpg',
-        contentType: 'image/jpeg',
-        size: 1024,
-        caption: 'This is a test post!',
-        isPrivate: false,
-        uploadedBy: testUser._id,
-        fileData: Buffer.from('fake-image-data')
-      });
-      await testPost.save();
-    }
-
-    res.json({
-      message: 'Sample data added successfully',
-      user: {
-        id: testUser._id,
-        username: testUser.username
-      },
-      post: {
-        id: testPost._id,
-        caption: testPost.caption
-      }
-    });
-  } catch (error) {
-    console.error('Error adding sample data:', error);
-    res.status(500).json({ message: 'Error adding sample data', error: error.message });
-  }
-});
-
-// Test endpoint to check profile picture data
-app.get('/api/test/profile-pictures', async (req, res) => {
-  try {
-    // Ensure DB connection
-    if (mongoose.connection.readyState !== 1) {
-      let connected = false;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const ok = await connectDB();
-        if (ok) { connected = true; break; }
-        await new Promise(r => setTimeout(r, 500));
-      }
-      if (!connected) {
-        return res.status(503).json({ message: 'Database unavailable' });
-      }
-    }
-
-    // Get all users with their profile pictures
-    const users = await User.find().select('username profilePicture');
-    
-    // Get sample posts with populated uploaders
-    const samplePosts = await File.find().limit(5)
-      .populate('uploadedBy', 'username profilePicture')
-      .select('uploadedBy');
-
-    res.json({
-      users: users.map(user => ({
-        username: user.username,
-        hasProfilePicture: !!user.profilePicture,
-        profilePictureId: user.profilePicture
-      })),
-      samplePosts: samplePosts.map(post => ({
-        postId: post._id,
-        uploader: post.uploadedBy ? {
-          username: post.uploadedBy.username,
-          hasProfilePicture: !!post.uploadedBy.profilePicture,
-          profilePictureId: post.uploadedBy.profilePicture
-        } : null
-      })),
-      totalUsers: users.length,
-      usersWithProfilePictures: users.filter(u => u.profilePicture).length
-    });
-  } catch (error) {
-    console.error('Profile picture test error:', error);
-    res.status(500).json({ message: 'Error testing profile pictures', error: error.message });
-  }
-});
 
 // 404 handler
 app.use((req, res) => {
@@ -2524,6 +1978,8 @@ connectDB().then(success => {
   }
 }).catch(error => {
   console.error('❌ Database connection error on startup:', error.message);
+  // Don't exit the process, just log the error
+  console.log('⚠️ Continuing without database connection');
 });
 
 // Export for Vercel

@@ -1,5 +1,0 @@
-[33mf67ca5d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Clean up code: Remove localhost configs and test endpoints for production deployment
-[33m2d17d71[m ðŸš€ Optimized SnapStream platform for deployment
-[33mcdd9832[m Add test endpoint to debug profile picture loading issue
-[33m8a1d105[m Add debugging for profile picture loading issue in feed
-[33m78d76c9[m[33m ([m[1;31morigin/main[m[33m)[m Fix private post filtering - ensure private posts are properly excluded from feed and following feed

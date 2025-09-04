@@ -14,13 +14,15 @@ yarn-error.log*
 # Build outputs
 dist/
 build/
+.next/
+out/
 
 # Logs
-logs
+logs/
 *.log
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
@@ -29,7 +31,7 @@ pids
 coverage/
 
 # nyc test coverage
-.nyc_output
+.nyc_output/
 
 # Dependency directories
 jspm_packages/
@@ -64,5 +66,12 @@ jspm_packages/
 ehthumbs.db
 Thumbs.db
 
-# Uploads directory (if you want to exclude uploaded files)
+# Temporary files
+tmp/
+temp/
+
+# Uploads directory
 uploads/
+
+# Vercel
+.vercel
