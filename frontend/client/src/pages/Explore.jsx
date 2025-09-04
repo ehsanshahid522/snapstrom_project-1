@@ -404,23 +404,29 @@ export default function Explore() {
            </div>
          </div>
 
-              {/* Professional Mobile Navigation Bar */}
+              {/* Professional Mobile Navigation Bar with Logo */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           {/* Mobile Professional Navigation */}
           <div className="sm:hidden">
-            {/* Top Row - Search and Actions */}
+            {/* Top Row - Logo and Actions */}
             <div className="flex items-center justify-between mb-3">
-              <button
-                onClick={() => setShowSearch(!showSearch)}
-                className="flex-1 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl px-4 py-3 text-left text-gray-600 flex items-center no-select shadow-sm border border-gray-200"
-              >
-                <svg className="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <span className="text-sm font-medium">Search posts, creators...</span>
-              </button>
-              <div className="flex items-center space-x-2 ml-3">
+              {/* Logo */}
+              <div className="flex-shrink-0">
+                <Logo size="md" showText={false} />
+              </div>
+              
+              {/* Search and Actions */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowSearch(!showSearch)}
+                  className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl px-4 py-3 text-left text-gray-600 flex items-center no-select shadow-sm border border-gray-200"
+                >
+                  <svg className="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <span className="text-sm font-medium">Search...</span>
+                </button>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl no-select shadow-sm border border-purple-200"
@@ -493,44 +499,124 @@ export default function Explore() {
               </div>
             )}
 
-            {/* Horizontal Scrollable Quick Actions */}
-            <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide smooth-scroll">
-              <button className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full text-sm font-medium shadow-lg no-select flex-shrink-0 border border-pink-400">
+            {/* Enhanced Horizontal Scrollable Navigation */}
+            <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide smooth-scroll no-select">
+              <button 
+                onClick={() => setActiveCategory('all')}
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg flex-shrink-0 border transition-all duration-300 ${
+                  activeCategory === 'all'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white border-pink-400 shadow-xl'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-md'
+                }`}
+              >
                 🌟 All Posts
               </button>
-              <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium shadow-sm no-select flex-shrink-0 border border-gray-200">
+              <button 
+                onClick={() => setActiveCategory('photography')}
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg flex-shrink-0 border transition-all duration-300 ${
+                  activeCategory === 'photography'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-blue-400 shadow-xl'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-md'
+                }`}
+              >
                 📸 Photography
               </button>
-              <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium shadow-sm no-select flex-shrink-0 border border-gray-200">
+              <button 
+                onClick={() => setActiveCategory('travel')}
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg flex-shrink-0 border transition-all duration-300 ${
+                  activeCategory === 'travel'
+                    ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white border-green-400 shadow-xl'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-md'
+                }`}
+              >
                 ✈️ Travel
               </button>
-              <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium shadow-sm no-select flex-shrink-0 border border-gray-200">
+              <button 
+                onClick={() => setActiveCategory('food')}
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg flex-shrink-0 border transition-all duration-300 ${
+                  activeCategory === 'food'
+                    ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white border-orange-400 shadow-xl'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-md'
+                }`}
+              >
                 🍕 Food
               </button>
-              <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium shadow-sm no-select flex-shrink-0 border border-gray-200">
+              <button 
+                onClick={() => setActiveCategory('art')}
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg flex-shrink-0 border transition-all duration-300 ${
+                  activeCategory === 'art'
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white border-pink-400 shadow-xl'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-md'
+                }`}
+              >
                 🎨 Art
               </button>
-              <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium shadow-sm no-select flex-shrink-0 border border-gray-200">
+              <button 
+                onClick={() => setActiveCategory('technology')}
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg flex-shrink-0 border transition-all duration-300 ${
+                  activeCategory === 'technology'
+                    ? 'bg-gradient-to-r from-indigo-500 to-blue-600 text-white border-indigo-400 shadow-xl'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-md'
+                }`}
+              >
                 💻 Tech
+              </button>
+              <button 
+                onClick={() => setActiveCategory('nature')}
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg flex-shrink-0 border transition-all duration-300 ${
+                  activeCategory === 'nature'
+                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white border-emerald-400 shadow-xl'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-md'
+                }`}
+              >
+                🌿 Nature
+              </button>
+              <button 
+                onClick={() => setActiveCategory('fashion')}
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg flex-shrink-0 border transition-all duration-300 ${
+                  activeCategory === 'fashion'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white border-purple-400 shadow-xl'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-md'
+                }`}
+              >
+                👗 Fashion
+              </button>
+              <button 
+                onClick={() => setActiveCategory('sports')}
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg flex-shrink-0 border transition-all duration-300 ${
+                  activeCategory === 'sports'
+                    ? 'bg-gradient-to-r from-red-500 to-orange-600 text-white border-red-400 shadow-xl'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-md'
+                }`}
+              >
+                ⚽ Sports
               </button>
             </div>
           </div>
 
-          {/* Desktop Search and Controls */}
+          {/* Desktop Search and Controls with Logo */}
           <div className="hidden sm:flex flex-col lg:flex-row gap-4 items-center justify-between">
-            {/* Search Bar */}
-            <div className="flex-1 w-full max-w-md">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="🔍 Search posts, creators, or categories..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-6 py-4 pl-14 bg-transparent border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-lg"
-                />
-                <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+            {/* Logo and Search Bar */}
+            <div className="flex items-center space-x-6 flex-1">
+              {/* Logo */}
+              <div className="flex-shrink-0">
+                <Logo size="lg" showText={true} />
+              </div>
+              
+              {/* Search Bar */}
+              <div className="flex-1 max-w-md">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="🔍 Search posts, creators, or categories..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-6 py-4 pl-14 bg-transparent border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-lg"
+                  />
+                  <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
               </div>
             </div>
 
@@ -612,31 +698,54 @@ export default function Explore() {
               </div>
             </div>
 
-            {/* Desktop Professional Categories Grid */}
-            <div className="hidden sm:flex flex-wrap gap-4">
-              <button
-                onClick={() => setActiveCategory('all')}
-                className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-sm border ${
-                  activeCategory === 'all'
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xl border-pink-400'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm border-gray-200'
-                }`}
-              >
-                🌟 All Posts
-              </button>
-              {categories.map((category) => (
+            {/* Desktop Professional Horizontal Scroll Categories */}
+            <div className="hidden sm:flex overflow-x-auto pb-4 scrollbar-hide smooth-scroll no-select">
+              <div className="flex space-x-4 flex-shrink-0">
                 <button
-                  key={category.id}
-                  onClick={() => setActiveCategory(category.id)}
-                  className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-sm border ${
-                    activeCategory === category.id
-                      ? `bg-gradient-to-r ${category.color} text-white shadow-xl`
-                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm border-gray-200'
+                  onClick={() => setActiveCategory('all')}
+                  className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border flex-shrink-0 ${
+                    activeCategory === 'all'
+                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xl border-pink-400'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md border-gray-200'
                   }`}
                 >
-                  {category.name} ({category.count})
+                  🌟 All Posts
                 </button>
-              ))}
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setActiveCategory(category.id)}
+                    className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border flex-shrink-0 ${
+                      activeCategory === category.id
+                        ? `bg-gradient-to-r ${category.color} text-white shadow-xl border-${category.color.split('-')[1]}-400`
+                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md border-gray-200'
+                    }`}
+                  >
+                    {category.name} ({category.count})
+                  </button>
+                ))}
+                {/* Additional categories for desktop */}
+                <button
+                  onClick={() => setActiveCategory('fashion')}
+                  className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border flex-shrink-0 ${
+                    activeCategory === 'fashion'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-xl border-purple-400'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md border-gray-200'
+                  }`}
+                >
+                  👗 Fashion (234)
+                </button>
+                <button
+                  onClick={() => setActiveCategory('sports')}
+                  className={`px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border flex-shrink-0 ${
+                    activeCategory === 'sports'
+                      ? 'bg-gradient-to-r from-red-500 to-orange-600 text-white shadow-xl border-red-400'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md border-gray-200'
+                  }`}
+                >
+                  ⚽ Sports (189)
+                </button>
+              </div>
             </div>
           </div>
 
