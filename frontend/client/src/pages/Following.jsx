@@ -279,27 +279,27 @@ export default function Following() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Posts Feed */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="max-w-2xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {/* Floating Action Button */}
-        <div className="fixed bottom-8 right-8 z-50">
-          <a href="/upload" className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center text-white text-2xl">
+        <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50">
+          <a href="/upload" className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center text-white text-xl sm:text-2xl">
             📸
           </a>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {posts.map((p, index) => (
             <div 
               key={p._id} 
               className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden"
             >
               {/* Post Header */}
-              <div className="p-6 pb-4">
+              <div className="p-4 sm:p-6 pb-4">
                 <div className="flex items-center justify-between">
                   {/* Left Side - Username and Profile Info */}
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                     {/* Profile Picture */}
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200 flex-shrink-0">
                       {p.uploader?.profilePicture ? (
                         <img 
                           src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${p.uploader.profilePicture}`} 
@@ -308,7 +308,7 @@ export default function Following() {
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                          <span className="text-pink-600 font-bold text-lg">
+                          <span className="text-pink-600 font-bold text-sm sm:text-lg">
                             {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
                           </span>
                         </div>
@@ -316,11 +316,11 @@ export default function Following() {
                     </div>
                     
                     {/* Username and Time */}
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                         {p.uploader?.username || 'Unknown User'}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs sm:text-sm text-gray-500">
                         {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString() : 'Recently'}
                       </p>
                     </div>
@@ -330,14 +330,14 @@ export default function Following() {
                   <div className="flex items-center space-x-2">
                     {/* Private Badge */}
                     {p.isPrivate && (
-                      <div className="px-3 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold rounded-full">
+                      <div className="px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold rounded-full">
                         🔒 Private
                       </div>
                     )}
                     
                     {/* Your Post Badge */}
                     {currentUserId && p.uploader?._id === currentUserId && (
-                      <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full">
+                      <div className="px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full">
                         ✨ Your Post
                       </div>
                     )}

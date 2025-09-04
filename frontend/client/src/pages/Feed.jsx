@@ -677,29 +677,29 @@ export default function Feed() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Posts Feed */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="max-w-2xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {/* Floating Action Button */}
-        <div className="fixed bottom-8 right-8 z-50">
-          <a href="/upload" className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center text-white text-2xl">
+        <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50">
+          <a href="/upload" className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center text-white text-xl sm:text-2xl">
             📸
           </a>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {currentPosts.map((p, index) => (
             <div 
               key={p._id} 
               className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden"
             >
               {/* Post Header */}
-              <div className="p-6 pb-4">
+              <div className="p-4 sm:p-6 pb-4">
                 <div className="flex items-center justify-between">
                   {/* Left Side - Username and Profile Info */}
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                     {/* Clickable Profile Picture */}
                     <a 
                       href={`/profile/${p.uploader?.username}`}
-                      className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200 hover:ring-pink-300 transition-all duration-200 transform hover:scale-105 cursor-pointer"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200 hover:ring-pink-300 transition-all duration-200 transform hover:scale-105 cursor-pointer flex-shrink-0"
                     >
                       {p.uploader?.profilePicture ? (
                         <img 
@@ -708,23 +708,23 @@ export default function Feed() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                        <div className="w-full h-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
                           {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
                         </div>
                       )}
                     </a>
                     
                     {/* Clickable Username and Info */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <a 
                         href={`/profile/${p.uploader?.username}`}
                         className="block hover:opacity-80 transition-opacity duration-200"
                       >
-                        <div className="font-bold text-gray-900 text-lg hover:text-pink-600 transition-colors duration-200">
+                        <div className="font-bold text-gray-900 text-sm sm:text-lg hover:text-pink-600 transition-colors duration-200 truncate">
                           {p.uploader?.username || 'Unknown User'}
                         </div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <span className="mr-2">🕐</span>
+                        <div className="text-xs sm:text-sm text-gray-500 flex items-center">
+                          <span className="mr-1 sm:mr-2">🕐</span>
                           {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -735,67 +735,44 @@ export default function Feed() {
                     </div>
                   </div>
                   
-                  {/* Right Side - Kebab Menu */}
-                  <div className="relative kebab-menu">
-                    <button
-                      onClick={() => setShowKebabMenu(prev => ({ ...prev, [p._id]: !prev[p._id] }))}
-                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-all duration-200"
-                    >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-                      </svg>
-                    </button>
-                    
-                    {/* Kebab Menu Dropdown */}
-                    {showKebabMenu[p._id] && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
-                        {/* Share Option */}
-                        <button
-                          onClick={() => {
-                            share(p._id, p);
-                            setShowKebabMenu(prev => ({ ...prev, [p._id]: false }));
-                          }}
-                          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
-                        >
-                          <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                          </svg>
-                          <span>Share Post</span>
-                        </button>
-                        
-                        {/* Download Option */}
-                        <button
-                          onClick={() => {
-                            downloadPost(p);
-                            setShowKebabMenu(prev => ({ ...prev, [p._id]: false }));
-                          }}
-                          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
-                        >
-                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <span>Download</span>
-                        </button>
-                        
-                        {/* Delete Option - Only for post owner */}
-                        {currentUserId && p.uploader?._id === currentUserId && (
-                          <>
-                            <div className="border-t border-gray-100"></div>
-                            <button
-                              onClick={() => {
-                                deletePost(p._id);
-                                setShowKebabMenu(prev => ({ ...prev, [p._id]: false }));
-                              }}
-                              className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
-                            >
-                              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                              <span>Delete Post</span>
-                            </button>
-                          </>
-                        )}
+                  {/* Right Side - Badges and Follow Button */}
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    {/* Private Badge */}
+                    {p.isPrivate && (
+                      <div className="px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold rounded-full">
+                        🔒 Private
                       </div>
+                    )}
+                    
+                    {/* Your Post Badge */}
+                    {currentUserId && p.uploader?._id === currentUserId && (
+                      <div className="px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full">
+                        ✨ Your Post
+                      </div>
+                    )}
+                    
+                    {/* Follow Button */}
+                    {p.uploader?._id && p.uploader?._id !== currentUserId && (
+                      <button
+                        onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
+                        className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-300 transform hover:scale-105 ${
+                          followingStatus[p.uploader._id]
+                            ? 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-600'
+                            : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-lg'
+                        }`}
+                      >
+                        {followingStatus[p.uploader._id] ? (
+                          <span className="flex items-center space-x-1">
+                            <span>✓</span>
+                            <span className="hidden sm:inline">Following</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center space-x-1">
+                            <span>+</span>
+                            <span className="hidden sm:inline">Follow</span>
+                          </span>
+                        )}
+                      </button>
                     )}
                   </div>
                   
@@ -958,59 +935,59 @@ export default function Feed() {
 
               {/* Caption - Now below image */}
               {p.caption && (
-                <div className="px-6 py-4 border-b border-gray-100">
-                  <p className="text-gray-800 text-base leading-relaxed">
+                <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
+                  <p className="text-gray-800 text-sm sm:text-base leading-relaxed">
                     {p.caption}
                   </p>
                 </div>
               )}
 
               {/* Post Actions */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-6">
+                  <div className="flex items-center space-x-4 sm:space-x-6">
                     <button 
                       onClick={() => like(p._id)}
                       disabled={interactingPosts[`like-${p._id}`]}
-                      className="flex items-center space-x-3 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {interactingPosts[`like-${p._id}`] ? (
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                          <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                       ) : p.__liked ? (
-                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors shadow-lg">
-                          <svg className="w-7 h-7 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors shadow-lg">
+                          <svg className="w-6 h-6 sm:w-7 sm:h-7 text-red-500" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                           </svg>
                         </div>
                       ) : (
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors shadow-lg">
-                          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors shadow-lg">
+                          <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                           </svg>
                         </div>
                       )}
-                      <span className="font-bold text-xl">{p.__likesCount || 0}</span>
+                      <span className="font-bold text-lg sm:text-xl">{p.__likesCount || 0}</span>
                     </button>
                     
                     <button 
                       onClick={() => toggleComments(p._id)}
                       disabled={interactingPosts[`comment-${p._id}`]}
-                      className="flex items-center space-x-3 text-gray-700 hover:text-blue-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-blue-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {interactingPosts[`comment-${p._id}`] ? (
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                       ) : (
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors shadow-lg">
-                          <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors shadow-lg">
+                          <svg className="w-6 h-6 sm:w-7 sm:h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                           </svg>
                         </div>
                       )}
-                      <span className="font-bold text-xl">{p.comments?.length || 0}</span>
+                      <span className="font-bold text-lg sm:text-xl">{p.comments?.length || 0}</span>
                     </button>
                   </div>
                 </div>
