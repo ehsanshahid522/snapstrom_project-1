@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
-import SimpleNav from '../components/SimpleNav.jsx'
 
 export default function Feed() {
   const [posts, setPosts] = useState([])
@@ -641,9 +640,6 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Simple Navigation Header */}
-      <SimpleNav />
-
       {/* Posts Feed */}
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Floating Action Button */}
