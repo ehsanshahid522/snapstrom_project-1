@@ -470,15 +470,94 @@ export default function Trending() {
 
               {/* Post Image */}
               <div className="relative">
-                <img
-                  src={`${config.API_BASE_URL}/api/images/${post._id}`}
-                  alt={post.caption}
-                  className="w-full h-auto object-cover"
-                  onError={(e) => {
-                    console.error('❌ Image failed to load:', e.target.src);
-                    e.target.style.display = 'none';
-                  }}
-                />
+                                    <img
+                      src={`${config.API_BASE_URL}/api/images/${post._id}`}
+                      alt={post.caption}
+                      className="w-full h-auto object-cover"
+                      onError={(e) => {
+                        console.error('❌ Image failed to load:', e.target.src);
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                    
+                    {/* Overflow Menu at bottom of image */}
+                    <div className="absolute bottom-3 right-3 overflow-menu">
+                      <button 
+                        onClick={() => toggleOverflowMenu(post._id)}
+                        className="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/70 transition-all duration-200 transform hover:scale-110 shadow-lg"
+                      >
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                      </button>
+                      
+                      {/* Overflow Menu Dropdown */}
+                      {overflowMenuOpen[post._id] && (
+                        <div className="absolute bottom-12 right-0 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+                          {/* Download Option */}
+                          <button 
+                            onClick={() => {
+                              downloadImage(post._id, post.originalName)
+                              toggleOverflowMenu(post._id)
+                            }}
+                            disabled={interactingPosts[`download-${post._id}`]}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+                          >
+                            {interactingPosts[`download-${post._id}`] ? (
+                              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            )}
+                            <span>Download</span>
+                          </button>
+                          
+                          {/* Share Option */}
+                          <button 
+                            onClick={() => {
+                              share(post._id, post)
+                              toggleOverflowMenu(post._id)
+                            }}
+                            disabled={interactingPosts[`share-${post._id}`]}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
+                          >
+                            {interactingPosts[`share-${post._id}`] ? (
+                              <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                              </svg>
+                            )}
+                            <span>Share</span>
+                          </button>
+                          
+                          {/* Delete Option - Only for post owner */}
+                          {currentUserId && post.uploader?._id === currentUserId && (
+                            <>
+                              <div className="border-t border-gray-100"></div>
+                              <button 
+                                onClick={() => {
+                                  deletePost(post._id)
+                                  toggleOverflowMenu(post._id)
+                                }}
+                                disabled={interactingPosts[`delete-${post._id}`]}
+                                className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
+                              >
+                                {interactingPosts[`delete-${post._id}`] ? (
+                                  <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                )}
+                                <span>Delete</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
               </div>
 
               {/* Post Actions */}
