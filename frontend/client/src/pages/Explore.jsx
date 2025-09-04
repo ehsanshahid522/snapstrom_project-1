@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
+import Logo from '../components/Logo.jsx'
 
 export default function Explore() {
   const [trendingPosts, setTrendingPosts] = useState([])
@@ -389,40 +390,7 @@ export default function Explore() {
              <div className="text-center">
                {/* SNAPSTROM Logo */}
                <div className="flex items-center justify-center mb-4 sm:mb-6 logo-container">
-                 <div className="relative">
-                   {/* Logo Icon */}
-                   <div className="w-16 h-16 sm:w-20 sm:h-20 relative logo-icon logo-glow">
-                     {/* Camera Body */}
-                     <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-500 to-yellow-400 rounded-lg shadow-2xl">
-                       {/* Camera Top */}
-                       <div className="absolute -top-2 -left-2 w-6 h-4 bg-gradient-to-r from-orange-400 to-pink-500 rounded-md"></div>
-                       {/* Flash/Lens */}
-                       <div className="absolute left-2 top-3 w-3 h-3 bg-gradient-to-r from-orange-400 to-pink-500 rounded-full"></div>
-                       {/* Main Lens */}
-                       <div className="absolute inset-0 flex items-center justify-center">
-                         <div className="w-8 h-8 sm:w-10 sm:h-10 relative">
-                           {/* Outer Ring */}
-                           <div className="absolute inset-0 bg-purple-400 rounded-full animate-pulse"></div>
-                           {/* Middle Ring */}
-                           <div className="absolute inset-1 bg-purple-600 rounded-full"></div>
-                           {/* Inner Ring */}
-                           <div className="absolute inset-2 bg-magenta-400 rounded-full"></div>
-                         </div>
-                       </div>
-                       {/* Speech Bubble Tail */}
-                       <div className="absolute -bottom-1 -right-1 w-0 h-0 border-l-[12px] border-l-yellow-400 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent"></div>
-                     </div>
-                     {/* Glow Effect */}
-                     <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-500 to-yellow-400 rounded-lg blur-sm opacity-50"></div>
-                   </div>
-                   
-                   {/* Logo Text */}
-                   <div className="ml-4 sm:ml-6">
-                     <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent drop-shadow-lg logo-text">
-                       SNAPSTROM
-                     </h1>
-                   </div>
-                 </div>
+                 <Logo size="xl" showText={true} />
                </div>
                
                <h2 className="text-3xl sm:text-5xl font-bold mb-2 sm:mb-4 animate-pulse">🌍 Explore</h2>
