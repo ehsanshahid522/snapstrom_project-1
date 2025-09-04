@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
+import SimpleNav from '../components/SimpleNav.jsx'
 
 export default function Following() {
   const [posts, setPosts] = useState([])
@@ -245,19 +246,8 @@ export default function Following() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Simple Colorful Header */}
-      <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 border-b border-gray-200 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Following Feed
-            </h1>
-            <p className="text-white/90 text-lg font-medium">
-              Posts from people you follow
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Simple Navigation Header */}
+      <SimpleNav />
 
       {/* Posts Feed */}
       <div className="max-w-2xl mx-auto px-4 py-6">

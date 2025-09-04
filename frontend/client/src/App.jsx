@@ -30,14 +30,22 @@ function WithNav({ children }) {
   )
 }
 
+function WithoutNav({ children }) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {children}
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/share/:id" element={<Share />} />
-      <Route path="/" element={<PrivateRoute><WithNav><Feed /></WithNav></PrivateRoute>} />
-      <Route path="/following" element={<PrivateRoute><WithNav><Following /></WithNav></PrivateRoute>} />
+      <Route path="/" element={<PrivateRoute><WithoutNav><Feed /></WithoutNav></PrivateRoute>} />
+      <Route path="/following" element={<PrivateRoute><WithoutNav><Following /></WithoutNav></PrivateRoute>} />
       <Route path="/trending" element={<PrivateRoute><WithNav><Trending /></WithNav></PrivateRoute>} />
       <Route path="/settings" element={<PrivateRoute><WithNav><Settings /></WithNav></PrivateRoute>} />
       <Route path="/profile/:username" element={<PrivateRoute><WithNav><Profile /></WithNav></PrivateRoute>} />
