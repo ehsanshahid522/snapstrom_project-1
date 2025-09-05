@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
 
@@ -8,10 +8,21 @@ export default function Feed() {
   const [currentUser, setCurrentUser] = useState(null)
   const [followingStatus, setFollowingStatus] = useState({}) // Track follow status for each user
   const [interactingPosts, setInteractingPosts] = useState({}) // Track posts being interacted with
-  const [currentUserId, setCurrentUserId] = useState(null) // Store current user ID
   const [expandedComments, setExpandedComments] = useState({}) // Track which posts have comments expanded
   const [showKebabMenu, setShowKebabMenu] = useState({}) // Track which posts have kebab menu open
   const [overflowMenuOpen, setOverflowMenuOpen] = useState({}) // Track which posts have overflow menu open
+
+  // Memoized current user ID extraction
+  const currentUserId = useMemo(() => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return null
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      return payload.id
+    } catch (error) {
+      return null
+    }
+  }, [])
 
   // Close kebab menu when clicking outside
   useEffect(() => {
@@ -29,7 +40,7 @@ export default function Feed() {
   }, [])
 
     // Function to fetch posts
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -39,29 +50,11 @@ export default function Feed() {
         setCurrentUser({ username })
       }
 
-      // Get current user ID from token
-      const currentUserId = (() => {
-        try {
-          const token = localStorage.getItem('token')
-          if (!token) return null
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          return payload.id
-        } catch (error) {
-          return null
-        }
-      })()
-      
-      setCurrentUserId(currentUserId) // Store current user ID in state
-
       // Fetch feed data
       const response = await api('/feed')
       
-      console.log('🔍 Full API response:', response);
-      
       // Handle both direct array response and wrapped response
       const postsData = response.success ? response.data : (Array.isArray(response) ? response : []);
-      
-      console.log('🔍 Posts data:', postsData);
       
       if (!postsData || !Array.isArray(postsData)) {
         throw new Error('Failed to fetch feed data')
@@ -69,10 +62,6 @@ export default function Feed() {
       
       // Map the data to match expected structure
       const mapPosts = (data) => data.map(p => {
-        console.log('🔍 Processing post:', p);
-        console.log('🔍 uploadedBy object:', p.uploadedBy);
-        console.log('🔍 Profile picture value:', p.uploadedBy?.profilePicture);
-        
         const mappedPost = {
           ...p,
           _id: p.id || p._id,
@@ -87,10 +76,6 @@ export default function Feed() {
           comments: p.comments || []
         };
         
-        console.log('🔍 Mapped post result:', mappedPost);
-        console.log('🔍 Username found:', mappedPost.uploader.username);
-        console.log('🔍 Uploader ID:', mappedPost.uploader._id);
-        console.log('🔍 Final profile picture:', mappedPost.uploader.profilePicture);
         return mappedPost;
       });
       
@@ -109,17 +94,13 @@ export default function Feed() {
         .filter(id => id && id !== 'undefined' && id !== null)
         .filter((id, index, arr) => arr.indexOf(id) === index);
       
-      console.log('🔍 All users for follow status:', allUsers);
-      
       // Check follow status for each user
       const followStatus = {};
       for (const userId of allUsers) {
         try {
-          console.log('🔍 Checking follow status for:', userId);
           const response = await api(`/auth/follow-status/${userId}`).catch(() => ({ isFollowing: false }));
           followStatus[userId] = response.isFollowing || false;
         } catch (error) {
-          console.error('❌ Error checking follow status for', userId, ':', error);
           followStatus[userId] = false;
         }
       }
@@ -131,22 +112,18 @@ export default function Feed() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentUserId])
 
   useEffect(() => {
     fetchPosts()
   }, []) // Re-fetch when activeTab changes
 
-  const like = async (id) => {
+  const like = useCallback(async (id) => {
     try {
-      console.log('🔍 Liking post:', id);
-      
       // Set loading state
       setInteractingPosts(prev => ({ ...prev, [`like-${id}`]: true }));
       
       const response = await api(`/like/${id}`, { method: 'POST' })
-      
-      console.log('✅ Like response:', response);
       
       // Update posts with new like status
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
@@ -162,12 +139,10 @@ export default function Feed() {
       // Clear loading state
       setInteractingPosts(prev => ({ ...prev, [`like-${id}`]: false }));
     }
-  }
+  }, [])
 
-  const comment = async (id, text) => {
+  const comment = useCallback(async (id, text) => {
     try {
-      console.log('🔍 Commenting on post:', id, 'Text:', text);
-      
       // Set loading state
       setInteractingPosts(prev => ({ ...prev, [`comment-${id}`]: true }));
       
@@ -175,8 +150,6 @@ export default function Feed() {
         method: 'POST', 
         body: { text } 
       })
-      
-      console.log('✅ Comment response:', response);
       
       // Update posts with new comment
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
@@ -191,18 +164,14 @@ export default function Feed() {
       // Clear loading state
       setInteractingPosts(prev => ({ ...prev, [`comment-${id}`]: false }));
     }
-  }
+  }, [])
 
-  const share = async (id, post) => {
+  const share = useCallback(async (id, post) => {
     try {
-      console.log('🔍 Sharing post:', id);
-      
       // Set loading state
       setInteractingPosts(prev => ({ ...prev, [`share-${id}`]: true }));
       
       const response = await api(`/share/${id}`, { method: 'POST' })
-      
-      console.log('✅ Share response:', response);
       
       if (response.shareUrl) {
         // Create share options modal
@@ -217,12 +186,10 @@ export default function Feed() {
       // Clear loading state
       setInteractingPosts(prev => ({ ...prev, [`share-${id}`]: false }));
     }
-  }
+  }, [])
 
-  const downloadPost = async (post) => {
+  const downloadPost = useCallback(async (post) => {
     try {
-      console.log('🔍 Downloading post:', post._id);
-      
       // Create a temporary link element
       const link = document.createElement('a');
       link.href = `${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${post.image}`;
@@ -240,9 +207,9 @@ export default function Feed() {
       console.error('Error downloading post:', error);
       window.showToast('Failed to download post. Please try again.', 'error');
     }
-  }
+  }, [])
 
-  const downloadImage = async (postId, originalName) => {
+  const downloadImage = useCallback(async (postId, originalName) => {
     try {
       setInteractingPosts(prev => ({ ...prev, [`download-${postId}`]: true }))
       
@@ -265,16 +232,16 @@ export default function Feed() {
     } finally {
       setInteractingPosts(prev => ({ ...prev, [`download-${postId}`]: false }))
     }
-  }
+  }, [])
 
-  const toggleOverflowMenu = (postId) => {
+  const toggleOverflowMenu = useCallback((postId) => {
     setOverflowMenuOpen(prev => ({
       ...prev,
       [postId]: !prev[postId]
     }))
-  }
+  }, [])
 
-  const showShareOptions = (shareUrl, post) => {
+  const showShareOptions = useCallback((shareUrl, post) => {
     // Create modal overlay
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';

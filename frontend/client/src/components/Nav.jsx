@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { clearAuth, getUsername, api } from '../lib/api.js'
 import Logo from './Logo.jsx'
 
@@ -23,10 +23,10 @@ export default function Nav() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showAccountMenu])
 
-  function logout() {
+  const logout = useCallback(() => {
     clearAuth()
     window.location.href = '/login'
-  }
+  }, [])
 
   return (
     <>

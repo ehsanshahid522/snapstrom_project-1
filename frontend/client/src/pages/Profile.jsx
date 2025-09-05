@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../lib/api.js'
 
@@ -50,28 +50,21 @@ export default function Profile() {
   const currentUsername = localStorage.getItem('username')
   const isOwnProfile = currentUsername === username
   
-  // Separate posts by privacy
-  const publicPosts = data?.posts?.filter(post => !post.isPrivate) || []
-  const privatePosts = data?.posts?.filter(post => post.isPrivate) || []
-  const allPosts = data?.posts || []
-
-  // Get posts based on active tab and profile ownership
-  const getDisplayPosts = () => {
-    // For other users' profiles, only show public posts
-    if (!isOwnProfile) {
-      return publicPosts
-    }
+  // Memoized post filtering
+  const { publicPosts, privatePosts, allPosts, displayPosts } = useMemo(() => {
+    const publicPosts = data?.posts?.filter(post => !post.isPrivate) || []
+    const privatePosts = data?.posts?.filter(post => post.isPrivate) || []
+    const allPosts = data?.posts || []
     
-    // For own profile, show based on selected tab
-    switch(activeTab) {
-      case 'private': return privatePosts
-      default: return publicPosts
-    }
-  }
+    // Get posts based on active tab and profile ownership
+    const displayPosts = isOwnProfile 
+      ? (activeTab === 'public' ? publicPosts : privatePosts)
+      : publicPosts
+    
+    return { publicPosts, privatePosts, allPosts, displayPosts }
+  }, [data?.posts, activeTab, isOwnProfile])
 
-  const displayPosts = getDisplayPosts()
-
-  const handleProfilePictureUpload = async (event) => {
+  const handleProfilePictureUpload = useCallback(async (event) => {
     const file = event.target.files[0]
     if (!file) return
 
