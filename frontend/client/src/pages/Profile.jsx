@@ -115,9 +115,9 @@ export default function Profile() {
     } finally {
       setUploadingProfilePic(false)
     }
-  }
+  }, [])
 
-  const handleFollow = async () => {
+  const handleFollow = useCallback(async () => {
     if (followLoading) return
     
     setFollowLoading(true)
@@ -140,7 +140,7 @@ export default function Profile() {
     } finally {
       setFollowLoading(false)
     }
-  }
+  }, [followLoading, isFollowing, data?.user?.id])
 
   if (loading) {
     return (
