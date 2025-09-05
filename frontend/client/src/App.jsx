@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate, Suspense, lazy } from 'react-router-dom'
+import { Routes, Route, Navigate, Suspense } from 'react-router-dom'
+import { lazy } from 'react'
 import LoadingSpinner from './components/LoadingSpinner.jsx'
 
 // Lazy load components for better performance
