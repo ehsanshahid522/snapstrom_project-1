@@ -432,9 +432,9 @@ export default function Feed() {
         toast.remove();
       }, 3000);
     };
-  }
+  }, [])
 
-  const deleteAllPosts = async () => {
+  const deleteAllPosts = useCallback(async () => {
     try {
       // Double confirmation for safety
       const confirmed = window.confirm(
@@ -466,9 +466,9 @@ export default function Feed() {
       console.error('Error deleting all posts:', error);
       alert('Failed to delete all posts. Please try again.');
     }
-  }
+  }, [fetchPosts])
 
-  const fixPostOwnership = async (id) => {
+  const fixPostOwnership = useCallback(async (id) => {
     try {
       console.log('🔧 Attempting to fix post ownership:', id);
       
@@ -484,9 +484,9 @@ export default function Feed() {
       console.error('Error fixing post ownership:', error);
       alert('Failed to fix post ownership. Please try again.');
     }
-  }
+  }, [fetchPosts])
 
-  const deletePost = async (id) => {
+  const deletePost = useCallback(async (id) => {
     try {
       console.log('🔍 Deleting post:', id);
       
@@ -538,9 +538,9 @@ export default function Feed() {
       // Clear loading state
       setInteractingPosts(prev => ({ ...prev, [`delete-${id}`]: false }));
     }
-  }
+  }, [fixPostOwnership])
 
-  const toggleFollow = async (userId, username) => {
+  const toggleFollow = useCallback(async (userId, username) => {
     try {
       // Ensure userId is a string
       const userIdString = typeof userId === 'object' ? userId._id || userId.id : userId;
@@ -565,16 +565,16 @@ export default function Feed() {
       console.error('Error toggling follow:', error)
       alert(`Failed to ${followingStatus[userId] ? 'unfollow' : 'follow'} ${username}. Please try again.`)
     }
-  }
+  }, [followingStatus])
 
-  const toggleComments = (postId) => {
+  const toggleComments = useCallback((postId) => {
     setExpandedComments(prev => ({
       ...prev,
       [postId]: !prev[postId]
     }));
-  }
+  }, [])
 
-  const getCurrentPosts = () => posts // Posts are already filtered based on active tab
+  const getCurrentPosts = useCallback(() => posts, [posts])
 
   if (loading) {
     return (
