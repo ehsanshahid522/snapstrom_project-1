@@ -26,49 +26,16 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages, scrollToBottom])
-
-  // Fetch conversations on component mount
-  useEffect(() => {
-    fetchConversations()
-  }, [])
-
-  // Handle user parameter from URL
-  useEffect(() => {
-    const userId = searchParams.get('user')
-    if (userId && conversations.length > 0) {
-      // Find existing conversation with this user
-      const existingConversation = conversations.find(conv => 
-        conv.participants.some(p => p.id === userId)
-      )
-      
-      if (existingConversation) {
-        // Open existing conversation
-        setSelectedConversation(existingConversation)
-        fetchMessages(existingConversation.id)
-      } else {
-        // Start new conversation with this user
-        startNewConversation({ id: userId })
-      }
+  // Fetch messages for selected conversation
+  const fetchMessages = useCallback(async (conversationId) => {
+    try {
+      const messages = await getMessages(conversationId)
+      setMessages(messages)
+    } catch (error) {
+      console.error('Error fetching messages:', error)
+      setMessages([])
     }
-  }, [searchParams, conversations, fetchMessages, startNewConversation])
-
-  // Handle search query changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchQuery.trim()) {
-        searchUsers(searchQuery)
-        setShowUserSearch(true)
-      } else {
-        setSearchResults([])
-        setShowUserSearch(false)
-      }
-    }, 300) // Debounce search
-
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery, searchUsers])
+  }, [getMessages, setMessages])
 
   // Fetch conversations from API
   const fetchConversations = useCallback(async () => {
@@ -116,22 +83,56 @@ export default function Chat() {
     }
   }, [startConversation, fetchMessages])
 
-  // Fetch messages for selected conversation
-  const fetchMessages = useCallback(async (conversationId) => {
-    try {
-      const messages = await getMessages(conversationId)
-      setMessages(messages)
-    } catch (error) {
-      console.error('Error fetching messages:', error)
-      setMessages([])
-    }
-  }, [getMessages, setMessages])
-
   // Handle conversation selection
   const handleSelectConversation = useCallback((conversation) => {
     setSelectedConversation(conversation)
     fetchMessages(conversation.id)
   }, [fetchMessages])
+
+  // Auto-scroll effect
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, scrollToBottom])
+
+  // Fetch conversations on component mount
+  useEffect(() => {
+    fetchConversations()
+  }, [fetchConversations])
+
+  // Handle user parameter from URL
+  useEffect(() => {
+    const userId = searchParams.get('user')
+    if (userId && conversations.length > 0) {
+      // Find existing conversation with this user
+      const existingConversation = conversations.find(conv => 
+        conv.participants.some(p => p.id === userId)
+      )
+      
+      if (existingConversation) {
+        // Open existing conversation
+        setSelectedConversation(existingConversation)
+        fetchMessages(existingConversation.id)
+      } else {
+        // Start new conversation with this user
+        startNewConversation({ id: userId })
+      }
+    }
+  }, [searchParams, conversations, fetchMessages, startNewConversation])
+
+  // Handle search query changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchUsers(searchQuery)
+        setShowUserSearch(true)
+      } else {
+        setSearchResults([])
+        setShowUserSearch(false)
+      }
+    }, 300) // Debounce search
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, searchUsers])
 
   // Send a new message
   const sendMessage = useCallback(async () => {
@@ -174,13 +175,10 @@ export default function Chat() {
 
       // Mark messages as read
       markAsRead(selectedConversation.id)
-
     } catch (error) {
       console.error('Error sending message:', error)
-      // Remove failed message from local state
-      setMessages(prev => prev.filter(msg => msg.status !== 'sending'))
     }
-  }, [newMessage, selectedConversation, currentUser, wsSendMessage, apiSendMessage, setMessages, markAsRead])
+  }, [newMessage, selectedConversation, wsSendMessage, apiSendMessage, currentUser, setMessages, markAsRead])
 
   // Handle Enter key press
   const handleKeyPress = useCallback((e) => {
@@ -365,30 +363,20 @@ export default function Chat() {
                           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                         )}
                       </div>
-
-                      {/* Content */}
+                      
+                      {/* Conversation Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-semibold text-gray-900 truncate">
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">
                             {partner.username}
                           </h3>
-                          {conversation.lastMessageTime && (
-                            <span className="text-xs text-gray-500">
-                              {formatMessageTime(conversation.lastMessageTime)}
-                            </span>
-                          )}
+                          <span className="text-xs text-gray-500">
+                            {formatMessageTime(conversation.lastMessageTime)}
+                          </span>
                         </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-600 truncate">
-                            {conversation.lastMessage || 'No messages yet'}
-                          </p>
-                          {conversation.unreadCount > 0 && (
-                            <span className="bg-pink-500 text-white text-xs px-2 py-1 rounded-full">
-                              {conversation.unreadCount}
-                            </span>
-                          )}
-                        </div>
+                        <p className="text-sm text-gray-500 truncate mt-1">
+                          {conversation.lastMessage || 'No messages yet'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -405,26 +393,15 @@ export default function Chat() {
               {/* Chat Header */}
               <div className="p-6 border-b border-gray-100 bg-white">
                 <div className="flex items-center space-x-3">
-                  <div className="relative">
-                    <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                      {getConversationPartner(selectedConversation).username.charAt(0).toUpperCase()}
-                    </div>
-                    {getConversationPartner(selectedConversation).isOnline && (
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                    )}
+                  <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                    {getConversationPartner(selectedConversation).username.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h2 className="font-semibold text-gray-900">
+                    <h2 className="text-lg font-semibold text-gray-900">
                       {getConversationPartner(selectedConversation).username}
                     </h2>
                     <p className="text-sm text-gray-500">
                       {getConversationPartner(selectedConversation).isOnline ? 'Online' : 'Offline'}
-                      {isConnected && (
-                        <span className="ml-2 inline-flex items-center">
-                          <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
-                          Connected
-                        </span>
-                      )}
                     </p>
                   </div>
                 </div>
@@ -432,110 +409,61 @@ export default function Chat() {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {messages.length === 0 ? (
-                  <div className="text-center text-gray-500 py-8">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                    </div>
-                    <p className="text-lg font-medium mb-2">Start the conversation!</p>
-                    <p className="text-sm">Send a message to begin chatting.</p>
-                  </div>
-                ) : (
-                  messages.map((message) => {
-                    const isOwn = message.senderUsername === currentUser
-                    const isSending = message.status === 'sending'
-                    
-                    return (
-                      <div
-                        key={message.id}
-                        className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                          isOwn 
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white' 
-                            : 'bg-white text-gray-900 border border-gray-200'
-                        } ${isSending ? 'opacity-70' : ''}`}>
-                          <p className="text-sm">{message.content}</p>
-                          <div className={`flex items-center justify-between mt-2 text-xs ${
-                            isOwn ? 'text-pink-100' : 'text-gray-500'
-                          }`}>
-                            <span>{formatMessageTime(message.timestamp)}</span>
-                            {isOwn && (
-                              <span>
-                                {isSending ? '⏳' : '✓'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })
-                )}
-                {typingUsers.length > 0 && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-2xl">
-                      <div className="flex items-center space-x-2">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                        </div>
-                        <span className="text-sm">
-                          {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
-                        </span>
-                      </div>
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.senderUsername === currentUser ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                        message.senderUsername === currentUser
+                          ? 'bg-pink-500 text-white'
+                          : 'bg-gray-200 text-gray-900'
+                      }`}
+                    >
+                      <p className="text-sm">{message.content}</p>
+                      <p className={`text-xs mt-1 ${
+                        message.senderUsername === currentUser ? 'text-pink-100' : 'text-gray-500'
+                      }`}>
+                        {formatMessageTime(message.timestamp)}
+                      </p>
                     </div>
                   </div>
-                )}
+                ))}
                 <div ref={messagesEndRef} />
               </div>
 
               {/* Message Input */}
               <div className="p-6 border-t border-gray-100 bg-white">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-1 relative">
-                    <textarea
-                      value={newMessage}
-                      onChange={(e) => {
-                        setNewMessage(e.target.value)
-                        handleTyping()
-                      }}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Type a message..."
-                      rows="1"
-                      className="w-full px-4 py-3 pr-12 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 resize-none"
-                      style={{ minHeight: '48px', maxHeight: '120px' }}
-                    />
-                    <button
-                      onClick={sendMessage}
-                      disabled={!newMessage.trim() || sendingMessage}
-                      className="absolute right-2 top-2 p-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:from-pink-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                    >
-                      {sendingMessage ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
+                <div className="flex space-x-3">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type a message..."
+                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim()}
+                    className="px-6 py-3 bg-pink-500 text-white rounded-xl hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Send
+                  </button>
                 </div>
               </div>
             </>
           ) : (
-            /* No conversation selected */
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center text-gray-500">
-                <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+                <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                   <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Select a conversation</h3>
-                <p className="text-sm">Choose a conversation from the sidebar to start chatting.</p>
+                <h3 className="text-xl font-medium mb-2">Select a conversation</h3>
+                <p className="text-sm">Choose a conversation from the sidebar to start chatting</p>
               </div>
             </div>
           )}
