@@ -116,7 +116,7 @@ export default function Feed() {
 
   useEffect(() => {
     fetchPosts()
-  }, []) // Re-fetch when activeTab changes
+  }, []) // Re-fetch posts on component mount
 
   const like = useCallback(async (id) => {
     try {
@@ -612,13 +612,10 @@ export default function Feed() {
             </svg>
           </div>
           <h3 className="text-3xl font-bold text-slate-800 mb-3">
-            {activeTab === 'following' ? 'No Following Posts Yet' : 'No Posts Yet'}
+            {'No Posts Yet'}
           </h3>
           <p className="text-slate-600 mb-8 text-lg">
-            {activeTab === 'following' 
-              ? 'Follow some users to see their posts here! 🌟' 
-              : 'Be the first to share a photo! ✨'
-            }
+            {'Be the first to share a photo! ✨'}
           </p>
           <div className="space-y-4">
             <a href="/upload" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:via-purple-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-2xl">
@@ -627,14 +624,6 @@ export default function Feed() {
               </svg>
               Share Your First Photo 🚀
             </a>
-            {activeTab === 'following' && (
-              <button 
-                onClick={() => setActiveTab('forYou')}
-                className="block w-full px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 shadow-2xl"
-              >
-                🌍 Explore All Posts
-              </button>
-            )}
           </div>
         </div>
       </div>

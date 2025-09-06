@@ -366,8 +366,24 @@ app.get('/api/images/:fileId', async (req, res) => {
   }
 });
 
+// AGGRESSIVE OPTIONS HANDLER FOR FEED
+app.options('/api/feed', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
 // Get feed posts (For You - all recent posts)
 app.get('/api/feed', async (req, res) => {
+  // AGGRESSIVE CORS HEADERS FOR FEED
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  
   try {
     // Ensure DB connection with retry logic
     if (mongoose.connection.readyState !== 1) {
