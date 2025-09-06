@@ -21,6 +21,9 @@
     },
     "api/data-check-commonjs.js": {
       "maxDuration": 30
+    },
+    "api/investigate-data.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
@@ -35,6 +38,10 @@
     {
       "source": "/api/data-check",
       "destination": "/api/data-check-commonjs.js"
+    },
+    {
+      "source": "/api/investigate",
+      "destination": "/api/investigate-data.js"
     },
     {
       "source": "/api/auth/login",
