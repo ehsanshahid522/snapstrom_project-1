@@ -1,13 +1,33 @@
-import dotenv from 'dotenv';
-import express from 'express';
-import cors from 'cors';
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+const dotenv = require('dotenv');
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 dotenv.config();
 
 const app = express();
+
+// ULTRA AGGRESSIVE CORS SETUP - MUST BE FIRST
+app.use((req, res, next) => {
+  console.log('🚨 LOGIN ULTRA CORS: Processing request:', req.method, req.path);
+  
+  // Set CORS headers for ALL requests
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  
+  // Handle OPTIONS requests immediately
+  if (req.method === 'OPTIONS') {
+    console.log('🚨 LOGIN ULTRA CORS: Handling OPTIONS request');
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
 // RADICAL CORS SETUP
 app.use(cors({
@@ -172,4 +192,4 @@ app.use((error, req, res, next) => {
   }
 });
 
-export default app;
+module.exports = app;

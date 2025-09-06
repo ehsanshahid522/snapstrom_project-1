@@ -3,6 +3,33 @@
   "outputDirectory": "frontend/client/dist",
   "framework": "vite",
   "installCommand": "npm install",
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        },
+        {
+          "key": "Access-Control-Max-Age",
+          "value": "86400"
+        }
+      ]
+    }
+  ],
   "functions": {
     "api/auth/login.js": {
       "maxDuration": 30
@@ -36,6 +63,9 @@
     },
     "api/cleanup-posts.js": {
       "maxDuration": 30
+    },
+    "api/cors-proxy.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
@@ -86,6 +116,10 @@
     {
       "source": "/api/chat/(.*)",
       "destination": "/api/chat.js"
+    },
+    {
+      "source": "/api/cors-proxy/(.*)",
+      "destination": "/api/cors-proxy.js"
     },
     {
       "source": "/(.*)",

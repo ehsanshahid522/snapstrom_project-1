@@ -8,6 +8,26 @@ dotenv.config();
 
 const app = express();
 
+// ULTRA AGGRESSIVE CORS SETUP - MUST BE FIRST
+app.use((req, res, next) => {
+  console.log('🚨 ULTRA CORS: Processing request:', req.method, req.path);
+  
+  // Set CORS headers for ALL requests
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  
+  // Handle OPTIONS requests immediately
+  if (req.method === 'OPTIONS') {
+    console.log('🚨 ULTRA CORS: Handling OPTIONS request');
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
 // RADICAL CORS SETUP
 app.use(cors({
   origin: true,
