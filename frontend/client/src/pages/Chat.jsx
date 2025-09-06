@@ -357,7 +357,7 @@ export default function Chat() {
                   </div>
                 )
               })
-            )}
+            ) : null}
           </div>
         </div>
 
