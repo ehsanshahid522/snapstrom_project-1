@@ -124,7 +124,7 @@ export default function Profile() {
     setFollowLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/auth/${isFollowing ? 'unfollow' : 'follow'}/${data.user.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/follow/${data.user.id}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

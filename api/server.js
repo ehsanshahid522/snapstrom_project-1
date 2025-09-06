@@ -1987,9 +1987,147 @@ export default app;
 
 // Start server if running directly (not on Vercel)
 if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📱 API available at http://localhost:${PORT}`);
-  });
+// Chat routes (simplified implementation)
+app.get('/api/chat/conversations', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+
+    // For now, return empty conversations array
+    res.json({ conversations: [] });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching conversations', error: error.message });
+  }
+});
+
+app.get('/api/chat/messages/:conversationId', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // For now, return empty messages array
+    res.json({ messages: [] });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching messages', error: error.message });
+  }
+});
+
+app.post('/api/chat/send', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const { conversationId, content, type } = req.body;
+    
+    // For now, return success
+    res.json({ 
+      success: true, 
+      message: { 
+        id: Date.now(), 
+        content, 
+        type: type || 'text',
+        timestamp: new Date().toISOString()
+      } 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error sending message', error: error.message });
+  }
+});
+
+app.post('/api/chat/start-conversation', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+    const { username } = req.body;
+
+    // For now, return a mock conversation
+    res.json({ 
+      conversationId: `conv_${Date.now()}`,
+      participants: [
+        { username: decoded.username, isOnline: true },
+        { username, isOnline: false }
+      ]
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error starting conversation', error: error.message });
+  }
+});
+
+app.patch('/api/chat/mark-read/:conversationId', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // For now, return success
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: 'Error marking as read', error: error.message });
+  }
+});
+
+app.get('/api/chat/online-users', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // For now, return empty online users array
+    res.json({ onlineUsers: [] });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching online users', error: error.message });
+  }
+});
+
+// User search endpoint for chat
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const { q } = req.query;
+
+    if (!q || q.trim().length < 2) {
+      return res.json({ users: [] });
+    }
+
+    // Search for users by username
+    const users = await User.find({
+      username: { $regex: q, $options: 'i' },
+      _id: { $ne: decoded.userId }
+    }).select('username').limit(10);
+
+    res.json({ users: users.map(user => ({ username: user.username })) });
+  } catch (error) {
+    res.status(500).json({ message: 'Error searching users', error: error.message });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📱 API available at http://localhost:${PORT}`);
+});
 }
