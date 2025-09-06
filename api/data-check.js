@@ -103,18 +103,33 @@ const PostSchema = new mongoose.Schema({
   }
 });
 
-const User = mongoose.models.User || mongoose.model('User', UserSchema);
-const Post = mongoose.models.Post || mongoose.model('Post', PostSchema);
+// Initialize models safely
+let User, Post;
+try {
+  User = mongoose.models.User || mongoose.model('User', UserSchema);
+  Post = mongoose.models.Post || mongoose.model('Post', PostSchema);
+} catch (error) {
+  console.error('❌ Model initialization error:', error);
+}
 
-// Connect to MongoDB
+// Connect to MongoDB with better error handling
 const connectDB = async () => {
   try {
+    if (!process.env.MONGO_URI) {
+      throw new Error('MONGO_URI environment variable not set');
+    }
+    
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGO_URI);
+      await mongoose.connect(process.env.MONGO_URI, {
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000,
+      });
       console.log('✅ MongoDB connected for data check');
     }
+    return true;
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
+    return false;
   }
 };
 
@@ -139,40 +154,71 @@ app.get('/api/data-check', async (req, res) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   
   try {
-    await connectDB();
+    // Check environment variables first
+    const envCheck = {
+      MONGO_URI: !!process.env.MONGO_URI,
+      JWT_SECRET: !!process.env.JWT_SECRET,
+      NODE_ENV: process.env.NODE_ENV || 'development'
+    };
     
-    console.log('🔍 Checking database data...');
+    console.log('🔍 Environment check:', envCheck);
     
     if (!process.env.MONGO_URI) {
-      console.error('❌ MONGO_URI not set');
-      return res.status(500).json({ message: 'Database not configured' });
+      return res.status(500).json({ 
+        message: 'Database not configured - MONGO_URI missing',
+        environment: envCheck,
+        timestamp: new Date().toISOString()
+      });
     }
 
-    // Check database connection
+    // Try to connect to database
+    const connected = await connectDB();
+    if (!connected) {
+      return res.status(503).json({ 
+        message: 'Database connection failed',
+        environment: envCheck,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Check database connection status
     const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
     
-    // Count users
-    const userCount = await User.countDocuments();
+    // Try to count documents with error handling
+    let userCount = 0;
+    let postCount = 0;
+    let recentPosts = [];
+    let recentUsers = [];
     
-    // Count posts
-    const postCount = await Post.countDocuments();
-    
-    // Get recent posts (last 10)
-    const recentPosts = await Post.find()
-      .populate('userId', 'username profilePicture')
-      .sort({ createdAt: -1 })
-      .limit(10);
-    
-    // Get recent users (last 5)
-    const recentUsers = await User.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('username email createdAt');
+    try {
+      userCount = await User.countDocuments();
+      postCount = await Post.countDocuments();
+      
+      recentPosts = await Post.find()
+        .populate('userId', 'username profilePicture')
+        .sort({ createdAt: -1 })
+        .limit(10);
+      
+      recentUsers = await User.find()
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('username email createdAt');
+        
+    } catch (dbError) {
+      console.error('❌ Database query error:', dbError);
+      return res.status(500).json({
+        message: 'Database query failed',
+        error: dbError.message,
+        environment: envCheck,
+        timestamp: new Date().toISOString()
+      });
+    }
 
     console.log(`🔍 Found ${userCount} users and ${postCount} posts`);
 
     res.json({
-      message: 'Data check completed',
+      message: 'Data check completed successfully',
+      environment: envCheck,
       database: {
         status: dbStatus,
         userCount,
@@ -182,10 +228,10 @@ app.get('/api/data-check', async (req, res) => {
         posts: recentPosts.map(post => ({
           id: post._id,
           username: post.username,
-          content: post.content.substring(0, 100) + '...',
+          content: post.content ? post.content.substring(0, 100) + '...' : 'No content',
           createdAt: post.createdAt,
-          likes: post.likes.length,
-          comments: post.comments.length
+          likes: post.likes ? post.likes.length : 0,
+          comments: post.comments ? post.comments.length : 0
         })),
         users: recentUsers.map(user => ({
           id: user._id,
@@ -201,7 +247,9 @@ app.get('/api/data-check', async (req, res) => {
     console.error('🚨 Data check error:', error);
     res.status(500).json({ 
       message: 'Data check failed', 
-      error: error.message 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -218,7 +266,9 @@ app.use((error, req, res, next) => {
   if (!res.headersSent) {
     res.status(500).json({ 
       message: 'Internal server error', 
-      error: error.message 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      timestamp: new Date().toISOString()
     });
   }
 });

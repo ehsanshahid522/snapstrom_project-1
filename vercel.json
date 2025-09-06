@@ -65,6 +65,10 @@
       "destination": "/api/data-check.js"
     },
     {
+      "source": "/api/health-check",
+      "destination": "/api/health-check.js"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/server.js"
     },
@@ -84,6 +88,9 @@
       "maxDuration": 30
     },
     "api/data-check.js": {
+      "maxDuration": 30
+    },
+    "api/health-check.js": {
       "maxDuration": 30
     },
     "api/server.js": {
