@@ -1,0 +1,13 @@
+# Ignore MVC structure files from Vercel function detection
+api/models/
+api/controllers/
+api/routes/
+api/middleware/
+api/services/
+api/utils/
+api/test-backend.js
+api/README.md
+api/server-new.js
+
+# Only use the main server.js file
+!api/server.js
