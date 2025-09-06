@@ -49,6 +49,14 @@
   ],
   "rewrites": [
     {
+      "source": "/api/auth/login",
+      "destination": "/api/auth/login.js"
+    },
+    {
+      "source": "/api/auth/register",
+      "destination": "/api/auth/register.js"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/server.js"
     },
@@ -58,6 +66,12 @@
     }
   ],
   "functions": {
+    "api/auth/login.js": {
+      "maxDuration": 30
+    },
+    "api/auth/register.js": {
+      "maxDuration": 30
+    },
     "api/server.js": {
       "maxDuration": 30
     }
