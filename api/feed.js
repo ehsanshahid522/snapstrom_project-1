@@ -10,7 +10,7 @@ const app = express();
 
 // ULTRA AGGRESSIVE CORS SETUP - MUST BE FIRST
 app.use((req, res, next) => {
-  console.log('🚨 ULTRA CORS: Processing request:', req.method, req.path);
+  console.log('🚨 FEED ULTRA CORS: Processing request:', req.method, req.path);
   
   // Set CORS headers for ALL requests
   res.header('Access-Control-Allow-Origin', '*');
@@ -19,10 +19,10 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Max-Age', '86400');
   
-  // Handle OPTIONS requests immediately
+  // Handle OPTIONS requests immediately with 200 status
   if (req.method === 'OPTIONS') {
-    console.log('🚨 ULTRA CORS: Handling OPTIONS request');
-    return res.status(200).end();
+    console.log('🚨 FEED ULTRA CORS: Handling OPTIONS request with 200 status');
+    return res.status(200).json({ message: 'CORS preflight successful' });
   }
   
   next();
@@ -181,7 +181,7 @@ app.options('/api/feed', (req, res) => {
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Max-Age', '86400');
-  res.status(200).end();
+  res.status(200).json({ message: 'CORS preflight successful', method: 'OPTIONS' });
 });
 
 // SPECIFIC OPTIONS HANDLER FOR FEED HEALTH
@@ -192,7 +192,7 @@ app.options('/api/feed/health', (req, res) => {
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Max-Age', '86400');
-  res.status(200).end();
+  res.status(200).json({ message: 'CORS preflight successful', method: 'OPTIONS' });
 });
 
 // RADICAL OPTIONS HANDLER FOR ALL OTHER ROUTES
@@ -203,7 +203,7 @@ app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Max-Age', '86400');
-  res.status(200).end();
+  res.status(200).json({ message: 'CORS preflight successful', method: 'OPTIONS' });
 });
 
 // HEALTH CHECK ENDPOINT (no auth required)
