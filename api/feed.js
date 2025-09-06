@@ -21,6 +21,16 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// FORCE CORS HEADERS ON ALL REQUESTS
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  next();
+});
+
 // User Schema
 const UserSchema = new mongoose.Schema({
   username: { 
@@ -121,6 +131,11 @@ const connectDB = async () => {
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
+  // Skip authentication for OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+  
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -137,15 +152,49 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// RADICAL OPTIONS HANDLER
-app.options('*', (req, res) => {
+// SPECIFIC OPTIONS HANDLER FOR FEED
+app.options('/api/feed', (req, res) => {
   console.log('🚨 FEED OPTIONS handler for:', req.path);
+  console.log('🚨 FEED OPTIONS headers:', req.headers);
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Max-Age', '86400');
   res.status(200).end();
+});
+
+// SPECIFIC OPTIONS HANDLER FOR FEED HEALTH
+app.options('/api/feed/health', (req, res) => {
+  console.log('🚨 FEED HEALTH OPTIONS handler for:', req.path);
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
+// RADICAL OPTIONS HANDLER FOR ALL OTHER ROUTES
+app.options('*', (req, res) => {
+  console.log('🚨 GENERAL OPTIONS handler for:', req.path);
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
+// HEALTH CHECK ENDPOINT (no auth required)
+app.get('/api/feed/health', (req, res) => {
+  console.log('🏥 FEED HEALTH CHECK');
+  res.json({
+    status: 'ok',
+    message: 'Feed endpoint is working',
+    timestamp: new Date().toISOString(),
+    cors: 'enabled'
+  });
 });
 
 // FEED ENDPOINT
