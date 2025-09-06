@@ -246,6 +246,51 @@ export const toggleFollow = async (req, res) => {
   }
 };
 
+// Search users by username
+export const searchUsers = async (req, res) => {
+  try {
+    const { q } = req.query;
+    const currentUserId = req.user._id;
+
+    if (!q || q.trim().length === 0) {
+      return res.json({
+        success: true,
+        users: []
+      });
+    }
+
+    // Search users by username (case-insensitive)
+    const users = await User.find({
+      username: { $regex: q, $options: 'i' },
+      _id: { $ne: currentUserId } // Exclude current user
+    })
+    .select('username profilePicture bio followers following isOnline')
+    .limit(20);
+
+    // Format response
+    const formattedUsers = users.map(user => ({
+      id: user._id,
+      username: user.username,
+      profilePicture: user.profilePicture,
+      bio: user.bio,
+      followersCount: user.followers.length,
+      followingCount: user.following.length,
+      isOnline: user.isOnline
+    }));
+
+    res.json({
+      success: true,
+      users: formattedUsers
+    });
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to search users'
+    });
+  }
+};
+
 // Logout user
 export const logout = async (req, res) => {
   try {

@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useChatAPI, useRealTimeChat, useTypingIndicator } from '../hooks/useChat.js'
+import { api } from '../lib/api.js'
 
 export default function Chat() {
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showUserSearch, setShowUserSearch] = useState(false)
   const [onlineUsers, setOnlineUsers] = useState([])
   const messagesEndRef = useRef(null)
   const currentUser = useMemo(() => localStorage.getItem('username'), [])
@@ -29,6 +33,21 @@ export default function Chat() {
     fetchConversations()
   }, [])
 
+  // Handle search query changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchUsers(searchQuery)
+        setShowUserSearch(true)
+      } else {
+        setSearchResults([])
+        setShowUserSearch(false)
+      }
+    }, 300) // Debounce search
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, searchUsers])
+
   // Fetch conversations from API
   const fetchConversations = useCallback(async () => {
     try {
@@ -39,6 +58,41 @@ export default function Chat() {
       setConversations([])
     }
   }, [getConversations])
+
+  // Search users function
+  const searchUsers = useCallback(async (query) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const response = await api.get(`/users/search?q=${encodeURIComponent(query)}`)
+      if (response.success) {
+        setSearchResults(response.users)
+      }
+    } catch (error) {
+      console.error('Error searching users:', error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }, [])
+
+  // Start new conversation with user
+  const startNewConversation = useCallback(async (user) => {
+    try {
+      const conversation = await startConversation(user.id)
+      setSelectedConversation(conversation)
+      setSearchQuery('')
+      setSearchResults([])
+      setShowUserSearch(false)
+      fetchMessages(conversation.id)
+    } catch (error) {
+      console.error('Error starting conversation:', error)
+    }
+  }, [startConversation, fetchMessages])
 
   // Fetch messages for selected conversation
   const fetchMessages = useCallback(async (conversationId) => {
@@ -193,7 +247,7 @@ export default function Chat() {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search conversations..."
+                placeholder="Search users or conversations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200"
@@ -206,7 +260,80 @@ export default function Chat() {
 
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto">
-            {filteredConversations.length === 0 ? (
+            {showUserSearch ? (
+              // User Search Results
+              <div>
+                {isSearching ? (
+                  <div className="p-6 text-center">
+                    <div className="w-8 h-8 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full mx-auto mb-4 animate-spin"></div>
+                    <p className="text-gray-600">Searching users...</p>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div>
+                    <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
+                      <h3 className="text-sm font-medium text-gray-700">Search Results</h3>
+                    </div>
+                    {searchResults.map((user) => (
+                      <div
+                        key={user.id}
+                        onClick={() => startNewConversation(user)}
+                        className="p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50"
+                      >
+                        <div className="flex items-center space-x-3">
+                          {/* Avatar */}
+                          <div className="relative">
+                            <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                              {user.username.charAt(0).toUpperCase()}
+                            </div>
+                            {user.isOnline && (
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                            )}
+                          </div>
+                          
+                          {/* User Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2">
+                              <h3 className="text-sm font-semibold text-gray-900 truncate">
+                                {user.username}
+                              </h3>
+                              {user.isOnline && (
+                                <span className="text-xs text-green-600 font-medium">Online</span>
+                              )}
+                            </div>
+                            {user.bio && (
+                              <p className="text-xs text-gray-500 truncate mt-1">{user.bio}</p>
+                            )}
+                            <div className="flex items-center space-x-4 mt-1">
+                              <span className="text-xs text-gray-400">
+                                {user.followersCount} followers
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {user.followingCount} following
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Start Chat Button */}
+                          <button className="px-3 py-1 bg-pink-500 text-white text-xs font-medium rounded-full hover:bg-pink-600 transition-colors">
+                            Chat
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-gray-500">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-lg font-medium mb-2">No users found</p>
+                    <p className="text-sm">Try searching with a different username</p>
+                  </div>
+                )}
+              </div>
+            ) : filteredConversations.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
                 <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
