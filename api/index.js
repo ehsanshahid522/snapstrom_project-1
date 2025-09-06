@@ -16,7 +16,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
+    res.status(200).json({ message: 'OK' });
     return;
   }
   
@@ -88,6 +88,15 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working', timestamp: new Date().toISOString() });
 });
 
+// OPTIONS handler for login
+app.options('/api/auth/login', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).json({ message: 'OK' });
+});
+
 // Login endpoint
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -123,6 +132,15 @@ app.post('/api/auth/login', async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// OPTIONS handler for register
+app.options('/api/auth/register', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).json({ message: 'OK' });
 });
 
 // Register endpoint
@@ -168,6 +186,15 @@ app.post('/api/auth/register', async (req, res) => {
     console.error('Register error:', error);
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// OPTIONS handler for feed
+app.options('/api/feed', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).json({ message: 'OK' });
 });
 
 // Feed endpoint
