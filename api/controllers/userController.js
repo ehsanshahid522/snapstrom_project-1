@@ -246,6 +246,46 @@ export const toggleFollow = async (req, res) => {
   }
 };
 
+// Search users
+export const searchUsers = async (req, res) => {
+  try {
+    const { q } = req.query;
+    const currentUserId = req.user._id;
+
+    if (!q || q.trim().length < 2) {
+      return res.json({
+        success: true,
+        users: []
+      });
+    }
+
+    const users = await User.find({
+      username: { $regex: q, $options: 'i' },
+      _id: { $ne: currentUserId }
+    })
+    .select('username profilePicture isOnline lastSeen')
+    .limit(10)
+    .sort({ isOnline: -1, lastSeen: -1 });
+
+    res.json({
+      success: true,
+      users: users.map(user => ({
+        id: user._id,
+        username: user.username,
+        profilePicture: user.profilePicture,
+        isOnline: user.isOnline,
+        lastSeen: user.lastSeen
+      }))
+    });
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to search users'
+    });
+  }
+};
+
 // Logout user
 export const logout = async (req, res) => {
   try {

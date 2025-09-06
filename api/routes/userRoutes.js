@@ -5,6 +5,7 @@ import {
   getProfile,
   updateProfile,
   toggleFollow,
+  searchUsers,
   logout
 } from '../controllers/userController.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -21,6 +22,7 @@ router.use(authenticateToken);
 router.get('/profile/:userId?', getProfile);
 router.put('/profile', updateProfile);
 router.post('/follow/:userId', toggleFollow);
+router.get('/search', searchUsers);
 router.post('/logout', logout);
 
 export default router;
