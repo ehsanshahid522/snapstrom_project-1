@@ -1,8 +1,8 @@
+// CommonJS version for Vercel - User Search Function
 const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 dotenv.config();
@@ -56,23 +56,47 @@ const UserSchema = new mongoose.Schema({
   }
 });
 
+// Ensure models are not re-registered
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
 
 // Connect to MongoDB
 const connectDB = async () => {
   try {
     if (mongoose.connection.readyState === 0) {
+      if (!process.env.MONGO_URI) {
+        console.error('❌ MONGO_URI environment variable is not set.');
+        throw new Error('Database connection string not configured.');
+      }
       await mongoose.connect(process.env.MONGO_URI);
-      console.log('✅ MongoDB connected for register');
+      console.log('✅ MongoDB connected for user search');
     }
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
+    throw new Error(`Database connection failed: ${error.message}`);
   }
+};
+
+// Auth middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Access token required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret', (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+    req.user = user;
+    next();
+  });
 };
 
 // RADICAL OPTIONS HANDLER
 app.options('*', (req, res) => {
-  console.log('🚨 REGISTER OPTIONS handler for:', req.path);
+  console.log('🚨 USER SEARCH OPTIONS handler for:', req.path);
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -81,9 +105,9 @@ app.options('*', (req, res) => {
   res.status(200).end();
 });
 
-// REGISTER ENDPOINT
-app.post('/api/auth/register', async (req, res) => {
-  console.log('📝 REGISTER request received');
+// SEARCH USERS ENDPOINT
+app.get('/api/users/search', authenticateToken, async (req, res) => {
+  console.log('🔍 USER SEARCH request:', req.query.q);
   
   // FORCE CORS HEADERS
   res.header('Access-Control-Allow-Origin', '*');
@@ -94,88 +118,44 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     await connectDB();
     
-    const { username, email, password } = req.body;
+    const { q } = req.query;
+    const currentUserId = req.user.userId;
     
-    console.log('📝 Registration attempt:', { username, email, hasPassword: !!password });
-    
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'Username, email, and password are required' });
+    if (!q || q.trim().length < 2) {
+      return res.json({ users: [] });
     }
     
-    if (!process.env.MONGO_URI) {
-      console.error('❌ MONGO_URI not set');
-      return res.status(500).json({ message: 'Database not configured' });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ 
-      $or: [{ email }, { username }] 
+    // Search users by username (case insensitive)
+    const users = await User.find({
+      username: { $regex: q.trim(), $options: 'i' },
+      _id: { $ne: currentUserId } // Exclude current user
+    })
+    .select('username profilePicture followers following createdAt')
+    .limit(10);
+    
+    res.json({
+      users: users.map(user => ({
+        id: user._id,
+        username: user.username,
+        profilePicture: user.profilePicture,
+        followersCount: user.followers.length,
+        followingCount: user.following.length,
+        createdAt: user.createdAt
+      }))
     });
     
-    if (existingUser) {
-      if (existingUser.email === email) {
-        return res.status(400).json({ message: 'Email already registered' });
-      } else {
-        return res.status(400).json({ message: 'Username already taken' });
-      }
-    }
-
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create new user
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-      profilePicture: '',
-      followers: [],
-      following: []
-    });
-
-    await newUser.save();
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: newUser._id, email: newUser.email },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: '7d' }
-    );
-
-    console.log('✅ Registration successful for:', email);
-    
-    res.status(201).json({
-      message: 'Registration successful',
-      token,
-      user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-        profilePicture: newUser.profilePicture,
-        followers: newUser.followers.length,
-        following: newUser.following.length
-      }
-    });
-
   } catch (error) {
-    console.error('🚨 Registration error:', error);
+    console.error('🚨 User search error:', error);
     res.status(500).json({ 
-      message: 'Registration failed', 
+      message: 'Failed to search users', 
       error: error.message 
     });
   }
 });
 
-// Health check
-app.get('/api/auth/register', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.json({ message: 'Register endpoint is working', timestamp: new Date().toISOString() });
-});
-
 // Global error handler
 app.use((error, req, res, next) => {
-  console.error('🚨 REGISTER Global error handler:', error);
+  console.error('🚨 USER SEARCH Global error handler:', error);
   
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -183,11 +163,13 @@ app.use((error, req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   
   if (!res.headersSent) {
-    res.status(500).json({ 
-      message: 'Internal server error', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Internal server error from user search',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      timestamp: new Date().toISOString()
     });
   }
 });
 
-export default app;
+module.exports = app;

@@ -1,3 +1,4 @@
+// CommonJS version for Vercel - Profile Function
 const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
@@ -104,6 +105,7 @@ const PostSchema = new mongoose.Schema({
   }
 });
 
+// Ensure models are not re-registered
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
 const Post = mongoose.models.Post || mongoose.model('Post', PostSchema);
 
@@ -111,11 +113,16 @@ const Post = mongoose.models.Post || mongoose.model('Post', PostSchema);
 const connectDB = async () => {
   try {
     if (mongoose.connection.readyState === 0) {
+      if (!process.env.MONGO_URI) {
+        console.error('❌ MONGO_URI environment variable is not set.');
+        throw new Error('Database connection string not configured.');
+      }
       await mongoose.connect(process.env.MONGO_URI);
-      console.log('✅ MongoDB connected for feed');
+      console.log('✅ MongoDB connected for profile');
     }
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
+    throw new Error(`Database connection failed: ${error.message}`);
   }
 };
 
@@ -139,7 +146,7 @@ const authenticateToken = (req, res, next) => {
 
 // RADICAL OPTIONS HANDLER
 app.options('*', (req, res) => {
-  console.log('🚨 FEED OPTIONS handler for:', req.path);
+  console.log('🚨 PROFILE OPTIONS handler for:', req.path);
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -148,9 +155,9 @@ app.options('*', (req, res) => {
   res.status(200).end();
 });
 
-// FEED ENDPOINT
-app.get('/api/feed', authenticateToken, async (req, res) => {
-  console.log('📱 FEED request received');
+// GET PROFILE ENDPOINT
+app.get('/api/profile/:username', authenticateToken, async (req, res) => {
+  console.log('👤 PROFILE request for:', req.params.username);
   
   // FORCE CORS HEADERS
   res.header('Access-Control-Allow-Origin', '*');
@@ -161,64 +168,121 @@ app.get('/api/feed', authenticateToken, async (req, res) => {
   try {
     await connectDB();
     
-    console.log('📱 Fetching feed for user:', req.user.userId);
+    const { username } = req.params;
+    const currentUserId = req.user.userId;
     
-    if (!process.env.MONGO_URI) {
-      console.error('❌ MONGO_URI not set');
-      return res.status(500).json({ message: 'Database not configured' });
+    // Find user by username
+    const user = await User.findOne({ username }).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
-
-    // Get all public posts, sorted by creation date (newest first)
-    const posts = await Post.find({ isPrivate: false })
+    
+    // Get user's posts
+    const posts = await Post.find({ userId: user._id })
       .populate('userId', 'username profilePicture')
-      .sort({ createdAt: -1 })
-      .limit(50);
-
-    console.log(`📱 Found ${posts.length} posts for feed`);
-
-    // Format posts for frontend
-    const formattedPosts = posts.map(post => ({
-      id: post._id,
-      userId: post.userId._id,
-      username: post.username,
-      content: post.content,
-      imageUrl: post.imageUrl,
-      likes: post.likes.length,
-      comments: post.comments.length,
-      shares: post.shares,
-      isPrivate: post.isPrivate,
-      createdAt: post.createdAt,
-      userProfilePicture: post.userId?.profilePicture || '',
-      isLiked: post.likes.includes(req.user.userId),
-      commentsList: post.comments.map(comment => ({
-        id: comment._id,
-        userId: comment.userId,
-        username: comment.username,
-        content: comment.content,
-        createdAt: comment.createdAt
-      }))
-    }));
-
-    res.json(formattedPosts);
-
+      .sort({ createdAt: -1 });
+    
+    // Check if current user is following this user
+    const isFollowing = user.followers.includes(currentUserId);
+    
+    res.json({
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        followersCount: user.followers.length,
+        followingCount: user.following.length,
+        followers: user.followers,
+        following: user.following,
+        createdAt: user.createdAt
+      },
+      posts: posts.map(post => ({
+        id: post._id,
+        userId: post.userId._id,
+        username: post.username,
+        content: post.content,
+        imageUrl: post.imageUrl,
+        likes: post.likes,
+        comments: post.comments,
+        shares: post.shares,
+        isPrivate: post.isPrivate,
+        createdAt: post.createdAt,
+        __liked: post.likes.includes(currentUserId),
+        __likesCount: post.likes.length
+      })),
+      isFollowing
+    });
+    
   } catch (error) {
-    console.error('🚨 Feed error:', error);
+    console.error('🚨 Profile error:', error);
     res.status(500).json({ 
-      message: 'Failed to fetch feed', 
+      message: 'Failed to fetch profile', 
       error: error.message 
     });
   }
 });
 
-// Health check
-app.get('/api/feed', (req, res) => {
+// FOLLOW/UNFOLLOW ENDPOINT
+app.post('/api/follow/:userId', authenticateToken, async (req, res) => {
+  console.log('👥 FOLLOW request for:', req.params.userId);
+  
+  // FORCE CORS HEADERS
   res.header('Access-Control-Allow-Origin', '*');
-  res.json({ message: 'Feed endpoint is working', timestamp: new Date().toISOString() });
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  
+  try {
+    await connectDB();
+    
+    const { userId } = req.params;
+    const currentUserId = req.user.userId;
+    
+    if (userId === currentUserId) {
+      return res.status(400).json({ message: 'Cannot follow yourself' });
+    }
+    
+    const userToFollow = await User.findById(userId);
+    const currentUser = await User.findById(currentUserId);
+    
+    if (!userToFollow || !currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const isFollowing = userToFollow.followers.includes(currentUserId);
+    
+    if (isFollowing) {
+      // Unfollow
+      userToFollow.followers.pull(currentUserId);
+      currentUser.following.pull(userId);
+    } else {
+      // Follow
+      userToFollow.followers.push(currentUserId);
+      currentUser.following.push(userId);
+    }
+    
+    await userToFollow.save();
+    await currentUser.save();
+    
+    res.json({
+      message: isFollowing ? 'Unfollowed successfully' : 'Followed successfully',
+      isFollowing: !isFollowing,
+      followersCount: userToFollow.followers.length
+    });
+    
+  } catch (error) {
+    console.error('🚨 Follow error:', error);
+    res.status(500).json({ 
+      message: 'Failed to follow/unfollow user', 
+      error: error.message 
+    });
+  }
 });
 
 // Global error handler
 app.use((error, req, res, next) => {
-  console.error('🚨 FEED Global error handler:', error);
+  console.error('🚨 PROFILE Global error handler:', error);
   
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -226,11 +290,13 @@ app.use((error, req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   
   if (!res.headersSent) {
-    res.status(500).json({ 
-      message: 'Internal server error', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Internal server error from profile',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      timestamp: new Date().toISOString()
     });
   }
 });
 
-export default app;
+module.exports = app;

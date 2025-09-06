@@ -1,3 +1,4 @@
+// CommonJS version for Vercel - Like Function
 const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
@@ -20,40 +21,6 @@ app.use(cors({
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// User Schema
-const UserSchema = new mongoose.Schema({
-  username: { 
-    type: String, 
-    required: true, 
-    unique: true
-  },
-  email: { 
-    type: String, 
-    required: true, 
-    unique: true
-  },
-  password: { 
-    type: String, 
-    required: true 
-  },
-  profilePicture: { 
-    type: String, 
-    default: '' 
-  },
-  followers: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
-  }],
-  following: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
-  }],
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
-  }
-});
 
 // Post Schema
 const PostSchema = new mongoose.Schema({
@@ -104,18 +71,23 @@ const PostSchema = new mongoose.Schema({
   }
 });
 
-const User = mongoose.models.User || mongoose.model('User', UserSchema);
+// Ensure models are not re-registered
 const Post = mongoose.models.Post || mongoose.model('Post', PostSchema);
 
 // Connect to MongoDB
 const connectDB = async () => {
   try {
     if (mongoose.connection.readyState === 0) {
+      if (!process.env.MONGO_URI) {
+        console.error('❌ MONGO_URI environment variable is not set.');
+        throw new Error('Database connection string not configured.');
+      }
       await mongoose.connect(process.env.MONGO_URI);
-      console.log('✅ MongoDB connected for feed');
+      console.log('✅ MongoDB connected for like');
     }
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
+    throw new Error(`Database connection failed: ${error.message}`);
   }
 };
 
@@ -139,7 +111,7 @@ const authenticateToken = (req, res, next) => {
 
 // RADICAL OPTIONS HANDLER
 app.options('*', (req, res) => {
-  console.log('🚨 FEED OPTIONS handler for:', req.path);
+  console.log('🚨 LIKE OPTIONS handler for:', req.path);
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -148,9 +120,9 @@ app.options('*', (req, res) => {
   res.status(200).end();
 });
 
-// FEED ENDPOINT
-app.get('/api/feed', authenticateToken, async (req, res) => {
-  console.log('📱 FEED request received');
+// LIKE/UNLIKE POST ENDPOINT
+app.post('/api/like/:postId', authenticateToken, async (req, res) => {
+  console.log('❤️ LIKE request for post:', req.params.postId);
   
   // FORCE CORS HEADERS
   res.header('Access-Control-Allow-Origin', '*');
@@ -161,64 +133,44 @@ app.get('/api/feed', authenticateToken, async (req, res) => {
   try {
     await connectDB();
     
-    console.log('📱 Fetching feed for user:', req.user.userId);
+    const { postId } = req.params;
+    const currentUserId = req.user.userId;
     
-    if (!process.env.MONGO_URI) {
-      console.error('❌ MONGO_URI not set');
-      return res.status(500).json({ message: 'Database not configured' });
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
     }
-
-    // Get all public posts, sorted by creation date (newest first)
-    const posts = await Post.find({ isPrivate: false })
-      .populate('userId', 'username profilePicture')
-      .sort({ createdAt: -1 })
-      .limit(50);
-
-    console.log(`📱 Found ${posts.length} posts for feed`);
-
-    // Format posts for frontend
-    const formattedPosts = posts.map(post => ({
-      id: post._id,
-      userId: post.userId._id,
-      username: post.username,
-      content: post.content,
-      imageUrl: post.imageUrl,
-      likes: post.likes.length,
-      comments: post.comments.length,
-      shares: post.shares,
-      isPrivate: post.isPrivate,
-      createdAt: post.createdAt,
-      userProfilePicture: post.userId?.profilePicture || '',
-      isLiked: post.likes.includes(req.user.userId),
-      commentsList: post.comments.map(comment => ({
-        id: comment._id,
-        userId: comment.userId,
-        username: comment.username,
-        content: comment.content,
-        createdAt: comment.createdAt
-      }))
-    }));
-
-    res.json(formattedPosts);
-
+    
+    const isLiked = post.likes.includes(currentUserId);
+    
+    if (isLiked) {
+      // Unlike
+      post.likes.pull(currentUserId);
+    } else {
+      // Like
+      post.likes.push(currentUserId);
+    }
+    
+    await post.save();
+    
+    res.json({
+      message: isLiked ? 'Post unliked' : 'Post liked',
+      isLiked: !isLiked,
+      likesCount: post.likes.length
+    });
+    
   } catch (error) {
-    console.error('🚨 Feed error:', error);
+    console.error('🚨 Like error:', error);
     res.status(500).json({ 
-      message: 'Failed to fetch feed', 
+      message: 'Failed to like/unlike post', 
       error: error.message 
     });
   }
 });
 
-// Health check
-app.get('/api/feed', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.json({ message: 'Feed endpoint is working', timestamp: new Date().toISOString() });
-});
-
 // Global error handler
 app.use((error, req, res, next) => {
-  console.error('🚨 FEED Global error handler:', error);
+  console.error('🚨 LIKE Global error handler:', error);
   
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -226,11 +178,13 @@ app.use((error, req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   
   if (!res.headersSent) {
-    res.status(500).json({ 
-      message: 'Internal server error', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Internal server error from like',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      timestamp: new Date().toISOString()
     });
   }
 });
 
-export default app;
+module.exports = app;

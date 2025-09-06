@@ -16,6 +16,18 @@
     "api/upload.js": {
       "maxDuration": 30
     },
+    "api/profile.js": {
+      "maxDuration": 30
+    },
+    "api/like.js": {
+      "maxDuration": 30
+    },
+    "api/users-search.js": {
+      "maxDuration": 30
+    },
+    "api/chat.js": {
+      "maxDuration": 30
+    },
     "api/data-check-commonjs.js": {
       "maxDuration": 30
     },
@@ -54,6 +66,26 @@
     {
       "source": "/api/upload",
       "destination": "/api/upload.js"
+    },
+    {
+      "source": "/api/profile/(.*)",
+      "destination": "/api/profile.js"
+    },
+    {
+      "source": "/api/like/(.*)",
+      "destination": "/api/like.js"
+    },
+    {
+      "source": "/api/follow/(.*)",
+      "destination": "/api/profile.js"
+    },
+    {
+      "source": "/api/users/search",
+      "destination": "/api/users-search.js"
+    },
+    {
+      "source": "/api/chat/(.*)",
+      "destination": "/api/chat.js"
     },
     {
       "source": "/(.*)",
