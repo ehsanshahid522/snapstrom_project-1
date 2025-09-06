@@ -54,36 +54,9 @@
     },
     "api/chat.js": {
       "maxDuration": 30
-    },
-    "api/data-check-commonjs.js": {
-      "maxDuration": 30
-    },
-    "api/create-sample-posts.js": {
-      "maxDuration": 30
-    },
-    "api/cleanup-posts.js": {
-      "maxDuration": 30
-    },
-    "api/cors-proxy.js": {
-      "maxDuration": 10
-    },
-    "api/test-all.js": {
-      "maxDuration": 10
     }
   },
   "rewrites": [
-    {
-      "source": "/api/data-check",
-      "destination": "/api/data-check-commonjs.js"
-    },
-    {
-      "source": "/api/create-sample-posts",
-      "destination": "/api/create-sample-posts.js"
-    },
-    {
-      "source": "/api/cleanup-posts",
-      "destination": "/api/cleanup-posts.js"
-    },
     {
       "source": "/api/auth/login",
       "destination": "/api/auth/login.js"
@@ -119,14 +92,6 @@
     {
       "source": "/api/chat/(.*)",
       "destination": "/api/chat.js"
-    },
-    {
-      "source": "/api/cors-proxy/(.*)",
-      "destination": "/api/cors-proxy.js"
-    },
-    {
-      "source": "/api/test-all",
-      "destination": "/api/test-all.js"
     },
     {
       "source": "/(.*)",
