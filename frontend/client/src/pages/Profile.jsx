@@ -145,7 +145,7 @@ export default function Profile() {
 
   const handleMessage = useCallback(() => {
     // Navigate to chat page with the user's username as a parameter
-    navigate(`/chat?user=${encodeURIComponent(username)}`)
+    navigate(`/messages?user=${encodeURIComponent(username)}`)
   }, [navigate, username])
 
   if (loading) {
