@@ -30,6 +30,9 @@
     },
     "api/create-sample-posts.js": {
       "maxDuration": 30
+    },
+    "api/cleanup-posts.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
@@ -52,6 +55,10 @@
     {
       "source": "/api/create-sample-posts",
       "destination": "/api/create-sample-posts.js"
+    },
+    {
+      "source": "/api/cleanup-posts",
+      "destination": "/api/cleanup-posts.js"
     },
     {
       "source": "/api/auth/login",

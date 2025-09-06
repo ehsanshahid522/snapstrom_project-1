@@ -199,11 +199,7 @@ app.get('/api/feed', authenticateToken, async (req, res) => {
       }))
     }));
 
-    res.json({
-      message: 'Feed fetched successfully',
-      posts: formattedPosts,
-      total: formattedPosts.length
-    });
+    res.json(formattedPosts);
 
   } catch (error) {
     console.error('🚨 Feed error:', error);
