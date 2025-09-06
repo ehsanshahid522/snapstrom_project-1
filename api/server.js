@@ -1987,7 +1987,11 @@ export default app;
 
 // Start server if running directly (not on Vercel)
 if (process.env.NODE_ENV !== 'production') {
-// Chat routes (simplified implementation)
+// Import models
+import Conversation from './models/Conversation.js';
+import Message from './models/Message.js';
+
+// Chat routes (real implementation)
 app.get('/api/chat/conversations', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -1999,9 +2003,40 @@ app.get('/api/chat/conversations', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.userId;
 
-    // For now, return empty conversations array
-    res.json({ conversations: [] });
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+
+    // Find conversations where user is a participant
+    const conversations = await Conversation.find({
+      'participants.user': userId,
+      isActive: true
+    })
+    .populate('participants.user', 'username')
+    .populate('lastMessage.sender', 'username')
+    .sort({ updatedAt: -1 });
+
+    // Format conversations for frontend
+    const formattedConversations = conversations.map(conv => {
+      const otherParticipant = conv.participants.find(p => p.user._id.toString() !== userId);
+      const unreadCount = conv.participants.find(p => p.user._id.toString() === userId)?.unreadCount || 0;
+      
+      return {
+        id: conv._id,
+        participants: conv.participants.map(p => ({
+          username: p.user.username,
+          isOnline: false // TODO: Implement online status
+        })),
+        lastMessage: conv.lastMessage?.content || '',
+        lastMessageTime: conv.lastMessage?.timestamp || conv.updatedAt,
+        unreadCount
+      };
+    });
+
+    res.json({ conversations: formattedConversations });
   } catch (error) {
+    console.error('Error fetching conversations:', error);
     res.status(500).json({ message: 'Error fetching conversations', error: error.message });
   }
 });
@@ -2013,9 +2048,45 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    // For now, return empty messages array
-    res.json({ messages: [] });
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+    const { conversationId } = req.params;
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+
+    // Verify user is participant in conversation
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      'participants.user': userId,
+      isActive: true
+    });
+
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation not found' });
+    }
+
+    // Get messages for this conversation
+    const messages = await Message.find({ conversation: conversationId })
+      .populate('sender', 'username')
+      .sort({ createdAt: 1 });
+
+    // Format messages for frontend
+    const formattedMessages = messages.map(msg => ({
+      id: msg._id,
+      content: msg.content,
+      sender: msg.sender.username,
+      timestamp: msg.createdAt,
+      type: msg.type,
+      status: msg.status
+    }));
+
+    res.json({ messages: formattedMessages });
   } catch (error) {
+    console.error('Error fetching messages:', error);
     res.status(500).json({ message: 'Error fetching messages', error: error.message });
   }
 });
@@ -2027,19 +2098,69 @@ app.post('/api/chat/send', async (req, res) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const { conversationId, content, type } = req.body;
-    
-    // For now, return success
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+    const { conversationId, content, type = 'text' } = req.body;
+
+    if (!conversationId || !content) {
+      return res.status(400).json({ message: 'Conversation ID and content are required' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+
+    // Verify user is participant in conversation
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      'participants.user': userId,
+      isActive: true
+    });
+
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation not found' });
+    }
+
+    // Create new message
+    const message = new Message({
+      conversation: conversationId,
+      sender: userId,
+      content: content.trim(),
+      type,
+      status: 'sent'
+    });
+
+    await message.save();
+
+    // Update conversation's last message
+    conversation.lastMessage = {
+      content: content.trim(),
+      sender: userId,
+      timestamp: new Date()
+    };
+    await conversation.save();
+
+    // Populate sender info for response
+    await message.populate('sender', 'username');
+
+    // Format message for frontend
+    const formattedMessage = {
+      id: message._id,
+      content: message.content,
+      sender: message.sender.username,
+      timestamp: message.createdAt,
+      type: message.type,
+      status: message.status
+    };
+
     res.json({ 
       success: true, 
-      message: { 
-        id: Date.now(), 
-        content, 
-        type: type || 'text',
-        timestamp: new Date().toISOString()
-      } 
+      message: formattedMessage 
     });
   } catch (error) {
+    console.error('Error sending message:', error);
     res.status(500).json({ message: 'Error sending message', error: error.message });
   }
 });
@@ -2056,15 +2177,71 @@ app.post('/api/chat/start-conversation', async (req, res) => {
     const userId = decoded.userId;
     const { username } = req.body;
 
-    // For now, return a mock conversation
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+
+    // Find the target user
+    const targetUser = await User.findOne({ username });
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (targetUser._id.toString() === userId) {
+      return res.status(400).json({ message: 'Cannot start conversation with yourself' });
+    }
+
+    // Check if conversation already exists
+    let conversation = await Conversation.findOne({
+      participants: {
+        $all: [
+          { user: userId },
+          { user: targetUser._id }
+        ]
+      },
+      isActive: true
+    });
+
+    if (!conversation) {
+      // Create new conversation
+      conversation = new Conversation({
+        participants: [
+          {
+            user: userId,
+            username: decoded.username,
+            joinedAt: new Date(),
+            lastReadAt: new Date()
+          },
+          {
+            user: targetUser._id,
+            username: targetUser.username,
+            joinedAt: new Date(),
+            lastReadAt: new Date()
+          }
+        ],
+        isActive: true
+      });
+
+      await conversation.save();
+    }
+
+    // Populate participants
+    await conversation.populate('participants.user', 'username');
+
     res.json({ 
-      conversationId: `conv_${Date.now()}`,
-      participants: [
-        { username: decoded.username, isOnline: true },
-        { username, isOnline: false }
-      ]
+      conversationId: conversation._id,
+      participants: conversation.participants.map(p => ({
+        username: p.user.username,
+        isOnline: false // TODO: Implement online status
+      }))
     });
   } catch (error) {
+    console.error('Error starting conversation:', error);
     res.status(500).json({ message: 'Error starting conversation', error: error.message });
   }
 });
@@ -2076,9 +2253,32 @@ app.patch('/api/chat/mark-read/:conversationId', async (req, res) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    // For now, return success
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+    const { conversationId } = req.params;
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+
+    // Update user's last read timestamp in conversation
+    await Conversation.updateOne(
+      { 
+        _id: conversationId,
+        'participants.user': userId 
+      },
+      { 
+        $set: { 
+          'participants.$.lastReadAt': new Date() 
+        } 
+      }
+    );
+
     res.json({ success: true });
   } catch (error) {
+    console.error('Error marking as read:', error);
     res.status(500).json({ message: 'Error marking as read', error: error.message });
   }
 });
@@ -2091,8 +2291,10 @@ app.get('/api/chat/online-users', async (req, res) => {
     }
 
     // For now, return empty online users array
+    // TODO: Implement real-time online status tracking
     res.json({ onlineUsers: [] });
   } catch (error) {
+    console.error('Error fetching online users:', error);
     res.status(500).json({ message: 'Error fetching online users', error: error.message });
   }
 });
