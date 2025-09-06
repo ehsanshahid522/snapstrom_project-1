@@ -168,29 +168,6 @@ export default function Chat() {
     }
   }, [sendMessage])
 
-  // Start new conversation
-  const startNewConversation = useCallback(async (username) => {
-    try {
-      const response = await startConversation(username)
-      
-      const newConversation = {
-        id: response.conversationId,
-        participants: [
-          { username: currentUser, isOnline: true },
-          { username, isOnline: onlineUsers.includes(username) }
-        ],
-        lastMessage: '',
-        lastMessageTime: new Date().toISOString(),
-        unreadCount: 0
-      }
-
-      setConversations(prev => [newConversation, ...prev])
-      handleSelectConversation(newConversation)
-    } catch (error) {
-      console.error('Error starting conversation:', error)
-    }
-  }, [currentUser, onlineUsers, startConversation, handleSelectConversation])
-
   // Filter conversations based on search
   const filteredConversations = useMemo(() => {
     if (!searchQuery.trim()) return conversations
