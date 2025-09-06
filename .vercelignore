@@ -1,0 +1,10 @@
+# Ignore MVC structure files to avoid Vercel function limit
+api/controllers/
+api/models/
+api/routes/
+api/middleware/
+api/services/
+api/utils/
+api/README.md
+api/server-new.js
+api/test-backend.js
