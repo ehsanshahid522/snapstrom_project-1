@@ -8,72 +8,7 @@ dotenv.config();
 
 const app = express();
 
-// AGGRESSIVE CORS SOLUTION - HANDLE BEFORE EXPRESS MIDDLEWARE
-app.use((req, res, next) => {
-  console.log('🚨 AGGRESSIVE CORS: Processing request:', req.method, req.path);
-  
-  // Set ALL CORS headers immediately
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
-  res.header('Access-Control-Max-Age', '86400');
-  res.header('Access-Control-Expose-Headers', 'Content-Length, X-JSON');
-  
-  // Handle OPTIONS requests with immediate response - NO PROCESSING
-  if (req.method === 'OPTIONS') {
-    console.log('🚨 AGGRESSIVE CORS: Handling OPTIONS request - returning 200 immediately');
-    res.status(200).json({ 
-      message: 'CORS preflight successful', 
-      method: 'OPTIONS',
-      timestamp: new Date().toISOString(),
-      endpoint: req.path,
-      status: 'success'
-    });
-    return; // CRITICAL: Stop all processing here
-  }
-  
-  next();
-});
-
-// OVERRIDE ALL RESPONSE METHODS TO FORCE CORS
-app.use((req, res, next) => {
-  // Override res.json
-  const originalJson = res.json;
-  res.json = function(data) {
-    this.header('Access-Control-Allow-Origin', '*');
-    this.header('Access-Control-Allow-Credentials', 'true');
-    this.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
-    this.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
-    this.header('Access-Control-Max-Age', '86400');
-    return originalJson.call(this, data);
-  };
-  
-  // Override res.status
-  const originalStatus = res.status;
-  res.status = function(code) {
-    this.header('Access-Control-Allow-Origin', '*');
-    this.header('Access-Control-Allow-Credentials', 'true');
-    this.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
-    this.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
-    this.header('Access-Control-Max-Age', '86400');
-    return originalStatus.call(this, code);
-  };
-  
-  // Override res.send
-  const originalSend = res.send;
-  res.send = function(data) {
-    this.header('Access-Control-Allow-Origin', '*');
-    this.header('Access-Control-Allow-Credentials', 'true');
-    this.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
-    this.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
-    this.header('Access-Control-Max-Age', '86400');
-    return originalSend.call(this, data);
-  };
-  
-  next();
-});
-
+// Basic middleware
 app.use(express.json());
 
 // Connect to MongoDB
@@ -175,7 +110,6 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ 
       $or: [{ email }, { username }] 
     });
@@ -184,10 +118,8 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = new User({
       username,
       email,
@@ -196,7 +128,6 @@ app.post('/api/auth/register', async (req, res) => {
 
     await user.save();
 
-    // Generate token
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET,
@@ -379,7 +310,6 @@ app.get('/api/users/search', authenticateToken, async (req, res) => {
 // Chat endpoints
 app.get('/api/chat/conversations', authenticateToken, async (req, res) => {
   try {
-    // Simple implementation - return empty array for now
     res.json([]);
   } catch (error) {
     console.error('Conversations error:', error);
@@ -391,7 +321,6 @@ app.post('/api/chat/conversations', authenticateToken, async (req, res) => {
   try {
     const { participantId } = req.body;
     
-    // Simple implementation - return mock conversation
     res.json({
       id: 'mock-conversation-id',
       participants: [req.user.userId, participantId],
@@ -405,7 +334,6 @@ app.post('/api/chat/conversations', authenticateToken, async (req, res) => {
 
 app.get('/api/chat/conversations/:conversationId/messages', authenticateToken, async (req, res) => {
   try {
-    // Simple implementation - return empty messages
     res.json([]);
   } catch (error) {
     console.error('Messages error:', error);
@@ -417,7 +345,6 @@ app.post('/api/chat/conversations/:conversationId/messages', authenticateToken, 
   try {
     const { content } = req.body;
     
-    // Simple implementation - return mock message
     res.json({
       id: 'mock-message-id',
       content,
@@ -428,20 +355,6 @@ app.post('/api/chat/conversations/:conversationId/messages', authenticateToken, 
     console.error('Send message error:', error);
     res.status(500).json({ error: 'Server error' });
   }
-});
-
-// Global error handler
-app.use((error, req, res, next) => {
-  console.error('Global error:', error);
-  
-  // Force CORS headers even on errors
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
-  res.header('Access-Control-Max-Age', '86400');
-  
-  res.status(500).json({ error: 'Internal server error' });
 });
 
 module.exports = app;
