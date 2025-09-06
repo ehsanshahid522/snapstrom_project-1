@@ -16,6 +16,17 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// RADICAL OPTIONS HANDLER - Handle ALL OPTIONS requests FIRST
+app.options('*', (req, res) => {
+  console.log('🚨 RADICAL OPTIONS handler for:', req.path);
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
 // ULTIMATE CORS FIX - Add headers to EVERY API route
 const addCorsHeaders = (req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -31,6 +42,47 @@ const addCorsHeaders = (req, res, next) => {
   
   next();
 };
+
+// RADICAL CORS SOLUTION - Force headers on EVERY response
+const forceCorsHeaders = (req, res, next) => {
+  // Set CORS headers IMMEDIATELY
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  
+  // Handle OPTIONS requests IMMEDIATELY
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  // Override res.json to always include CORS headers
+  const originalJson = res.json;
+  res.json = function(data) {
+    this.header('Access-Control-Allow-Origin', '*');
+    this.header('Access-Control-Allow-Credentials', 'true');
+    this.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    this.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    return originalJson.call(this, data);
+  };
+  
+  // Override res.status to always include CORS headers
+  const originalStatus = res.status;
+  res.status = function(code) {
+    this.header('Access-Control-Allow-Origin', '*');
+    this.header('Access-Control-Allow-Credentials', 'true');
+    this.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    this.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    return originalStatus.call(this, code);
+  };
+  
+  next();
+};
+
+// Apply RADICAL CORS to ALL routes
+app.use(forceCorsHeaders);
 
 // Apply CORS to ALL routes
 app.use(addCorsHeaders);
@@ -2437,19 +2489,23 @@ app.get('/api/users/search', async (req, res) => {
 
 // Global error handler for CORS and other issues
 app.use((error, req, res, next) => {
-  console.error('Global error handler:', error);
+  console.error('🚨 RADICAL Global error handler:', error);
   
-  // Set CORS headers even for errors
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  // FORCE CORS headers on EVERY error response
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
   
-  // Handle other errors
-  res.status(500).json({ 
-    message: 'Internal server error', 
-    error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong' 
-  });
+  // Ensure response is sent with CORS headers
+  if (!res.headersSent) {
+    res.status(500).json({ 
+      message: 'Internal server error', 
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
