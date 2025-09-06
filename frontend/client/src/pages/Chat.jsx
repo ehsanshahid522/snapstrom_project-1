@@ -305,7 +305,7 @@ export default function Chat() {
                 <p className="text-lg font-medium mb-2">No conversations yet</p>
                 <p className="text-sm">Start a conversation with someone!</p>
               </div>
-            ) : !searchQuery.trim() ? (
+            ) : !searchQuery.trim() && (
               filteredConversations.map((conversation) => {
                 const partner = getConversationPartner(conversation)
                 const isSelected = selectedConversation?.id === conversation.id
@@ -357,7 +357,7 @@ export default function Chat() {
                   </div>
                 )
               })
-            ) : null}
+            )}
           </div>
         </div>
 
