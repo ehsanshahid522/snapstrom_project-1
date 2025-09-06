@@ -27,6 +27,9 @@
     },
     "api/investigate-data.js": {
       "maxDuration": 30
+    },
+    "api/create-sample-posts.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
@@ -45,6 +48,10 @@
     {
       "source": "/api/investigate",
       "destination": "/api/investigate-data.js"
+    },
+    {
+      "source": "/api/create-sample-posts",
+      "destination": "/api/create-sample-posts.js"
     },
     {
       "source": "/api/auth/login",
