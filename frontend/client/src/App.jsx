@@ -13,6 +13,7 @@ const Upload = lazy(() => import('./pages/Upload.jsx'))
 const Trending = lazy(() => import('./pages/Trending.jsx'))
 const Nav = lazy(() => import('./components/Nav.jsx'))
 const Share = lazy(() => import('./pages/Share.jsx'))
+const Chat = lazy(() => import('./pages/Chat.jsx'))
 const NotFound = lazy(() => import('./pages/NotFound.jsx'))
 
 function isAuthed() {
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/settings" element={<PrivateRoute><WithNav><Settings /></WithNav></PrivateRoute>} />
         <Route path="/profile/:username" element={<PrivateRoute><WithNav><Profile /></WithNav></PrivateRoute>} />
         <Route path="/upload" element={<PrivateRoute><WithNav><Upload /></WithNav></PrivateRoute>} />
+        <Route path="/messages" element={<PrivateRoute><WithNav><Chat /></WithNav></PrivateRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
