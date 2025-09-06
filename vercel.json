@@ -61,6 +61,10 @@
       "destination": "/api/feed.js"
     },
     {
+      "source": "/api/data-check",
+      "destination": "/api/data-check.js"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/server.js"
     },
@@ -77,6 +81,9 @@
       "maxDuration": 30
     },
     "api/feed.js": {
+      "maxDuration": 30
+    },
+    "api/data-check.js": {
       "maxDuration": 30
     },
     "api/server.js": {
