@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
 
 export default function Profile() {
   const { username } = useParams()
+  const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
@@ -141,6 +142,11 @@ export default function Profile() {
       setFollowLoading(false)
     }
   }, [followLoading, isFollowing, data?.user?.id])
+
+  const handleMessage = useCallback(() => {
+    // Navigate to chat page with the user's username as a parameter
+    navigate(`/chat?user=${encodeURIComponent(username)}`)
+  }, [navigate, username])
 
   if (loading) {
     return (
@@ -318,26 +324,50 @@ export default function Profile() {
                 </div>
               )}
               {!isOwnProfile && (
-                <button
-                  onClick={handleFollow}
-                  disabled={followLoading}
-                  className={`mt-4 px-8 py-3 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
-                    isFollowing
-                      ? 'bg-gray-600 text-white hover:bg-gray-700'
-                      : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {followLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Loading...</span>
-                    </div>
-                  ) : isFollowing ? (
-                    '✓ Following'
-                  ) : (
-                    'Follow'
-                  )}
-                </button>
+                <div className="flex space-x-4 mt-4">
+                  {/* Message Button */}
+                  <button
+                    onClick={handleMessage}
+                    className="px-6 py-3 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-xl flex items-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span>Message</span>
+                  </button>
+
+                  {/* Follow Button */}
+                  <button
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                    className={`px-6 py-3 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
+                      isFollowing
+                        ? 'bg-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
+                    } disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2`}
+                  >
+                    {followLoading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading...</span>
+                      </>
+                    ) : isFollowing ? (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Following</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <span>Follow</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
           </div>

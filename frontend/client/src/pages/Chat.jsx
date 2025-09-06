@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useChatAPI, useRealTimeChat, useTypingIndicator } from '../hooks/useChat.js'
 import { api } from '../lib/api.js'
 
 export default function Chat() {
+  const [searchParams] = useSearchParams()
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
@@ -31,6 +33,25 @@ export default function Chat() {
   useEffect(() => {
     fetchConversations()
   }, [])
+
+  // Handle URL parameter for starting conversation with specific user
+  useEffect(() => {
+    const targetUser = searchParams.get('user')
+    if (targetUser) {
+      // Check if conversation already exists
+      const existingConversation = conversations.find(conv => 
+        conv.participants.some(p => p.username === targetUser)
+      )
+      
+      if (existingConversation) {
+        // Select existing conversation
+        handleSelectConversation(existingConversation)
+      } else {
+        // Start new conversation
+        startNewConversation(targetUser)
+      }
+    }
+  }, [searchParams, conversations])
 
   // Fetch conversations from API
   const fetchConversations = useCallback(async () => {
@@ -135,10 +156,15 @@ export default function Chat() {
 
       setConversations(prev => [newConversation, ...prev])
       handleSelectConversation(newConversation)
+      
+      // Clear URL parameter after starting conversation
+      const newSearchParams = new URLSearchParams(searchParams)
+      newSearchParams.delete('user')
+      window.history.replaceState({}, '', `${window.location.pathname}${newSearchParams.toString() ? '?' + newSearchParams.toString() : ''}`)
     } catch (error) {
       console.error('Error starting conversation:', error)
     }
-  }, [currentUser, onlineUsers, startConversation, handleSelectConversation])
+  }, [currentUser, onlineUsers, startConversation, handleSelectConversation, searchParams])
 
   // Search for users
   const searchUsers = useCallback(async (query) => {
