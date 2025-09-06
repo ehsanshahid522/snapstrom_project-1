@@ -57,6 +57,10 @@
       "destination": "/api/auth/register.js"
     },
     {
+      "source": "/api/feed",
+      "destination": "/api/feed.js"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/server.js"
     },
@@ -70,6 +74,9 @@
       "maxDuration": 30
     },
     "api/auth/register.js": {
+      "maxDuration": 30
+    },
+    "api/feed.js": {
       "maxDuration": 30
     },
     "api/server.js": {
