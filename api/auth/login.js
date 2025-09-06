@@ -9,22 +9,52 @@ dotenv.config();
 
 const app = express();
 
-// ULTRA AGGRESSIVE CORS SETUP - MUST BE FIRST
+// RADICAL CORS SOLUTION - MUST BE ABSOLUTELY FIRST
 app.use((req, res, next) => {
-  console.log('🚨 LOGIN ULTRA CORS: Processing request:', req.method, req.path);
+  console.log('🚨 RADICAL CORS: Processing request:', req.method, req.path);
   
-  // Set CORS headers for ALL requests
+  // Set ALL CORS headers immediately
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
   res.header('Access-Control-Max-Age', '86400');
+  res.header('Access-Control-Expose-Headers', 'Content-Length, X-JSON');
   
-  // Handle OPTIONS requests immediately with 200 status
+  // Handle OPTIONS requests with immediate response
   if (req.method === 'OPTIONS') {
-    console.log('🚨 LOGIN ULTRA CORS: Handling OPTIONS request with 200 status');
-    return res.status(200).json({ message: 'CORS preflight successful' });
+    console.log('🚨 RADICAL CORS: Handling OPTIONS request - returning 200 immediately');
+    res.status(200).json({ 
+      message: 'CORS preflight successful', 
+      method: 'OPTIONS',
+      timestamp: new Date().toISOString(),
+      endpoint: req.path
+    });
+    return; // Stop processing here
   }
+  
+  next();
+});
+
+// Force CORS headers on every response
+app.use((req, res, next) => {
+  const originalJson = res.json;
+  res.json = function(data) {
+    this.header('Access-Control-Allow-Origin', '*');
+    this.header('Access-Control-Allow-Credentials', 'true');
+    this.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+    this.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
+    return originalJson.call(this, data);
+  };
+  
+  const originalStatus = res.status;
+  res.status = function(code) {
+    this.header('Access-Control-Allow-Origin', '*');
+    this.header('Access-Control-Allow-Credentials', 'true');
+    this.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+    this.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
+    return originalStatus.call(this, code);
+  };
   
   next();
 });
@@ -89,17 +119,6 @@ const connectDB = async () => {
     console.error('❌ MongoDB connection error:', error);
   }
 };
-
-// RADICAL OPTIONS HANDLER
-app.options('*', (req, res) => {
-  console.log('🚨 LOGIN OPTIONS handler for:', req.path);
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Max-Age', '86400');
-  res.status(200).json({ message: 'CORS preflight successful', method: 'OPTIONS' });
-});
 
 // LOGIN ENDPOINT
 app.post('/api/auth/login', async (req, res) => {
