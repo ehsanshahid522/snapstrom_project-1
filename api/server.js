@@ -14,35 +14,24 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-
-// AGGRESSIVE CORS FIX - Set headers on EVERY request
-app.use((req, res, next) => {
-  // Set CORS headers for EVERY request
+// ULTIMATE CORS FIX - Add headers to EVERY API route
+const addCorsHeaders = (req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Max-Age', '86400');
   
-  // Handle OPTIONS requests immediately
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
   
   next();
-});
+};
 
-// Basic CORS middleware as backup
-app.use(cors({
-  origin: true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  preflightContinue: false,
-  optionsSuccessStatus: 200
-}));
+// Apply CORS to ALL routes
+app.use(addCorsHeaders);
 
 // Increase payload limits for file uploads
 app.use(express.json({ limit: '50mb' }));
@@ -366,8 +355,26 @@ app.get('/api/images/:fileId', async (req, res) => {
   }
 });
 
-// AGGRESSIVE OPTIONS HANDLER FOR FEED
+// ULTIMATE OPTIONS HANDLERS FOR ALL MAJOR ROUTES
 app.options('/api/feed', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
+app.options('/api/upload', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
+app.options('/api/profile/:username', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -726,7 +733,33 @@ app.get('/api/trending', async (req, res) => {
 });
 
 // API prefixed auth routes
+
+// ULTIMATE OPTIONS HANDLERS FOR ALL AUTH ROUTES
+app.options('/api/auth/register', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
+app.options('/api/auth/login', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
 app.post('/api/auth/register', async (req, res) => {
+  // ULTIMATE CORS HEADERS FOR REGISTER
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  
   try {
     const { username, email, password } = req.body;
     
