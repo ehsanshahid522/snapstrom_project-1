@@ -19,6 +19,9 @@
     "api/feed.js": {
       "maxDuration": 30
     },
+    "api/upload.js": {
+      "maxDuration": 30
+    },
     "api/data-check-commonjs.js": {
       "maxDuration": 30
     },
@@ -54,6 +57,10 @@
     {
       "source": "/api/feed",
       "destination": "/api/feed.js"
+    },
+    {
+      "source": "/api/upload",
+      "destination": "/api/upload.js"
     },
     {
       "source": "/(.*)",
