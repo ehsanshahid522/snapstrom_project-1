@@ -4,12 +4,6 @@
   "framework": "vite",
   "installCommand": "npm install",
   "functions": {
-    "api/test-minimal.js": {
-      "maxDuration": 30
-    },
-    "api/test-commonjs.js": {
-      "maxDuration": 30
-    },
     "api/auth/login.js": {
       "maxDuration": 30
     },
@@ -25,9 +19,6 @@
     "api/data-check-commonjs.js": {
       "maxDuration": 30
     },
-    "api/investigate-data.js": {
-      "maxDuration": 30
-    },
     "api/create-sample-posts.js": {
       "maxDuration": 30
     },
@@ -37,20 +28,8 @@
   },
   "rewrites": [
     {
-      "source": "/api/test-minimal",
-      "destination": "/api/test-minimal.js"
-    },
-    {
-      "source": "/api/test-commonjs",
-      "destination": "/api/test-commonjs.js"
-    },
-    {
       "source": "/api/data-check",
       "destination": "/api/data-check-commonjs.js"
-    },
-    {
-      "source": "/api/investigate",
-      "destination": "/api/investigate-data.js"
     },
     {
       "source": "/api/create-sample-posts",
