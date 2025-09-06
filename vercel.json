@@ -13,36 +13,11 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With, Accept, Origin"
-        },
-        {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
-        },
-        {
-          "key": "Access-Control-Max-Age",
-          "value": "86400"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+          "value": "Content-Type, Authorization"
         },
         {
           "key": "Access-Control-Allow-Credentials",
@@ -52,67 +27,14 @@
     }
   ],
   "functions": {
-    "api/auth/login.js": {
-      "maxDuration": 30
-    },
-    "api/auth/register.js": {
-      "maxDuration": 30
-    },
-    "api/feed.js": {
-      "maxDuration": 30
-    },
-    "api/upload.js": {
-      "maxDuration": 30
-    },
-    "api/profile.js": {
-      "maxDuration": 30
-    },
-    "api/like.js": {
-      "maxDuration": 30
-    },
-    "api/users-search.js": {
-      "maxDuration": 30
-    },
-    "api/chat.js": {
+    "api/index.js": {
       "maxDuration": 30
     }
   },
   "rewrites": [
     {
-      "source": "/api/auth/login",
-      "destination": "/api/auth/login.js"
-    },
-    {
-      "source": "/api/auth/register",
-      "destination": "/api/auth/register.js"
-    },
-    {
-      "source": "/api/feed",
-      "destination": "/api/feed.js"
-    },
-    {
-      "source": "/api/upload",
-      "destination": "/api/upload.js"
-    },
-    {
-      "source": "/api/profile/(.*)",
-      "destination": "/api/profile.js"
-    },
-    {
-      "source": "/api/like/(.*)",
-      "destination": "/api/like.js"
-    },
-    {
-      "source": "/api/follow/(.*)",
-      "destination": "/api/profile.js"
-    },
-    {
-      "source": "/api/users/search",
-      "destination": "/api/users-search.js"
-    },
-    {
-      "source": "/api/chat/(.*)",
-      "destination": "/api/chat.js"
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
     },
     {
       "source": "/(.*)",
