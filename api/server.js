@@ -16,45 +16,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Enhanced CORS configuration for Vercel deployment
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'https://snapstrom-project-1.vercel.app',
-  'https://snapstrom-project-1-git-main-ehsan-shahids-projects.vercel.app',
-  'https://snapstrom-project-1-gzahx8htx-ehsan-shahids-projects.vercel.app',
-  'https://snapstrom-project-1-ilu5lo14t-ehsan-shahids-projects.vercel.app',
-  // Allow any Vercel preview URL
-  /^https:\/\/snapstrom-project-1.*\.vercel\.app$/
-];
-
+// Simplified CORS configuration for Vercel
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // For debugging, log the origin
-    console.log('CORS request from origin:', origin);
-    
-    // Check if origin is in allowed list or matches Vercel pattern
-    const isAllowed = allowedOrigins.some(allowedOrigin => {
-      if (typeof allowedOrigin === 'string') {
-        return origin === allowedOrigin;
-      } else if (allowedOrigin instanceof RegExp) {
-        return allowedOrigin.test(origin);
-      }
-      return false;
-    });
-    
-    if (isAllowed) {
-      console.log('CORS: Origin allowed');
-      callback(null, true);
-    } else {
-      console.log('CORS blocked origin:', origin);
-      // For now, allow all origins to debug the issue
-      callback(null, true);
-    }
-  },
+  origin: true, // Allow all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
@@ -64,48 +28,20 @@ app.use(cors({
 
 // Handle preflight requests explicitly
 app.options('*', (req, res) => {
-  const origin = req.headers.origin;
-  
-  // Set CORS headers for OPTIONS request
-  if (origin && allowedOrigins.some(allowedOrigin => {
-    if (typeof allowedOrigin === 'string') {
-      return origin === allowedOrigin;
-    } else if (allowedOrigin instanceof RegExp) {
-      return allowedOrigin.test(origin);
-    }
-    return false;
-  })) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
-  
+  res.header('Access-Control-Max-Age', '86400');
   res.status(200).end();
 });
 
 // Additional CORS headers middleware for Vercel
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  
-  // Set CORS headers for allowed origins
-  if (origin && allowedOrigins.some(allowedOrigin => {
-    if (typeof allowedOrigin === 'string') {
-      return origin === allowedOrigin;
-    } else if (allowedOrigin instanceof RegExp) {
-      return allowedOrigin.test(origin);
-    }
-    return false;
-  })) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  
   next();
 });
 
@@ -2410,26 +2346,10 @@ app.use((error, req, res, next) => {
   console.error('Global error handler:', error);
   
   // Set CORS headers even for errors
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.some(allowedOrigin => {
-    if (typeof allowedOrigin === 'string') {
-      return origin === allowedOrigin;
-    } else if (allowedOrigin instanceof RegExp) {
-      return allowedOrigin.test(origin);
-    }
-    return false;
-  })) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  
-  // Handle CORS errors specifically
-  if (error.message === 'Not allowed by CORS') {
-    return res.status(403).json({ message: 'CORS policy violation' });
-  }
   
   // Handle other errors
   res.status(500).json({ 
