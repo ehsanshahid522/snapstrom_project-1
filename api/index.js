@@ -8,6 +8,21 @@ dotenv.config();
 
 const app = express();
 
+// Vercel-specific CORS handling
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  next();
+});
+
 // Basic middleware
 app.use(express.json());
 
@@ -67,6 +82,11 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+// Test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working', timestamp: new Date().toISOString() });
+});
 
 // Login endpoint
 app.post('/api/auth/login', async (req, res) => {
