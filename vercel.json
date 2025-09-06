@@ -3,112 +3,26 @@
   "outputDirectory": "frontend/client/dist",
   "framework": "vite",
   "installCommand": "npm install",
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With, Accept, Origin"
-        },
-        {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
-        },
-        {
-          "key": "Access-Control-Max-Age",
-          "value": "86400"
-        }
-      ]
+  "functions": {
+    "api/test-minimal.js": {
+      "maxDuration": 30
     },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With, Accept, Origin"
-        }
-      ]
+    "api/test-commonjs.js": {
+      "maxDuration": 30
     }
-  ],
+  },
   "rewrites": [
-    {
-      "source": "/api/auth/login",
-      "destination": "/api/auth/login.js"
-    },
-    {
-      "source": "/api/auth/register",
-      "destination": "/api/auth/register.js"
-    },
-    {
-      "source": "/api/feed",
-      "destination": "/api/feed.js"
-    },
-    {
-      "source": "/api/data-check",
-      "destination": "/api/data-check.js"
-    },
-    {
-      "source": "/api/health-check",
-      "destination": "/api/health-check.js"
-    },
     {
       "source": "/api/test-minimal",
       "destination": "/api/test-minimal.js"
     },
     {
-      "source": "/api/test-simple",
-      "destination": "/api/test-simple.js"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/server.js"
+      "source": "/api/test-commonjs",
+      "destination": "/api/test-commonjs.js"
     },
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "functions": {
-    "api/auth/login.js": {
-      "maxDuration": 30
-    },
-    "api/auth/register.js": {
-      "maxDuration": 30
-    },
-    "api/feed.js": {
-      "maxDuration": 30
-    },
-    "api/data-check.js": {
-      "maxDuration": 30
-    },
-    "api/health-check.js": {
-      "maxDuration": 30
-    },
-    "api/test-minimal.js": {
-      "maxDuration": 30
-    },
-    "api/test-simple.js": {
-      "maxDuration": 30
-    },
-    "api/server.js": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }

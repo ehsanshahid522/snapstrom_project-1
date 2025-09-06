@@ -1,5 +1,5 @@
-// Vercel serverless function
-export default async function handler(req, res) {
+// CommonJS version for Vercel
+module.exports = async function handler(req, res) {
   try {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
     // Simple response
     res.status(200).json({
-      message: 'Minimal test successful',
+      message: 'CommonJS test successful',
       method: req.method,
       timestamp: new Date().toISOString(),
       environment: {
@@ -26,12 +26,12 @@ export default async function handler(req, res) {
       }
     });
   } catch (error) {
-    console.error('Error in minimal test:', error);
+    console.error('Error in CommonJS test:', error);
     res.status(500).json({
-      message: 'Minimal test failed',
+      message: 'CommonJS test failed',
       error: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString()
     });
   }
-}
+};
