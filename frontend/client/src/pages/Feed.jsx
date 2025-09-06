@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
 
 export default function Feed() {
+  const navigate = useNavigate()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState(null)
@@ -11,6 +13,10 @@ export default function Feed() {
   const [expandedComments, setExpandedComments] = useState({}) // Track which posts have comments expanded
   const [showKebabMenu, setShowKebabMenu] = useState({}) // Track which posts have kebab menu open
   const [overflowMenuOpen, setOverflowMenuOpen] = useState({}) // Track which posts have overflow menu open
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showSearchResults, setShowSearchResults] = useState(false)
 
   // Memoized current user ID extraction
   const currentUserId = useMemo(() => {
@@ -18,7 +24,7 @@ export default function Feed() {
       const token = localStorage.getItem('token')
       if (!token) return null
       const payload = JSON.parse(atob(token.split('.')[1]))
-      return payload.id
+      return payload.userId || payload.id
     } catch (error) {
       return null
     }
@@ -33,11 +39,59 @@ export default function Feed() {
       if (!event.target.closest('.overflow-menu')) {
         setOverflowMenuOpen({})
       }
+      if (!event.target.closest('.search-container')) {
+        setShowSearchResults(false)
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Search users function
+  const searchUsers = useCallback(async (query) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      setShowSearchResults(false)
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const response = await api.get(`/users/search?q=${encodeURIComponent(query)}`)
+      if (response.success) {
+        setSearchResults(response.users)
+        setShowSearchResults(true)
+      }
+    } catch (error) {
+      console.error('Error searching users:', error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }, [])
+
+  // Handle search query changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchUsers(searchQuery)
+      } else {
+        setSearchResults([])
+        setShowSearchResults(false)
+      }
+    }, 300) // Debounce search
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, searchUsers])
+
+  // Handle user selection from search
+  const handleUserSelect = useCallback((user) => {
+    navigate(`/profile/${user.username}`)
+    setSearchQuery('')
+    setSearchResults([])
+    setShowSearchResults(false)
+  }, [navigate])
 
     // Function to fetch posts
   const fetchPosts = useCallback(async () => {
@@ -116,7 +170,7 @@ export default function Feed() {
 
   useEffect(() => {
     fetchPosts()
-  }, []) // Re-fetch when activeTab changes
+  }, []) // Re-fetch posts on component mount
 
   const like = useCallback(async (id) => {
     try {
@@ -612,13 +666,10 @@ export default function Feed() {
             </svg>
           </div>
           <h3 className="text-3xl font-bold text-slate-800 mb-3">
-            {activeTab === 'following' ? 'No Following Posts Yet' : 'No Posts Yet'}
+            {'No Posts Yet'}
           </h3>
           <p className="text-slate-600 mb-8 text-lg">
-            {activeTab === 'following' 
-              ? 'Follow some users to see their posts here! 🌟' 
-              : 'Be the first to share a photo! ✨'
-            }
+            {'Be the first to share a photo! ✨'}
           </p>
           <div className="space-y-4">
             <a href="/upload" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:via-purple-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-2xl">
@@ -627,14 +678,6 @@ export default function Feed() {
               </svg>
               Share Your First Photo 🚀
             </a>
-            {activeTab === 'following' && (
-              <button 
-                onClick={() => setActiveTab('forYou')}
-                className="block w-full px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 shadow-2xl"
-              >
-                🌍 Explore All Posts
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -643,6 +686,77 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Search Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="relative search-container">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200"
+              />
+              <svg className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {isSearching && (
+                <div className="absolute right-3 top-3.5">
+                  <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+            </div>
+            
+            {/* Search Results Dropdown */}
+            {showSearchResults && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
+                {searchResults.length > 0 ? (
+                  searchResults.map((user) => (
+                    <div
+                      key={user.id}
+                      onClick={() => handleUserSelect(user)}
+                      className="p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50 last:border-b-0"
+                    >
+                      <div className="flex items-center space-x-3">
+                        {/* Avatar */}
+                        <div className="relative">
+                          <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            {user.username.charAt(0).toUpperCase()}
+                          </div>
+                          {user.isOnline && (
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                          )}
+                        </div>
+                        
+                        {/* User Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-sm font-semibold text-gray-900 truncate">
+                              {user.username}
+                            </h3>
+                            {user.isOnline && (
+                              <span className="text-xs text-green-600 font-medium">Online</span>
+                            )}
+                          </div>
+                          {user.bio && (
+                            <p className="text-xs text-gray-500 truncate mt-1">{user.bio}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : searchQuery.trim() && !isSearching ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <p className="text-sm">No users found</p>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Posts Feed */}
       <div className="max-w-2xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {/* Floating Action Button */}

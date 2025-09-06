@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
 
 export default function Profile() {
   const { username } = useParams()
+  const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
@@ -117,21 +118,21 @@ export default function Profile() {
     }
   }, [])
 
+  // Handle message button click
+  const handleMessage = useCallback(() => {
+    if (data?.user?.id) {
+      navigate(`/messages?user=${data.user.id}`)
+    }
+  }, [navigate, data?.user?.id])
+
   const handleFollow = useCallback(async () => {
-    if (followLoading) return
+    if (followLoading || !data?.user?.id) return
     
     setFollowLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/auth/${isFollowing ? 'unfollow' : 'follow'}/${data.user.id}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await api(`/follow/${data.user.id}`, { method: 'POST' })
       
-      if (response.ok) {
+      if (response.success) {
         setIsFollowing(!isFollowing)
         setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1)
       }
@@ -318,26 +319,42 @@ export default function Profile() {
                 </div>
               )}
               {!isOwnProfile && (
-                <button
-                  onClick={handleFollow}
-                  disabled={followLoading}
-                  className={`mt-4 px-8 py-3 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
-                    isFollowing
-                      ? 'bg-gray-600 text-white hover:bg-gray-700'
-                      : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {followLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Loading...</span>
-                    </div>
-                  ) : isFollowing ? (
-                    '✓ Following'
-                  ) : (
-                    'Follow'
-                  )}
-                </button>
+                <div className="flex space-x-4 mt-4">
+                  <button
+                    onClick={handleMessage}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 hover:from-blue-600 hover:to-cyan-700 shadow-xl flex items-center space-x-2"
+                  >
+                    <span>💬</span>
+                    <span>Message</span>
+                  </button>
+                  
+                  <button
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                    className={`px-6 py-3 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 ${
+                      isFollowing
+                        ? 'bg-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
+                    } disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2`}
+                  >
+                    {followLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading...</span>
+                      </div>
+                    ) : isFollowing ? (
+                      <>
+                        <span>✓</span>
+                        <span>Following</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>👥</span>
+                        <span>Follow</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
           </div>

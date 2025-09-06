@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useChatAPI, useRealTimeChat, useTypingIndicator } from '../hooks/useChat.js'
 import { api } from '../lib/api.js'
 
 export default function Chat() {
+  const [searchParams] = useSearchParams()
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
@@ -32,6 +34,26 @@ export default function Chat() {
   useEffect(() => {
     fetchConversations()
   }, [])
+
+  // Handle user parameter from URL
+  useEffect(() => {
+    const userId = searchParams.get('user')
+    if (userId && conversations.length > 0) {
+      // Find existing conversation with this user
+      const existingConversation = conversations.find(conv => 
+        conv.participants.some(p => p.id === userId)
+      )
+      
+      if (existingConversation) {
+        // Open existing conversation
+        setSelectedConversation(existingConversation)
+        fetchMessages(existingConversation.id)
+      } else {
+        // Start new conversation with this user
+        startNewConversation({ id: userId })
+      }
+    }
+  }, [searchParams, conversations, fetchMessages, startNewConversation])
 
   // Handle search query changes
   useEffect(() => {
