@@ -14,6 +14,8 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const app = express();
+
 // ULTIMATE CORS FIX - Add headers to EVERY API route
 const addCorsHeaders = (req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -32,6 +34,16 @@ const addCorsHeaders = (req, res, next) => {
 
 // Apply CORS to ALL routes
 app.use(addCorsHeaders);
+
+// Additional CORS middleware as backup
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
+}));
 
 // Increase payload limits for file uploads
 app.use(express.json({ limit: '50mb' }));
@@ -270,6 +282,24 @@ async function connectDB() {
     return false;
   }
 }
+
+// CORS Test endpoint
+app.get('/api/cors-test', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.json({ message: 'CORS test successful', timestamp: new Date().toISOString() });
+});
+
+app.options('/api/cors-test', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
