@@ -16,12 +16,42 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Simplified CORS configuration for development and production
+// Enhanced CORS configuration for Vercel deployment
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://snapstrom-project-1.vercel.app',
+  'https://snapstrom-project-1-git-main-ehsan-shahids-projects.vercel.app',
+  'https://snapstrom-project-1-gzahx8htx-ehsan-shahids-projects.vercel.app',
+  // Allow any Vercel preview URL
+  /^https:\/\/snapstrom-project-1.*\.vercel\.app$/
+];
+
 app.use(cors({
-  origin: true, // Allow all origins for now
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list or matches Vercel pattern
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return origin === allowedOrigin;
+      } else if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   preflightContinue: false,
   optionsSuccessStatus: 204
 }));
@@ -29,6 +59,29 @@ app.use(cors({
 // Handle preflight requests explicitly
 app.options('*', (req, res) => {
   res.status(204).end();
+});
+
+// Additional CORS headers middleware for Vercel
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Set CORS headers for allowed origins
+  if (origin && allowedOrigins.some(allowedOrigin => {
+    if (typeof allowedOrigin === 'string') {
+      return origin === allowedOrigin;
+    } else if (allowedOrigin instanceof RegExp) {
+      return allowedOrigin.test(origin);
+    }
+    return false;
+  })) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  
+  next();
 });
 
 // Increase payload limits for file uploads
