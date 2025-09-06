@@ -75,6 +75,9 @@
     },
     "api/chat.js": {
       "maxDuration": 30
+    },
+    "api/cors-test.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
@@ -111,8 +114,8 @@
       "destination": "/api/users-search.js"
     },
     {
-      "source": "/api/chat/(.*)",
-      "destination": "/api/chat.js"
+      "source": "/api/cors-test",
+      "destination": "/api/cors-test.js"
     },
     {
       "source": "/(.*)",

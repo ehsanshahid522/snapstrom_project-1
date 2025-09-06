@@ -9,9 +9,9 @@ dotenv.config();
 
 const app = express();
 
-// RADICAL CORS SOLUTION - MUST BE ABSOLUTELY FIRST
+// ULTIMATE CORS SOLUTION - HANDLE OPTIONS BEFORE ANYTHING ELSE
 app.use((req, res, next) => {
-  console.log('🚨 RADICAL CORS: Processing request:', req.method, req.path);
+  console.log('🚨 ULTIMATE CORS: Processing request:', req.method, req.path);
   
   // Set ALL CORS headers immediately
   res.header('Access-Control-Allow-Origin', '*');
@@ -21,39 +21,55 @@ app.use((req, res, next) => {
   res.header('Access-Control-Max-Age', '86400');
   res.header('Access-Control-Expose-Headers', 'Content-Length, X-JSON');
   
-  // Handle OPTIONS requests with immediate response
+  // Handle OPTIONS requests with immediate response - NO PROCESSING
   if (req.method === 'OPTIONS') {
-    console.log('🚨 RADICAL CORS: Handling OPTIONS request - returning 200 immediately');
+    console.log('🚨 ULTIMATE CORS: Handling OPTIONS request - returning 200 immediately');
     res.status(200).json({ 
       message: 'CORS preflight successful', 
       method: 'OPTIONS',
       timestamp: new Date().toISOString(),
-      endpoint: req.path
+      endpoint: req.path,
+      status: 'success'
     });
-    return; // Stop processing here
+    return; // CRITICAL: Stop all processing here
   }
   
   next();
 });
 
-// Force CORS headers on every response
+// OVERRIDE ALL RESPONSE METHODS TO FORCE CORS
 app.use((req, res, next) => {
+  // Override res.json
   const originalJson = res.json;
   res.json = function(data) {
     this.header('Access-Control-Allow-Origin', '*');
     this.header('Access-Control-Allow-Credentials', 'true');
     this.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
     this.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
+    this.header('Access-Control-Max-Age', '86400');
     return originalJson.call(this, data);
   };
   
+  // Override res.status
   const originalStatus = res.status;
   res.status = function(code) {
     this.header('Access-Control-Allow-Origin', '*');
     this.header('Access-Control-Allow-Credentials', 'true');
     this.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
     this.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
+    this.header('Access-Control-Max-Age', '86400');
     return originalStatus.call(this, code);
+  };
+  
+  // Override res.send
+  const originalSend = res.send;
+  res.send = function(data) {
+    this.header('Access-Control-Allow-Origin', '*');
+    this.header('Access-Control-Allow-Credentials', 'true');
+    this.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+    this.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
+    this.header('Access-Control-Max-Age', '86400');
+    return originalSend.call(this, data);
   };
   
   next();
