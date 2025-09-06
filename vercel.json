@@ -9,6 +9,18 @@
     },
     "api/test-commonjs.js": {
       "maxDuration": 30
+    },
+    "api/auth/login.js": {
+      "maxDuration": 30
+    },
+    "api/auth/register.js": {
+      "maxDuration": 30
+    },
+    "api/feed.js": {
+      "maxDuration": 30
+    },
+    "api/data-check-commonjs.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
@@ -19,6 +31,22 @@
     {
       "source": "/api/test-commonjs",
       "destination": "/api/test-commonjs.js"
+    },
+    {
+      "source": "/api/data-check",
+      "destination": "/api/data-check-commonjs.js"
+    },
+    {
+      "source": "/api/auth/login",
+      "destination": "/api/auth/login.js"
+    },
+    {
+      "source": "/api/auth/register",
+      "destination": "/api/auth/register.js"
+    },
+    {
+      "source": "/api/feed",
+      "destination": "/api/feed.js"
     },
     {
       "source": "/(.*)",
