@@ -21,7 +21,7 @@ export default function Profile() {
       setMsg('')
       setLoading(true)
       try{
-        const res = await api(`/api/profile/${encodeURIComponent(username)}`)
+        const res = await api(`/profile/${encodeURIComponent(username)}`)
         
         // Check if res has the expected structure
         if (!res || !res.posts || !Array.isArray(res.posts)) {
@@ -123,19 +123,12 @@ export default function Profile() {
     
     setFollowLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/follow/${data.user.id}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await api(`/follow/${data.user.id}`, {
+        method: 'POST'
       })
       
-      if (response.ok) {
-        setIsFollowing(!isFollowing)
-        setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1)
-      }
+      setIsFollowing(response.isFollowing)
+      setFollowersCount(response.followersCount)
     } catch (error) {
       console.error('Follow error:', error)
     } finally {

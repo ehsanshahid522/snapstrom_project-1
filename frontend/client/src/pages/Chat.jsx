@@ -175,7 +175,7 @@ export default function Chat() {
 
     try {
       setIsSearching(true)
-      const response = await api(`/api/users/search?q=${encodeURIComponent(query)}`)
+      const response = await api(`/users/search?q=${encodeURIComponent(query)}`)
       const users = response.users || []
       
       // Filter out current user and users already in conversations
