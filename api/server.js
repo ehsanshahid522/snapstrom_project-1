@@ -1942,6 +1942,82 @@ app.get('/api/auth/follow-status/:userId', async (req, res) => {
   }
 });
 
+// Chat endpoints
+app.get('/api/chat/conversations', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' })
+    }
+
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const userId = payload.userId || payload.id
+
+    // For now, return empty conversations array
+    // TODO: Implement actual conversation fetching from database
+    res.json({ 
+      success: true,
+      conversations: [] 
+    })
+  } catch (error) {
+    console.error('Chat conversations error:', error)
+    res.status(500).json({ message: 'Error fetching conversations', error: error.message })
+  }
+})
+
+app.get('/api/chat/messages/:conversationId', async (req, res) => {
+  try {
+    const { conversationId } = req.params
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' })
+    }
+
+    // For now, return empty messages array
+    // TODO: Implement actual message fetching from database
+    res.json({ 
+      success: true,
+      messages: [] 
+    })
+  } catch (error) {
+    console.error('Chat messages error:', error)
+    res.status(500).json({ message: 'Error fetching messages', error: error.message })
+  }
+})
+
+app.post('/api/chat/start-conversation', async (req, res) => {
+  try {
+    const { username } = req.body
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' })
+    }
+
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const userId = payload.userId || payload.id
+
+    // For now, return a mock conversation
+    // TODO: Implement actual conversation creation
+    const mockConversation = {
+      id: 'mock-' + Date.now(),
+      participants: [
+        { id: userId, username: payload.username || 'Current User' },
+        { id: 'mock-user', username: username }
+      ],
+      lastMessage: null,
+      createdAt: new Date().toISOString()
+    }
+
+    res.json({ 
+      success: true,
+      conversation: mockConversation 
+    })
+  } catch (error) {
+    console.error('Start conversation error:', error)
+    res.status(500).json({ message: 'Error starting conversation', error: error.message })
+  }
+})
+
 // Search users
 app.get('/api/search/users', async (req, res) => {
   try {
