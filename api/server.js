@@ -106,6 +106,10 @@ const FileSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isProfilePicture: {
+    type: Boolean,
+    default: false
+  },
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -401,12 +405,13 @@ app.get('/api/feed', async (req, res) => {
       }
     }
     
-    // Get only public posts (exclude private posts)
+    // Get only public posts (exclude private posts and profile pictures)
     const files = await File.find({ 
       $or: [
         { isPrivate: false },
         { isPrivate: { $exists: false } }
-      ]
+      ],
+      isProfilePicture: { $ne: true } // Exclude profile pictures
     })
       .populate('uploadedBy', 'username profilePicture bio')
       .populate('likes', 'username')
@@ -519,7 +524,8 @@ app.get('/api/feed/following', async (req, res) => {
       $or: [
         { isPrivate: false },
         { isPrivate: { $exists: false } }
-      ]
+      ],
+      isProfilePicture: { $ne: true } // Exclude profile pictures
     })
       .populate('uploadedBy', 'username profilePicture bio')
       .populate('likes', 'username')
@@ -590,7 +596,8 @@ app.get('/api/trending', async (req, res) => {
           $or: [
             { isPrivate: false },
             { isPrivate: { $exists: false } }
-          ]
+          ],
+          isProfilePicture: { $ne: true } // Exclude profile pictures
         }
       },
       {
@@ -1064,8 +1071,11 @@ app.get('/api/profile/:username', async (req, res) => {
     console.log('✅ User found:', user.username);
     console.log('📸 User posts count:', user.posts?.length || 0);
 
-    // Get user's posts (both public and private for now)
-    const userPosts = await File.find({ uploadedBy: user._id })
+    // Get user's posts (both public and private, but exclude profile pictures)
+    const userPosts = await File.find({ 
+      uploadedBy: user._id,
+      isProfilePicture: { $ne: true } // Exclude profile pictures
+    })
       .populate('likes', 'username')
       .populate('comments.user', 'username profilePicture')
       .sort({ createdAt: -1 })
@@ -1219,8 +1229,11 @@ app.get('/api/profile', async (req, res) => {
 
     console.log('✅ Current user found:', user.username);
 
-    // Get user's posts (both public and private for current user)
-    const userPosts = await File.find({ uploadedBy: user._id })
+    // Get user's posts (both public and private for current user, but exclude profile pictures)
+    const userPosts = await File.find({ 
+      uploadedBy: user._id,
+      isProfilePicture: { $ne: true } // Exclude profile pictures
+    })
       .populate('likes', 'username')
       .populate('comments.user', 'username profilePicture')
       .sort({ createdAt: -1 })
@@ -1324,7 +1337,8 @@ app.post('/api/profile/picture', async (req, res) => {
           contentType: req.file.mimetype,
           size: req.file.size,
           caption: 'Profile Picture',
-          isPrivate: false,
+          isPrivate: true, // Make profile pictures private
+          isProfilePicture: true, // Mark as profile picture
           uploadedBy: user._id,
           fileData: Buffer.from(req.file.buffer)
         });

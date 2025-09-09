@@ -51,7 +51,6 @@ api/
 - Online user status
 - Conversation management
 - Message history
-
 ## 🔧 API Endpoints
 
 ### Authentication (`/api/auth`)
