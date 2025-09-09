@@ -201,7 +201,7 @@ export default function Chat() {
 
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto">
-            {showUserSearch ? (
+            {false ? (
               // User Search Results
               <div>
                 {isSearching ? (
