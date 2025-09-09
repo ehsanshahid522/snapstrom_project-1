@@ -331,7 +331,8 @@ app.get('/api/images/:fileId', async (req, res) => {
 
     const file = await File.findById(fileId);
     if (!file) {
-      return res.status(404).json({ message: 'File not found' });
+      console.error(`❌ Image not found: ${fileId}`);
+      return res.status(404).json({ message: 'File not found', fileId });
     }
 
     let buffer;
@@ -350,6 +351,37 @@ app.get('/api/images/:fileId', async (req, res) => {
   } catch (error) {
     console.error('Error serving image:', error);
     res.status(500).json({ message: 'Error serving image', error: error.message });
+  }
+});
+
+// Debug endpoint to check image status
+app.get('/api/debug/images/:fileId', async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const file = await File.findById(fileId);
+    
+    if (!file) {
+      return res.json({ 
+        exists: false, 
+        fileId, 
+        message: 'Image not found in database' 
+      });
+    }
+    
+    return res.json({
+      exists: true,
+      fileId,
+      filename: file.filename,
+      originalName: file.originalName,
+      contentType: file.contentType,
+      size: file.size,
+      uploadedBy: file.uploadedBy,
+      createdAt: file.createdAt,
+      hasFileData: !!file.fileData
+    });
+  } catch (error) {
+    console.error('Debug image error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

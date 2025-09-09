@@ -462,7 +462,9 @@ export default function Profile() {
                     alt={post.originalName || post.caption || 'Post image'} 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     onError={(e) => {
-                      e.target.src = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop';
+                      console.error('❌ Post image failed to load:', e.target.src);
+                      e.target.src = 'https://via.placeholder.com/400x400/6366f1/ffffff?text=Image+Not+Found';
+                      e.target.style.opacity = '0.7';
                     }}
                   />
                   

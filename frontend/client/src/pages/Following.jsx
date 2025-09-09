@@ -458,7 +458,9 @@ export default function Following() {
                    className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                    onError={(e) => {
                      console.error('❌ Image failed to load:', e.target.src);
-                     e.target.style.display = 'none';
+                     // Replace with a placeholder image
+                     e.target.src = 'https://via.placeholder.com/400x400/6366f1/ffffff?text=Image+Not+Found';
+                     e.target.style.opacity = '0.7';
                    }}
                  />
                  {/* Image overlay with gradient */}
@@ -714,14 +716,17 @@ export default function Following() {
                             src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${user.profilePicture}`} 
                             alt="" 
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
                           />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                            <span className="text-pink-600 font-bold text-lg">
-                              {user.username?.charAt(0).toUpperCase() || 'U'}
-                            </span>
-                          </div>
-                        )}
+                        ) : null}
+                        <div className={`w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center ${user.profilePicture ? 'hidden' : ''}`}>
+                          <span className="text-pink-600 font-bold text-lg">
+                            {user.username?.charAt(0).toUpperCase() || 'U'}
+                          </span>
+                        </div>
                       </div>
                       
                       {/* User Info */}
@@ -793,14 +798,17 @@ export default function Following() {
                             src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${user.profilePicture}`} 
                             alt="" 
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
                           />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                            <span className="text-pink-600 font-bold text-lg">
-                              {user.username?.charAt(0).toUpperCase() || 'U'}
-                            </span>
-                          </div>
-                        )}
+                        ) : null}
+                        <div className={`w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center ${user.profilePicture ? 'hidden' : ''}`}>
+                          <span className="text-pink-600 font-bold text-lg">
+                            {user.username?.charAt(0).toUpperCase() || 'U'}
+                          </span>
+                        </div>
                       </div>
                       
                       {/* User Info */}
