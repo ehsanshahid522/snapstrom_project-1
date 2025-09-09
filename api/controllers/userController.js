@@ -291,6 +291,64 @@ export const searchUsers = async (req, res) => {
   }
 };
 
+// Get followers list
+export const getFollowers = async (req, res) => {
+  try {
+    const userId = req.params.userId || req.user._id;
+    
+    const user = await User.findById(userId)
+      .select('followers')
+      .populate('followers', 'username profilePicture bio isOnline');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      followers: user.followers
+    });
+  } catch (error) {
+    console.error('Get followers error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch followers'
+    });
+  }
+};
+
+// Get following list
+export const getFollowing = async (req, res) => {
+  try {
+    const userId = req.params.userId || req.user._id;
+    
+    const user = await User.findById(userId)
+      .select('following')
+      .populate('following', 'username profilePicture bio isOnline');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      following: user.following
+    });
+  } catch (error) {
+    console.error('Get following error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch following'
+    });
+  }
+};
+
 // Logout user
 export const logout = async (req, res) => {
   try {

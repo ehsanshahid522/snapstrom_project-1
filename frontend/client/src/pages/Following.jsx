@@ -11,6 +11,12 @@ export default function Following() {
   const [currentUserId, setCurrentUserId] = useState(null)
   const [expandedComments, setExpandedComments] = useState({})
   const [overflowMenuOpen, setOverflowMenuOpen] = useState({}) // Track which posts have overflow menu open
+  
+  // New state for followers/following lists
+  const [activeTab, setActiveTab] = useState('posts') // 'posts', 'followers', 'following'
+  const [followers, setFollowers] = useState([])
+  const [following, setFollowing] = useState([])
+  const [loadingLists, setLoadingLists] = useState(false)
 
   // Function to fetch following posts
   const fetchFollowingPosts = async () => {
@@ -103,6 +109,65 @@ export default function Following() {
       setPosts([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Function to fetch followers list
+  const fetchFollowers = async () => {
+    try {
+      setLoadingLists(true)
+      const response = await api('/auth/followers')
+      if (response.success) {
+        setFollowers(response.followers || [])
+      }
+    } catch (error) {
+      console.error('Error fetching followers:', error)
+      setFollowers([])
+    } finally {
+      setLoadingLists(false)
+    }
+  }
+
+  // Function to fetch following list
+  const fetchFollowing = async () => {
+    try {
+      setLoadingLists(true)
+      const response = await api('/auth/following')
+      if (response.success) {
+        setFollowing(response.following || [])
+      }
+    } catch (error) {
+      console.error('Error fetching following:', error)
+      setFollowing([])
+    } finally {
+      setLoadingLists(false)
+    }
+  }
+
+  // Function to handle tab switching
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    if (tab === 'followers' && followers.length === 0) {
+      fetchFollowers()
+    } else if (tab === 'following' && following.length === 0) {
+      fetchFollowing()
+    }
+  }
+
+  // Function to handle follow/unfollow
+  const handleFollowToggle = async (userId) => {
+    try {
+      const response = await api(`/auth/follow/${userId}`, { method: 'POST' })
+      if (response.success) {
+        // Update the lists
+        if (activeTab === 'followers') {
+          fetchFollowers()
+        } else if (activeTab === 'following') {
+          fetchFollowing()
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error)
     }
   }
 
@@ -278,7 +343,45 @@ export default function Following() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Posts Feed */}
+      {/* Header with Tab Navigation */}
+      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="flex space-x-1 bg-gray-100 rounded-xl p-1">
+            <button
+              onClick={() => handleTabChange('posts')}
+              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                activeTab === 'posts'
+                  ? 'bg-white text-pink-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              📱 Posts
+            </button>
+            <button
+              onClick={() => handleTabChange('followers')}
+              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                activeTab === 'followers'
+                  ? 'bg-white text-pink-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              👥 Followers
+            </button>
+            <button
+              onClick={() => handleTabChange('following')}
+              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                activeTab === 'following'
+                  ? 'bg-white text-pink-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              ➕ Following
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content Area */}
       <div className="max-w-2xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {/* Floating Action Button */}
         <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50">
@@ -287,8 +390,10 @@ export default function Following() {
           </a>
         </div>
 
-        <div className="space-y-6 sm:space-y-8">
-          {posts.map((p, index) => (
+        {/* Conditional Content Based on Active Tab */}
+        {activeTab === 'posts' && (
+          <div className="space-y-6 sm:space-y-8">
+            {posts.map((p, index) => (
             <div 
               key={p._id} 
               className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden"
@@ -576,7 +681,160 @@ export default function Following() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
+
+        {/* Followers List */}
+        {activeTab === 'followers' && (
+          <div className="space-y-4">
+            {loadingLists ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading followers...</p>
+              </div>
+            ) : followers.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">No Followers Yet</h2>
+                <p className="text-gray-600">Share your posts to get more followers!</p>
+              </div>
+            ) : (
+              followers.map((user) => (
+                <div key={user._id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      {/* Profile Picture */}
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
+                        {user.profilePicture ? (
+                          <img 
+                            src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${user.profilePicture}`} 
+                            alt="" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
+                            <span className="text-pink-600 font-bold text-lg">
+                              {user.username?.charAt(0).toUpperCase() || 'U'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* User Info */}
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{user.username}</h3>
+                        {user.bio && (
+                          <p className="text-sm text-gray-600 mt-1">{user.bio}</p>
+                        )}
+                        <div className="flex items-center space-x-2 mt-1">
+                          {user.isOnline ? (
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          ) : (
+                            <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                          )}
+                          <span className="text-xs text-gray-500">
+                            {user.isOnline ? 'Online' : 'Offline'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Follow Button */}
+                    <button
+                      onClick={() => handleFollowToggle(user._id)}
+                      className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                    >
+                      Follow Back
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Following List */}
+        {activeTab === 'following' && (
+          <div className="space-y-4">
+            {loadingLists ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading following...</p>
+              </div>
+            ) : following.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Not Following Anyone</h2>
+                <p className="text-gray-600 mb-6">Start following people to see their posts in your feed!</p>
+                <a 
+                  href="/"
+                  className="inline-block px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-2xl"
+                >
+                  🌍 Explore All Posts
+                </a>
+              </div>
+            ) : (
+              following.map((user) => (
+                <div key={user._id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      {/* Profile Picture */}
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
+                        {user.profilePicture ? (
+                          <img 
+                            src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${user.profilePicture}`} 
+                            alt="" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
+                            <span className="text-pink-600 font-bold text-lg">
+                              {user.username?.charAt(0).toUpperCase() || 'U'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* User Info */}
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{user.username}</h3>
+                        {user.bio && (
+                          <p className="text-sm text-gray-600 mt-1">{user.bio}</p>
+                        )}
+                        <div className="flex items-center space-x-2 mt-1">
+                          {user.isOnline ? (
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          ) : (
+                            <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                          )}
+                          <span className="text-xs text-gray-500">
+                            {user.isOnline ? 'Online' : 'Offline'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Unfollow Button */}
+                    <button
+                      onClick={() => handleFollowToggle(user._id)}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                    >
+                      Unfollow
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
