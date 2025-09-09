@@ -1101,6 +1101,9 @@ app.get('/api/profile/:username', async (req, res) => {
       return res.status(400).json({ message: 'Username is required' });
     }
 
+    // URL decode the username to handle spaces and special characters
+    const decodedUsername = decodeURIComponent(username);
+
     // Ensure DB connection
     if (mongoose.connection.readyState !== 1) {
       let connected = false;
@@ -1114,10 +1117,10 @@ app.get('/api/profile/:username', async (req, res) => {
       }
     }
 
-    console.log('🔍 Looking for user:', username);
-    const user = await User.findOne({ username }).select('-password');
+    console.log('🔍 Looking for user:', decodedUsername);
+    const user = await User.findOne({ username: decodedUsername }).select('-password');
     if (!user) {
-      console.log('❌ User not found:', username);
+      console.log('❌ User not found:', decodedUsername);
       return res.status(404).json({ message: 'User not found' });
     }
 
