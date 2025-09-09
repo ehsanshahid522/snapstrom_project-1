@@ -17,11 +17,14 @@ export default function Nav() {
       if (showAccountMenu && !event.target.closest('.profile-dropdown')) {
         setShowAccountMenu(false)
       }
+      if (searchResults.length > 0 && !event.target.closest('.search-container')) {
+        setSearchResults([])
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showAccountMenu])
+  }, [showAccountMenu, searchResults])
 
   const logout = useCallback(() => {
     clearAuth()
@@ -37,13 +40,14 @@ export default function Nav() {
 
     setSearchLoading(true)
     try {
-      const response = await api.get(`/api/search/users?q=${encodeURIComponent(query)}`)
+      const response = await api(`/api/search/users?q=${encodeURIComponent(query)}`)
       if (response.users) {
         setSearchResults(response.users || [])
       }
     } catch (error) {
       console.error('Error searching users:', error)
       setSearchResults([])
+      // Don't show error to user, just clear results
     } finally {
       setSearchLoading(false)
     }
@@ -97,7 +101,7 @@ export default function Nav() {
         </div>
 
           {/* Center Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
+          <div className="hidden md:flex flex-1 max-w-md mx-8 search-container">
             <div className="relative w-full">
             <input
               type="text"
@@ -129,7 +133,18 @@ export default function Nav() {
                     <div className="flex items-center space-x-3">
                       {/* Avatar */}
                       <div className="relative">
-                        <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {user.profilePicture ? (
+                          <img 
+                            src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${user.profilePicture}`} 
+                            alt="Profile" 
+                            className="w-10 h-10 rounded-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                              e.target.nextSibling.style.display = 'flex'
+                            }}
+                          />
+                        ) : null}
+                        <div className={`w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm ${user.profilePicture ? 'hidden' : ''}`}>
                           {user.username.charAt(0).toUpperCase()}
                         </div>
                         {user.isOnline && (
