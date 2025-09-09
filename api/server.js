@@ -381,11 +381,64 @@ app.get('/api/debug/images/:fileId', async (req, res) => {
       size: file.size,
       uploadedBy: file.uploadedBy,
       createdAt: file.createdAt,
-      hasFileData: !!file.fileData
+      hasFileData: !!file.fileData,
+      isProfilePicture: file.isProfilePicture,
+      isPrivate: file.isPrivate,
+      caption: file.caption
     });
   } catch (error) {
     console.error('Debug image error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Migration endpoint to fix existing profile pictures
+app.post('/api/migrate/profile-pictures', async (req, res) => {
+  try {
+    console.log('🔄 Starting profile picture migration...');
+    
+    // Find all users with profile pictures
+    const usersWithProfilePics = await User.find({ 
+      profilePicture: { $exists: true, $ne: null } 
+    });
+    
+    console.log(`📊 Found ${usersWithProfilePics.length} users with profile pictures`);
+    
+    let updatedCount = 0;
+    
+    for (const user of usersWithProfilePics) {
+      // Find the file associated with this user's profile picture
+      const profilePicFile = await File.findById(user.profilePicture);
+      
+      if (profilePicFile) {
+        // Update the file to mark it as a profile picture
+        await File.findByIdAndUpdate(user.profilePicture, {
+          isProfilePicture: true,
+          isPrivate: true,
+          caption: 'Profile Picture'
+        });
+        
+        updatedCount++;
+        console.log(`✅ Updated profile picture for user: ${user.username}`);
+      }
+    }
+    
+    console.log(`🎉 Migration completed! Updated ${updatedCount} profile pictures`);
+    
+    res.json({
+      success: true,
+      message: `Successfully migrated ${updatedCount} profile pictures`,
+      updatedCount,
+      totalUsers: usersWithProfilePics.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Migration error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Migration failed', 
+      error: error.message 
+    });
   }
 });
 
@@ -1332,7 +1385,7 @@ app.post('/api/profile/picture', async (req, res) => {
       try {
         // Create a new file document for the profile picture
         const profilePictureFile = new File({
-          filename: 'profile-' + Date.now(),
+          filename: 'profile-' + Date.now() + '-' + user.username,
           originalName: req.file.originalname,
           contentType: req.file.mimetype,
           size: req.file.size,
