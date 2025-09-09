@@ -35,8 +35,22 @@ export default function Profile() {
         
         // Check if current user is following this user
         if (!isOwnProfile) {
-          const currentUserId = localStorage.getItem('userId')
-          const isFollowingUser = res.user?.followers?.includes(currentUserId)
+          // Get current user ID from token
+          const currentUserId = (() => {
+            try {
+              const token = localStorage.getItem('token')
+              if (!token) return null
+              const payload = JSON.parse(atob(token.split('.')[1]))
+              return payload.userId || payload.id
+            } catch (error) {
+              return null
+            }
+          })()
+          
+          // Check if current user is in the target user's followers list
+          const isFollowingUser = res.user?.followers?.some(follower => 
+            (typeof follower === 'string' ? follower : follower._id) === currentUserId
+          )
           setIsFollowing(isFollowingUser)
         }
       }catch(e){ 
@@ -130,7 +144,7 @@ export default function Profile() {
     
     setFollowLoading(true)
     try {
-      const response = await api(`/follow/${data.user.id}`, { method: 'POST' })
+      const response = await api(`/api/auth/follow/${data.user.id}`, { method: 'POST' })
       
       if (response.success) {
         setIsFollowing(!isFollowing)

@@ -35,7 +35,7 @@ export default function Following() {
           const token = localStorage.getItem('token')
           if (!token) return null
           const payload = JSON.parse(atob(token.split('.')[1]))
-          return payload.id
+          return payload.userId || payload.id
         } catch (error) {
           return null
         }
@@ -116,7 +116,7 @@ export default function Following() {
   const fetchFollowers = async () => {
     try {
       setLoadingLists(true)
-      const response = await api('/auth/followers')
+      const response = await api('/api/auth/followers')
       if (response.success) {
         setFollowers(response.followers || [])
       }
@@ -132,7 +132,7 @@ export default function Following() {
   const fetchFollowing = async () => {
     try {
       setLoadingLists(true)
-      const response = await api('/auth/following')
+      const response = await api('/api/auth/following')
       if (response.success) {
         setFollowing(response.following || [])
       }
@@ -157,7 +157,7 @@ export default function Following() {
   // Function to handle follow/unfollow
   const handleFollowToggle = async (userId) => {
     try {
-      const response = await api(`/auth/follow/${userId}`, { method: 'POST' })
+      const response = await api(`/api/auth/follow/${userId}`, { method: 'POST' })
       if (response.success) {
         // Update the lists
         if (activeTab === 'followers') {
