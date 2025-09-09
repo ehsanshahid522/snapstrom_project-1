@@ -1942,6 +1942,52 @@ app.get('/api/auth/follow-status/:userId', async (req, res) => {
   }
 });
 
+// Chat Database Schemas
+const ConversationSchema = new mongoose.Schema({
+  participants: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  lastMessage: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Message'
+  },
+  lastMessageAt: {
+    type: Date,
+    default: Date.now
+  }
+}, { timestamps: true })
+
+const MessageSchema = new mongoose.Schema({
+  conversation: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Conversation',
+    required: true
+  },
+  sender: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  content: {
+    type: String,
+    required: true
+  },
+  readBy: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    readAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
+}, { timestamps: true })
+
+const Conversation = mongoose.model('Conversation', ConversationSchema)
+const Message = mongoose.model('Message', MessageSchema)
+
 // Chat endpoints
 app.get('/api/chat/conversations', async (req, res) => {
   try {
@@ -1953,11 +1999,40 @@ app.get('/api/chat/conversations', async (req, res) => {
     const payload = JSON.parse(atob(token.split('.')[1]))
     const userId = payload.userId || payload.id
 
-    // For now, return empty conversations array
-    // TODO: Implement actual conversation fetching from database
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB()
+    }
+
+    // Find conversations where user is a participant
+    const conversations = await Conversation.find({
+      participants: userId
+    })
+    .populate('participants', 'username profilePicture')
+    .populate('lastMessage')
+    .sort({ lastMessageAt: -1 })
+
+    // Format conversations for frontend
+    const formattedConversations = conversations.map(conv => ({
+      id: conv._id,
+      participants: conv.participants.map(p => ({
+        id: p._id,
+        username: p.username,
+        profilePicture: p.profilePicture
+      })),
+      lastMessage: conv.lastMessage ? {
+        id: conv.lastMessage._id,
+        content: conv.lastMessage.content,
+        sender: conv.lastMessage.sender,
+        createdAt: conv.lastMessage.createdAt
+      } : null,
+      lastMessageAt: conv.lastMessageAt,
+      createdAt: conv.createdAt
+    }))
+
     res.json({ 
       success: true,
-      conversations: [] 
+      conversations: formattedConversations 
     })
   } catch (error) {
     console.error('Chat conversations error:', error)
@@ -1973,11 +2048,41 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
       return res.status(401).json({ message: 'No token provided' })
     }
 
-    // For now, return empty messages array
-    // TODO: Implement actual message fetching from database
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const userId = payload.userId || payload.id
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB()
+    }
+
+    // Verify user is participant in conversation
+    const conversation = await Conversation.findById(conversationId)
+    if (!conversation || !conversation.participants.includes(userId)) {
+      return res.status(403).json({ message: 'Access denied to this conversation' })
+    }
+
+    // Fetch messages for this conversation
+    const messages = await Message.find({ conversation: conversationId })
+      .populate('sender', 'username profilePicture')
+      .sort({ createdAt: 1 })
+
+    // Format messages for frontend
+    const formattedMessages = messages.map(msg => ({
+      id: msg._id,
+      content: msg.content,
+      sender: {
+        id: msg.sender._id,
+        username: msg.sender.username,
+        profilePicture: msg.sender.profilePicture
+      },
+      createdAt: msg.createdAt,
+      readBy: msg.readBy
+    }))
+
     res.json({ 
       success: true,
-      messages: [] 
+      messages: formattedMessages 
     })
   } catch (error) {
     console.error('Chat messages error:', error)
@@ -1996,25 +2101,113 @@ app.post('/api/chat/start-conversation', async (req, res) => {
     const payload = JSON.parse(atob(token.split('.')[1]))
     const userId = payload.userId || payload.id
 
-    // For now, return a mock conversation
-    // TODO: Implement actual conversation creation
-    const mockConversation = {
-      id: 'mock-' + Date.now(),
-      participants: [
-        { id: userId, username: payload.username || 'Current User' },
-        { id: 'mock-user', username: username }
-      ],
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB()
+    }
+
+    // Find the target user
+    const targetUser = await User.findOne({ username })
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    // Check if conversation already exists
+    let conversation = await Conversation.findOne({
+      participants: { $all: [userId, targetUser._id] }
+    }).populate('participants', 'username profilePicture')
+
+    if (!conversation) {
+      // Create new conversation
+      conversation = new Conversation({
+        participants: [userId, targetUser._id]
+      })
+      await conversation.save()
+      await conversation.populate('participants', 'username profilePicture')
+    }
+
+    // Format conversation for frontend
+    const formattedConversation = {
+      id: conversation._id,
+      participants: conversation.participants.map(p => ({
+        id: p._id,
+        username: p.username,
+        profilePicture: p.profilePicture
+      })),
       lastMessage: null,
-      createdAt: new Date().toISOString()
+      lastMessageAt: conversation.lastMessageAt,
+      createdAt: conversation.createdAt
     }
 
     res.json({ 
       success: true,
-      conversation: mockConversation 
+      conversation: formattedConversation 
     })
   } catch (error) {
     console.error('Start conversation error:', error)
     res.status(500).json({ message: 'Error starting conversation', error: error.message })
+  }
+})
+
+// Send message endpoint
+app.post('/api/chat/send-message', async (req, res) => {
+  try {
+    const { conversationId, content } = req.body
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' })
+    }
+
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const userId = payload.userId || payload.id
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB()
+    }
+
+    // Verify user is participant in conversation
+    const conversation = await Conversation.findById(conversationId)
+    if (!conversation || !conversation.participants.includes(userId)) {
+      return res.status(403).json({ message: 'Access denied to this conversation' })
+    }
+
+    // Create new message
+    const message = new Message({
+      conversation: conversationId,
+      sender: userId,
+      content: content.trim()
+    })
+    await message.save()
+
+    // Update conversation's last message
+    conversation.lastMessage = message._id
+    conversation.lastMessageAt = new Date()
+    await conversation.save()
+
+    // Populate message with sender info
+    await message.populate('sender', 'username profilePicture')
+
+    // Format message for frontend
+    const formattedMessage = {
+      id: message._id,
+      content: message.content,
+      sender: {
+        id: message.sender._id,
+        username: message.sender.username,
+        profilePicture: message.sender.profilePicture
+      },
+      createdAt: message.createdAt,
+      readBy: message.readBy
+    }
+
+    res.json({ 
+      success: true,
+      message: formattedMessage 
+    })
+  } catch (error) {
+    console.error('Send message error:', error)
+    res.status(500).json({ message: 'Error sending message', error: error.message })
   }
 })
 

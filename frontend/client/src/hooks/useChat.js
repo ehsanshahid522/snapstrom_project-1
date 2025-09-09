@@ -188,9 +188,9 @@ export const useChatAPI = () => {
       setLoading(true)
       setError(null)
       
-      const response = await api('/chat/send', {
+      const response = await api('/api/chat/send-message', {
         method: 'POST',
-        body: { conversationId, content, type }
+        body: { conversationId, content }
       })
 
       return response
@@ -207,7 +207,7 @@ export const useChatAPI = () => {
       setLoading(true)
       setError(null)
       
-      const response = await api('/chat/conversations')
+      const response = await api('/api/chat/conversations')
       return response.conversations || []
     } catch (err) {
       setError(err.message)
@@ -222,7 +222,7 @@ export const useChatAPI = () => {
       setLoading(true)
       setError(null)
       
-      const response = await api(`/chat/messages/${conversationId}`)
+      const response = await api(`/api/chat/messages/${conversationId}`)
       return response.messages || []
     } catch (err) {
       setError(err.message)
@@ -237,7 +237,7 @@ export const useChatAPI = () => {
       setLoading(true)
       setError(null)
       
-      const response = await api('/chat/start-conversation', {
+      const response = await api('/api/chat/start-conversation', {
         method: 'POST',
         body: { username }
       })
