@@ -153,17 +153,8 @@ export default function Chat() {
     }
   }, [sendMessage])
 
-  // Filter conversations based on search
-  const filteredConversations = useMemo(() => {
-    if (!searchQuery.trim()) return conversations
-    
-    return conversations.filter(conv => 
-      conv.participants.some(p => 
-        p.username.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        p.username !== currentUser
-      )
-    )
-  }, [conversations, searchQuery, currentUser])
+  // Use conversations directly since search is removed
+  const filteredConversations = conversations
 
   // Format message time
   const formatMessageTime = useCallback((timestamp) => {

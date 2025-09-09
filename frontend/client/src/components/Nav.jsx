@@ -28,6 +28,54 @@ export default function Nav() {
     window.location.href = '/login'
   }, [])
 
+  // Search users function
+  const searchUsers = useCallback(async (query) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    setSearchLoading(true)
+    try {
+      const response = await api.get(`/api/search/users?q=${encodeURIComponent(query)}`)
+      if (response.users) {
+        setSearchResults(response.users || [])
+      }
+    } catch (error) {
+      console.error('Error searching users:', error)
+      setSearchResults([])
+    } finally {
+      setSearchLoading(false)
+    }
+  }, [])
+
+  // Handle search query changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchUsers(searchQuery)
+      } else {
+        setSearchResults([])
+      }
+    }, 300) // Debounce search
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, searchUsers])
+
+  // Handle search submission
+  const handleSearch = useCallback(() => {
+    if (searchQuery.trim()) {
+      searchUsers(searchQuery)
+    }
+  }, [searchQuery, searchUsers])
+
+  // Handle user selection from search
+  const handleUserSelect = useCallback((user) => {
+    window.location.href = `/profile/${user.username}`
+    setSearchQuery('')
+    setSearchResults([])
+  }, [])
+
   return (
     <>
       {/* Top Header with Logo */}
@@ -62,7 +110,59 @@ export default function Nav() {
               <svg className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
+              {searchLoading && (
+                <div className="absolute right-4 top-3.5">
+                  <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
             </div>
+            
+            {/* Search Results Dropdown */}
+            {searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
+                {searchResults.map((user) => (
+                  <div
+                    key={user.id}
+                    onClick={() => handleUserSelect(user)}
+                    className="p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50 last:border-b-0"
+                  >
+                    <div className="flex items-center space-x-3">
+                      {/* Avatar */}
+                      <div className="relative">
+                        <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          {user.username.charAt(0).toUpperCase()}
+                        </div>
+                        {user.isOnline && (
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                        )}
+                      </div>
+                      
+                      {/* User Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">
+                            @{user.username}
+                          </h3>
+                          {user.isOnline && (
+                            <span className="text-xs text-green-600 font-medium">Online</span>
+                          )}
+                        </div>
+                        {user.bio && (
+                          <p className="text-xs text-gray-500 truncate mt-1">{user.bio}</p>
+                        )}
+                      </div>
+                      
+                      {/* View Profile Button */}
+                      <div className="flex-shrink-0">
+                        <button className="px-3 py-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-semibold rounded-full hover:from-pink-600 hover:to-purple-700 transition-all duration-200">
+                          View Profile
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           
           {/* Action Buttons */}
