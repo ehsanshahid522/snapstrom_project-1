@@ -2009,9 +2009,9 @@ app.get('/api/chat/conversations', async (req, res) => {
 
     // Find conversations where user is a participant
     const conversations = await Conversation.find({
-      participants: userId
+      'participants.user': userId
     })
-    .populate('participants', 'username profilePicture')
+    .populate('participants.user', 'username profilePicture')
     .populate('lastMessage')
     .sort({ lastMessageAt: -1 })
 
@@ -2019,9 +2019,9 @@ app.get('/api/chat/conversations', async (req, res) => {
     const formattedConversations = conversations.map(conv => ({
       id: conv._id,
       participants: conv.participants.map(p => ({
-        id: p._id,
-        username: p.username,
-        profilePicture: p.profilePicture
+        id: p.user._id,
+        username: p.user.username,
+        profilePicture: p.user.profilePicture
       })),
       lastMessage: conv.lastMessage ? {
         id: conv.lastMessage._id,
@@ -2061,7 +2061,7 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
 
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
-    if (!conversation || !conversation.participants.includes(userId)) {
+    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId)) {
       return res.status(403).json({ message: 'Access denied to this conversation' })
     }
 
@@ -2117,25 +2117,28 @@ app.post('/api/chat/start-conversation', async (req, res) => {
 
     // Check if conversation already exists
     let conversation = await Conversation.findOne({
-      participants: { $all: [userId, targetUser._id] }
-    }).populate('participants', 'username profilePicture')
+      'participants.user': { $all: [userId, targetUser._id] }
+    }).populate('participants.user', 'username profilePicture')
 
     if (!conversation) {
       // Create new conversation
       conversation = new Conversation({
-        participants: [userId, targetUser._id]
+        participants: [
+          { user: userId, username: payload.username },
+          { user: targetUser._id, username: targetUser.username }
+        ]
       })
       await conversation.save()
-      await conversation.populate('participants', 'username profilePicture')
+      await conversation.populate('participants.user', 'username profilePicture')
     }
 
     // Format conversation for frontend
     const formattedConversation = {
       id: conversation._id,
       participants: conversation.participants.map(p => ({
-        id: p._id,
-        username: p.username,
-        profilePicture: p.profilePicture
+        id: p.user._id,
+        username: p.user.username,
+        profilePicture: p.user.profilePicture
       })),
       lastMessage: null,
       lastMessageAt: conversation.lastMessageAt,
@@ -2171,7 +2174,7 @@ app.post('/api/chat/send-message', async (req, res) => {
 
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
-    if (!conversation || !conversation.participants.includes(userId)) {
+    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId)) {
       return res.status(403).json({ message: 'Access denied to this conversation' })
     }
 
@@ -2211,6 +2214,52 @@ app.post('/api/chat/send-message', async (req, res) => {
   } catch (error) {
     console.error('Send message error:', error)
     res.status(500).json({ message: 'Error sending message', error: error.message })
+  }
+})
+
+// Mark messages as read endpoint
+app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
+  try {
+    const { conversationId } = req.params
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' })
+    }
+
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const userId = payload.userId || payload.id
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB()
+    }
+
+    // Verify user is participant in conversation
+    const conversation = await Conversation.findById(conversationId)
+    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId)) {
+      return res.status(403).json({ message: 'Access denied to this conversation' })
+    }
+
+    // Update lastReadAt for the user
+    await Conversation.findByIdAndUpdate(
+      conversationId,
+      { 
+        $set: { 
+          'participants.$[elem].lastReadAt': new Date() 
+        } 
+      },
+      { 
+        arrayFilters: [{ 'elem.user': userId }] 
+      }
+    )
+
+    res.json({ 
+      success: true,
+      message: 'Messages marked as read' 
+    })
+  } catch (error) {
+    console.error('Mark read error:', error)
+    res.status(500).json({ message: 'Error marking messages as read', error: error.message })
   }
 })
 

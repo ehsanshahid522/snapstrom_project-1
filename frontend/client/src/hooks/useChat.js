@@ -253,7 +253,7 @@ export const useChatAPI = () => {
 
   const markAsRead = useCallback(async (conversationId) => {
     try {
-      await api(`/chat/mark-read/${conversationId}`, {
+      await api(`/api/chat/mark-read/${conversationId}`, {
         method: 'POST'
       })
     } catch (err) {
