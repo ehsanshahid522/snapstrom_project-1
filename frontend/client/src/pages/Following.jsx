@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
 
 export default function Following() {
+  const [searchParams] = useSearchParams()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState(null)
@@ -17,6 +19,7 @@ export default function Following() {
   const [followers, setFollowers] = useState([])
   const [following, setFollowing] = useState([])
   const [loadingLists, setLoadingLists] = useState(false)
+  const [targetUserId, setTargetUserId] = useState(null) // User whose followers/following we're viewing
 
   // Function to fetch following posts
   const fetchFollowingPosts = async () => {
@@ -113,10 +116,11 @@ export default function Following() {
   }
 
   // Function to fetch followers list
-  const fetchFollowers = async () => {
+  const fetchFollowers = async (userId = null) => {
     try {
       setLoadingLists(true)
-      const response = await api('/api/auth/followers')
+      const endpoint = userId ? `/api/auth/followers/${userId}` : '/api/auth/followers'
+      const response = await api(endpoint)
       if (response.success) {
         setFollowers(response.followers || [])
       }
@@ -129,10 +133,11 @@ export default function Following() {
   }
 
   // Function to fetch following list
-  const fetchFollowing = async () => {
+  const fetchFollowing = async (userId = null) => {
     try {
       setLoadingLists(true)
-      const response = await api('/api/auth/following')
+      const endpoint = userId ? `/api/auth/following/${userId}` : '/api/auth/following'
+      const response = await api(endpoint)
       if (response.success) {
         setFollowing(response.following || [])
       }
@@ -148,9 +153,9 @@ export default function Following() {
   const handleTabChange = (tab) => {
     setActiveTab(tab)
     if (tab === 'followers' && followers.length === 0) {
-      fetchFollowers()
+      fetchFollowers(targetUserId)
     } else if (tab === 'following' && following.length === 0) {
-      fetchFollowing()
+      fetchFollowing(targetUserId)
     }
   }
 
@@ -171,9 +176,33 @@ export default function Following() {
     }
   }
 
+  // Handle URL parameters
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    const userId = searchParams.get('userId')
+    
+    if (tab) {
+      setActiveTab(tab)
+    }
+    
+    if (userId) {
+      setTargetUserId(userId)
+    }
+  }, [searchParams])
+
+  // Load data on component mount
   useEffect(() => {
     fetchFollowingPosts()
   }, [])
+
+  // Load followers/following when tab changes or target user changes
+  useEffect(() => {
+    if (activeTab === 'followers') {
+      fetchFollowers(targetUserId)
+    } else if (activeTab === 'following') {
+      fetchFollowing(targetUserId)
+    }
+  }, [activeTab, targetUserId])
 
   const like = async (id) => {
     try {

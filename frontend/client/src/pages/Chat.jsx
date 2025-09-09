@@ -8,10 +8,7 @@ export default function Chat() {
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [showUserSearch, setShowUserSearch] = useState(false)
+  // Removed search functionality - using header search only
   const [onlineUsers, setOnlineUsers] = useState([])
   const messagesEndRef = useRef(null)
   const currentUser = useMemo(() => localStorage.getItem('username'), [])
@@ -48,26 +45,7 @@ export default function Chat() {
     }
   }, [getConversations])
 
-  // Search users function
-  const searchUsers = useCallback(async (query) => {
-    if (!query.trim()) {
-      setSearchResults([])
-      return
-    }
-
-    setIsSearching(true)
-    try {
-      const response = await api.get(`/users/search?q=${encodeURIComponent(query)}`)
-      if (response.success) {
-        setSearchResults(response.users)
-      }
-    } catch (error) {
-      console.error('Error searching users:', error)
-      setSearchResults([])
-    } finally {
-      setIsSearching(false)
-    }
-  }, [])
+  // Removed search functionality - using header search only
 
   // Start new conversation with user
   const startNewConversation = useCallback(async (user) => {
@@ -119,20 +97,7 @@ export default function Chat() {
     }
   }, [searchParams, conversations, fetchMessages, startNewConversation])
 
-  // Handle search query changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchQuery.trim()) {
-        searchUsers(searchQuery)
-        setShowUserSearch(true)
-      } else {
-        setSearchResults([])
-        setShowUserSearch(false)
-      }
-    }, 300) // Debounce search
-
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery, searchUsers])
+  // Removed search query handling - using header search only
 
   // Send a new message
   const sendMessage = useCallback(async () => {
@@ -240,19 +205,7 @@ export default function Chat() {
           <div className="p-6 border-b border-gray-100">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Messages</h1>
             
-            {/* Search */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search users or conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200"
-              />
-              <svg className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+            {/* Removed search - using header search only */}
           </div>
 
           {/* Conversations List */}

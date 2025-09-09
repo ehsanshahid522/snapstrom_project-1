@@ -13,10 +13,7 @@ export default function Feed() {
   const [expandedComments, setExpandedComments] = useState({}) // Track which posts have comments expanded
   const [showKebabMenu, setShowKebabMenu] = useState({}) // Track which posts have kebab menu open
   const [overflowMenuOpen, setOverflowMenuOpen] = useState({}) // Track which posts have overflow menu open
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [showSearchResults, setShowSearchResults] = useState(false)
+  // Removed search functionality - using header search only
 
   // Memoized current user ID extraction
   const currentUserId = useMemo(() => {
@@ -39,59 +36,14 @@ export default function Feed() {
       if (!event.target.closest('.overflow-menu')) {
         setOverflowMenuOpen({})
       }
-      if (!event.target.closest('.search-container')) {
-        setShowSearchResults(false)
-      }
+      // Removed search container check - using header search only
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Search users function
-  const searchUsers = useCallback(async (query) => {
-    if (!query.trim()) {
-      setSearchResults([])
-      setShowSearchResults(false)
-      return
-    }
-
-    setIsSearching(true)
-    try {
-      const response = await api.get(`/users/search?q=${encodeURIComponent(query)}`)
-      if (response.success) {
-        setSearchResults(response.users)
-        setShowSearchResults(true)
-      }
-    } catch (error) {
-      console.error('Error searching users:', error)
-      setSearchResults([])
-    } finally {
-      setIsSearching(false)
-    }
-  }, [])
-
-  // Handle search query changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchQuery.trim()) {
-        searchUsers(searchQuery)
-      } else {
-        setSearchResults([])
-        setShowSearchResults(false)
-      }
-    }, 300) // Debounce search
-
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery, searchUsers])
-
-  // Handle user selection from search
-  const handleUserSelect = useCallback((user) => {
-    navigate(`/profile/${user.username}`)
-    setSearchQuery('')
-    setSearchResults([])
-    setShowSearchResults(false)
-  }, [navigate])
+  // Removed search functionality - using header search only
 
     // Function to fetch posts
   const fetchPosts = useCallback(async () => {
@@ -686,76 +638,7 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Search Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <div className="relative search-container">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200"
-              />
-              <svg className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              {isSearching && (
-                <div className="absolute right-3 top-3.5">
-                  <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              )}
-            </div>
-            
-            {/* Search Results Dropdown */}
-            {showSearchResults && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
-                {searchResults.length > 0 ? (
-                  searchResults.map((user) => (
-                    <div
-                      key={user.id}
-                      onClick={() => handleUserSelect(user)}
-                      className="p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50 last:border-b-0"
-                    >
-                      <div className="flex items-center space-x-3">
-                        {/* Avatar */}
-                        <div className="relative">
-                          <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                            {user.username.charAt(0).toUpperCase()}
-                          </div>
-                          {user.isOnline && (
-                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                          )}
-                        </div>
-                        
-                        {/* User Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2">
-                            <h3 className="text-sm font-semibold text-gray-900 truncate">
-                              {user.username}
-                            </h3>
-                            {user.isOnline && (
-                              <span className="text-xs text-green-600 font-medium">Online</span>
-                            )}
-                          </div>
-                          {user.bio && (
-                            <p className="text-xs text-gray-500 truncate mt-1">{user.bio}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : searchQuery.trim() && !isSearching ? (
-                  <div className="p-4 text-center text-gray-500">
-                    <p className="text-sm">No users found</p>
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Removed search header - using navigation search only */}
 
       {/* Posts Feed */}
       <div className="max-w-2xl mx-auto px-2 sm:px-4 py-4 sm:py-6">

@@ -139,6 +139,20 @@ export default function Profile() {
     }
   }, [navigate, data?.user?.id])
 
+  // Handle followers button click - show users who follow this user
+  const handleFollowersClick = useCallback(() => {
+    if (data?.user?.id) {
+      navigate(`/following?tab=followers&userId=${data.user.id}`)
+    }
+  }, [navigate, data?.user?.id])
+
+  // Handle following button click - show users that this user follows
+  const handleFollowingClick = useCallback(() => {
+    if (data?.user?.id) {
+      navigate(`/following?tab=following&userId=${data.user.id}`)
+    }
+  }, [navigate, data?.user?.id])
+
   const handleFollow = useCallback(async () => {
     if (followLoading || !data?.user?.id) return
     
@@ -305,7 +319,7 @@ export default function Profile() {
                   </div>
                 </div>
                 
-                <div className="text-center group cursor-pointer transform hover:scale-110 transition-all duration-300 relative">
+                <div className="text-center group cursor-pointer transform hover:scale-110 transition-all duration-300 relative" onClick={() => handleFollowersClick()}>
                   <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-purple-400/20 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                   <div className="relative">
                     <div className="text-5xl font-bold text-white mb-2 group-hover:text-pink-300 transition-colors drop-shadow-lg animate-pulse" style={{animationDelay: '0.5s'}}>
@@ -317,7 +331,7 @@ export default function Profile() {
                   </div>
                 </div>
                 
-                <div className="text-center group cursor-pointer transform hover:scale-110 transition-all duration-300 relative">
+                <div className="text-center group cursor-pointer transform hover:scale-110 transition-all duration-300 relative" onClick={() => handleFollowingClick()}>
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                   <div className="relative">
                     <div className="text-5xl font-bold text-white mb-2 group-hover:text-cyan-300 transition-colors drop-shadow-lg animate-pulse" style={{animationDelay: '1s'}}>
