@@ -195,7 +195,35 @@ export default function Chat() {
 
   // Format message time
   const formatMessageTime = useCallback((timestamp) => {
-    const date = new Date(timestamp)
+    // Handle different timestamp formats
+    let dateString = timestamp
+    
+    // If timestamp is an object with timestamp property
+    if (typeof timestamp === 'object' && timestamp !== null) {
+      if (timestamp.timestamp) {
+        dateString = timestamp.timestamp
+      } else if (timestamp.createdAt) {
+        dateString = timestamp.createdAt
+      } else if (timestamp.lastMessageAt) {
+        dateString = timestamp.lastMessageAt
+      } else {
+        // If it's a Date object, convert to string
+        dateString = timestamp.toString()
+      }
+    }
+    
+    // Ensure we have a valid date string
+    if (!dateString) {
+      return 'Just now'
+    }
+    
+    const date = new Date(dateString)
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Just now'
+    }
+    
     const now = new Date()
     const diffInHours = (now - date) / (1000 * 60 * 60)
 
@@ -376,6 +404,12 @@ export default function Chat() {
                 const partner = getConversationPartner(conversation)
                 const isSelected = selectedConversation?.id === conversation.id
                 
+                // Defensive programming - ensure we have valid data
+                if (!conversation || !partner || !partner.username) {
+                  console.warn('Invalid conversation data:', conversation)
+                  return null
+                }
+                
                 return (
                   <div
                     key={conversation.id}
@@ -402,7 +436,7 @@ export default function Chat() {
                             {partner.username}
                           </h3>
                           <span className="text-xs text-gray-500">
-                            {formatMessageTime(conversation.lastMessageTime)}
+                            {formatMessageTime(conversation.lastMessageTime || conversation.lastMessageAt || conversation.createdAt)}
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 truncate mt-1">
@@ -412,7 +446,7 @@ export default function Chat() {
                     </div>
                   </div>
                 )
-              })
+              }).filter(Boolean) // Remove null entries
             )}
           </div>
         </div>
@@ -440,27 +474,35 @@ export default function Chat() {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.senderUsername === currentUser ? 'justify-end' : 'justify-start'}`}
-                  >
+                {messages.map((message) => {
+                  // Defensive programming - ensure we have valid message data
+                  if (!message || !message.id || !message.content) {
+                    console.warn('Invalid message data:', message)
+                    return null
+                  }
+                  
+                  return (
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.senderUsername === currentUser
-                          ? 'bg-pink-500 text-white'
-                          : 'bg-gray-200 text-gray-900'
-                      }`}
+                      key={message.id}
+                      className={`flex ${message.senderUsername === currentUser ? 'justify-end' : 'justify-start'}`}
                     >
-                      <p className="text-sm">{message.content}</p>
-                      <p className={`text-xs mt-1 ${
-                        message.senderUsername === currentUser ? 'text-pink-100' : 'text-gray-500'
-                      }`}>
-                        {formatMessageTime(message.timestamp)}
-                      </p>
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          message.senderUsername === currentUser
+                            ? 'bg-pink-500 text-white'
+                            : 'bg-gray-200 text-gray-900'
+                        }`}
+                      >
+                        <p className="text-sm">{message.content}</p>
+                        <p className={`text-xs mt-1 ${
+                          message.senderUsername === currentUser ? 'text-pink-100' : 'text-gray-500'
+                        }`}>
+                          {formatMessageTime(message.timestamp)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                }).filter(Boolean)} {/* Remove null entries */}
                 <div ref={messagesEndRef} />
               </div>
 
