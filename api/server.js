@@ -1877,12 +1877,26 @@ app.get('/api/auth/follow-status/:userId', async (req, res) => {
 // Chat Database Schemas
 const ConversationSchema = new mongoose.Schema({
   participants: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    username: {
+      type: String,
+      required: true
+    }
   }],
   lastMessage: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message'
+    content: String,
+    sender: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
   },
   lastMessageAt: {
     type: Date,
@@ -2040,25 +2054,37 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
 
 app.post('/api/chat/start-conversation', async (req, res) => {
   try {
+    console.log('🚀 Start conversation request received');
+    console.log('📝 Request body:', req.body);
+    
     const { username } = req.body
     if (!username) {
+      console.log('❌ No username provided');
       return res.status(400).json({ message: 'Username is required' })
     }
 
     const token = req.headers.authorization?.replace('Bearer ', '')
     if (!token) {
+      console.log('❌ No token provided');
       return res.status(401).json({ message: 'No token provided' })
     }
 
+    console.log('🔑 Token received, parsing...');
     const payload = JSON.parse(atob(token.split('.')[1]))
     const userId = payload.userId || payload.id
     const currentUsername = payload.username
 
+    console.log('👤 User ID:', userId);
+    console.log('👤 Current username:', currentUsername);
+    console.log('🎯 Target username:', username);
+
     if (!userId) {
+      console.log('❌ No user ID in token');
       return res.status(401).json({ message: 'Invalid token: missing user ID' })
     }
 
     if (!currentUsername) {
+      console.log('❌ No username in token');
       return res.status(401).json({ message: 'Invalid token: missing username' })
     }
 
@@ -2081,41 +2107,53 @@ app.post('/api/chat/start-conversation', async (req, res) => {
     }
 
     // Convert userId to ObjectId for proper querying
+    console.log('🔄 Converting user ID to ObjectId...');
     const userObjectId = new mongoose.Types.ObjectId(userId)
+    console.log('✅ User ObjectId created:', userObjectId);
 
     console.log('🔍 Starting conversation between:', currentUsername, 'and', username)
 
     // Find the target user
+    console.log('🔍 Searching for target user:', username);
     const targetUser = await User.findOne({ username })
     if (!targetUser) {
       console.log('❌ Target user not found:', username)
       return res.status(404).json({ message: 'User not found' })
     }
 
-    console.log('✅ Target user found:', targetUser.username)
+    console.log('✅ Target user found:', targetUser.username, 'ID:', targetUser._id)
 
     // Check if conversation already exists
+    console.log('🔍 Checking for existing conversation...');
     let conversation = await Conversation.findOne({
       'participants.user': { $all: [userObjectId, targetUser._id] }
     }).populate('participants.user', 'username profilePicture')
 
     if (!conversation) {
       console.log('📝 Creating new conversation...')
-      // Create new conversation
-      conversation = new Conversation({
-        participants: [
-          { user: userObjectId, username: currentUsername },
-          { user: targetUser._id, username: targetUser.username }
-        ]
-      })
-      await conversation.save()
-      await conversation.populate('participants.user', 'username profilePicture')
-      console.log('✅ New conversation created:', conversation._id)
+      try {
+        // Create new conversation
+        conversation = new Conversation({
+          participants: [
+            { user: userObjectId, username: currentUsername },
+            { user: targetUser._id, username: targetUser.username }
+          ]
+        })
+        console.log('💾 Saving conversation to database...');
+        await conversation.save()
+        console.log('✅ Conversation saved, populating participants...');
+        await conversation.populate('participants.user', 'username profilePicture')
+        console.log('✅ New conversation created:', conversation._id)
+      } catch (saveError) {
+        console.error('❌ Error saving conversation:', saveError);
+        throw saveError;
+      }
     } else {
       console.log('✅ Existing conversation found:', conversation._id)
     }
 
     // Format conversation for frontend
+    console.log('🔄 Formatting conversation for frontend...');
     const formattedConversation = {
       id: conversation._id,
       participants: conversation.participants.map(p => ({
@@ -2128,13 +2166,23 @@ app.post('/api/chat/start-conversation', async (req, res) => {
       createdAt: conversation.createdAt
     }
 
+    console.log('✅ Formatted conversation:', formattedConversation);
+    console.log('📤 Sending response...');
+
     res.json({ 
       success: true,
       conversation: formattedConversation 
     })
   } catch (error) {
-    console.error('Start conversation error:', error)
-    res.status(500).json({ message: 'Error starting conversation', error: error.message })
+    console.error('❌ Start conversation error:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    res.status(500).json({ 
+      message: 'Error starting conversation', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    })
   }
 })
 
