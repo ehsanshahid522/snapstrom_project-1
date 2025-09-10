@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useChatAPI, useRealTimeChat, useTypingIndicator } from '../hooks/useChat.js'
+import { useChat } from '../hooks/useChat.js'
 import { api } from '../lib/api.js'
 import { safeTimestampToString, safeObjectToString } from '../utils/timestampUtils.js'
 
@@ -9,46 +9,42 @@ export default function Chat() {
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
-  const [showUserSearch, setShowUserSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [onlineUsers, setOnlineUsers] = useState([])
+  const [showUserSearch, setShowUserSearch] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
   const messagesEndRef = useRef(null)
   const currentUser = useMemo(() => localStorage.getItem('username'), [])
 
-
   // Use custom hooks
-  const { loading, error, sendMessage: apiSendMessage, getConversations, getMessages, startConversation, markAsRead } = useChatAPI()
-  const { messages, isConnected, typingUsers, sendMessage: wsSendMessage, setMessages } = useRealTimeChat(selectedConversation?.id)
-  const { handleTyping } = useTypingIndicator(selectedConversation?.id, wsSendMessage)
+  const { 
+    messages, 
+    loading: chatLoading, 
+    error: chatError, 
+    isConnected, 
+    typingUsers, 
+    sendMessage, 
+    fetchMessages, 
+    markAsRead, 
+    startConversation 
+  } = useChat(selectedConversation?.id)
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
-  // Fetch messages for selected conversation
-  const fetchMessages = useCallback(async (conversationId) => {
-    try {
-      const messages = await getMessages(conversationId)
-      setMessages(messages)
-    } catch (error) {
-      console.error('Error fetching messages:', error)
-      setMessages([])
-    }
-  }, [getMessages, setMessages])
-
   // Fetch conversations from API
   const fetchConversations = useCallback(async () => {
     try {
-      const conversations = await getConversations()
-      setConversations(conversations)
+      const response = await api('/api/chat/conversations')
+      setConversations(response.conversations || [])
     } catch (error) {
       console.error('Error fetching conversations:', error)
       setConversations([])
     }
-  }, [getConversations])
+  }, [])
 
   // Search users function
   const searchUsers = useCallback(async (query) => {
@@ -57,248 +53,112 @@ export default function Chat() {
       return
     }
 
-    setIsSearching(true)
     try {
-      const response = await api(`/api/search/users?q=${encodeURIComponent(query)}`)
-      console.log('User search response:', response)
-      if (response.users) {
-        console.log('Found users:', response.users)
-        setSearchResults(response.users || [])
-      }
+      const response = await api(`/api/users/search?q=${encodeURIComponent(query)}`)
+      setSearchResults(response.users || [])
     } catch (error) {
       console.error('Error searching users:', error)
       setSearchResults([])
-    } finally {
-      setIsSearching(false)
     }
   }, [])
 
-  // Handle search query changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchQuery.trim()) {
-        searchUsers(searchQuery)
-      } else {
-        setSearchResults([])
-      }
-    }, 300) // Debounce search
-
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery, searchUsers])
-
-  // Start new conversation with user
+  // Start new conversation
   const startNewConversation = useCallback(async (user) => {
+    if (!user || !user.username) {
+      console.error('Invalid user object:', user)
+      return
+    }
+
     try {
-      console.log('🔍 startNewConversation called with user:', user)
-      console.log('🔍 User type:', typeof user)
-      console.log('🔍 User keys:', user ? Object.keys(user) : 'null')
+      setLoading(true)
+      setError(null)
       
-      // Validate user object and username
-      if (!user) {
-        console.error('❌ No user object provided')
-        alert('No user selected. Please try again.')
-        return
-      }
-      
-      if (!user.username) {
-        console.error('❌ No username in user object:', user)
-        alert('Invalid user selected. Please try again.')
-        return
-      }
-      
-      console.log('✅ Starting conversation with username:', user.username)
       const conversation = await startConversation(user.username)
-      console.log('✅ Conversation created:', conversation)
-      setSelectedConversation(conversation)
-      setSearchQuery('')
-      setSearchResults([])
-      setShowUserSearch(false)
       
-      const conversationId = conversation.id || conversation._id
-      if (conversationId) {
-        fetchMessages(conversationId)
+      if (conversation) {
+        setSelectedConversation(conversation)
+        setSearchQuery('')
+        setSearchResults([])
+        setShowUserSearch(false)
+        
+        const conversationId = conversation.id || conversation._id
+        if (conversationId) {
+          fetchMessages()
+        }
+        
+        // Refresh conversations list
+        fetchConversations()
       }
-      
-      // Refresh conversations list
-      fetchConversations()
     } catch (error) {
       console.error('❌ Error starting conversation:', error)
-      alert(`Failed to start conversation: ${error.message}`)
+      setError(error.message)
+    } finally {
+      setLoading(false)
     }
   }, [startConversation, fetchMessages, fetchConversations])
 
   // Handle conversation selection
   const handleSelectConversation = useCallback((conversation) => {
     setSelectedConversation(conversation)
+    setSearchQuery('')
+    setSearchResults([])
+    setShowUserSearch(false)
+    
     const conversationId = conversation.id || conversation._id
     if (conversationId) {
-      fetchMessages(conversationId)
-    } else {
-      console.error('No conversation ID found:', conversation)
+      fetchMessages()
     }
-  }, [fetchMessages])
-
-  // Auto-scroll effect
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages, scrollToBottom])
-
-  // Fetch conversations on component mount
-  useEffect(() => {
+    
+    // Refresh conversations list
     fetchConversations()
-  }, [fetchConversations])
+  }, [fetchMessages, fetchConversations])
 
-  // Handle user parameter from URL
-  useEffect(() => {
-    const userId = searchParams.get('user')
-    if (userId && conversations && conversations.length > 0) {
-      // Find existing conversation with this user
-      const existingConversation = conversations.find(conv => 
-        conv.participants && conv.participants.some(p => p.id === userId)
-      )
-      
-      if (existingConversation) {
-        // Open existing conversation
-        setSelectedConversation(existingConversation)
-        const conversationId = existingConversation.id || existingConversation._id
-        if (conversationId) {
-          fetchMessages(conversationId)
-        }
-      } else {
-        // Start new conversation with this user
-        // We need to get the username from the user ID
-        const fetchUserAndStartConversation = async () => {
-          try {
-            const userResponse = await api(`/api/users/${userId}`)
-            if (userResponse.user && userResponse.user.username) {
-              startNewConversation({ username: userResponse.user.username })
-            } else {
-              console.error('Could not get username for user ID:', userId)
-              alert('Could not find user details. Please try again.')
-            }
-          } catch (error) {
-            console.error('Error fetching user details:', error)
-            alert('Could not find user details. Please try again.')
-          }
-        }
-        
-        fetchUserAndStartConversation()
-      }
-    }
-  }, [searchParams, conversations, fetchMessages, startNewConversation])
-
-  // Removed search query handling - using header search only
-
-  // Send a new message
-  const sendMessage = useCallback(async () => {
+  // Handle sending messages
+  const handleSendMessage = useCallback(async () => {
     if (!newMessage.trim() || !selectedConversation) return
 
     try {
-      // Try WebSocket first for real-time delivery
-      const wsSuccess = wsSendMessage({
-        content: newMessage.trim(),
-        conversationId: selectedConversation.id
-      })
-
-      if (!wsSuccess) {
-        // Fallback to API if WebSocket is not available
-        await apiSendMessage(selectedConversation.id, newMessage.trim())
-      }
-
-      // Add message to local state immediately for better UX
-      const message = {
-        id: Date.now().toString(), // Temporary ID
-        content: newMessage.trim(),
-        senderId: currentUser,
-        senderUsername: currentUser,
-        timestamp: new Date().toISOString(),
-        type: 'text',
-        status: 'sending'
-      }
-
-      setMessages(prev => [...prev, message])
+      await sendMessage(newMessage.trim())
       setNewMessage('')
-
+      
       // Update conversation last message
       setConversations(prev => 
         prev.map(conv => 
           conv.id === selectedConversation.id 
             ? { 
                 ...conv, 
-                lastMessage: message.content, 
-                lastMessageTime: (() => {
-                  // Handle various timestamp formats
-                  if (!message.timestamp) return new Date().toISOString();
-                  if (typeof message.timestamp === 'string') return message.timestamp;
-                  if (typeof message.timestamp === 'object' && message.timestamp !== null) {
-                    if (message.timestamp.timestamp) return message.timestamp.timestamp;
-                    if (message.timestamp.createdAt) return message.timestamp.createdAt;
-                    if (message.timestamp.lastMessageAt) return message.timestamp.lastMessageAt;
-                    return new Date(message.timestamp).toISOString();
-                  }
-                  return new Date(message.timestamp).toISOString();
-                })()
+                lastMessage: newMessage.trim(), 
+                lastMessageTime: new Date().toISOString()
               }
             : conv
         )
       )
 
       // Mark messages as read
-      markAsRead(selectedConversation.id)
+      markAsRead()
     } catch (error) {
       console.error('Error sending message:', error)
     }
-  }, [newMessage, selectedConversation, wsSendMessage, apiSendMessage, currentUser, setMessages, markAsRead])
+  }, [newMessage, selectedConversation, sendMessage, markAsRead])
 
   // Handle Enter key press
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      sendMessage()
+      handleSendMessage()
     }
-  }, [sendMessage])
-
-  // Use conversations directly since search is removed
-  const filteredConversations = conversations || []
+  }, [handleSendMessage])
 
   // Format message time
   const formatMessageTime = useCallback((timestamp) => {
-    // Handle different timestamp formats
-    let dateString = timestamp
+    if (!timestamp) return ''
     
-    // If timestamp is an object with timestamp property
-    if (typeof timestamp === 'object' && timestamp !== null) {
-      if (timestamp.timestamp) {
-        dateString = timestamp.timestamp
-      } else if (timestamp.createdAt) {
-        dateString = timestamp.createdAt
-      } else if (timestamp.lastMessageAt) {
-        dateString = timestamp.lastMessageAt
-      } else {
-        // If it's a Date object, convert to string
-        dateString = timestamp.toString()
-      }
-    }
-    
-    // Ensure we have a valid date string
-    if (!dateString || typeof dateString !== 'string') {
-      return 'Just now'
-    }
-    
-    const date = new Date(dateString)
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return 'Just now'
-    }
-    
+    const date = new Date(safeTimestampToString(timestamp))
     const now = new Date()
     const diffInHours = (now - date) / (1000 * 60 * 60)
-
+    
     if (diffInHours < 24) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    } else if (diffInHours < 168) { // 7 days
-      return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })
     } else {
       return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
     }
@@ -315,12 +175,47 @@ export default function Chat() {
     )
   }, [currentUser])
 
-  if (loading) {
+  // Load initial data
+  useEffect(() => {
+    fetchConversations()
+  }, [fetchConversations])
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, scrollToBottom])
+
+  // Handle URL parameters
+  useEffect(() => {
+    const username = searchParams.get('username')
+    if (username && !selectedConversation) {
+      startNewConversation({ username })
+    }
+  }, [searchParams, selectedConversation, startNewConversation])
+
+  if (chatLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full mx-auto mb-4 animate-spin"></div>
-          <p className="text-gray-600 font-medium">Loading conversations...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading chat...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (chatError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">⚠️</div>
+          <p className="text-gray-600 mb-4">Error loading chat: {chatError}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     )
@@ -328,339 +223,224 @@ export default function Chat() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <div className="max-w-7xl mx-auto h-screen flex">
-        {/* Conversations Sidebar */}
-        <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-100">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Messages</h1>
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="flex h-[calc(100vh-2rem)]">
             
-            {/* Start New Chat Button */}
-            <button
-              onClick={() => setShowUserSearch(true)}
-              className="w-full px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center justify-center space-x-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <span>Start New Chat</span>
-            </button>
-          </div>
-
-          {/* Conversations List */}
-          <div className="flex-1 overflow-y-auto">
-            {showUserSearch ? (
-              // User Search Interface
-              <div>
-                {/* Search Input */}
-                <div className="p-4 border-b border-gray-100">
-                  <div className="relative">
+            {/* Sidebar */}
+            <div className="w-1/3 border-r border-gray-200 flex flex-col">
+              
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                <h1 className="text-2xl font-bold mb-4">Messages</h1>
+                
+                {/* Search and New Chat */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowUserSearch(!showUserSearch)}
+                    className="flex-1 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>+</span>
+                    <span>New Chat</span>
+                  </button>
+                </div>
+                
+                {/* User Search */}
+                {showUserSearch && (
+                  <div className="mt-4">
                     <input
                       type="text"
-                      placeholder="Search users to chat with..."
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      placeholder="Search users..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value)
+                        searchUsers(e.target.value)
+                      }}
+                      className="w-full px-3 py-2 rounded-lg bg-white/20 backdrop-blur-sm text-white placeholder-white/70 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50"
                     />
-                    <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <button
-                      onClick={() => setShowUserSearch(false)}
-                      className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Search Results */}
-                {isSearching ? (
-                  <div className="p-6 text-center">
-                    <div className="w-8 h-8 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full mx-auto mb-4 animate-spin"></div>
-                    <p className="text-gray-600">Searching users...</p>
-                  </div>
-                ) : searchResults.length > 0 ? (
-                  <div>
-                    <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
-                      <h3 className="text-sm font-medium text-gray-700">Search Results</h3>
-                    </div>
-                    {searchResults.map((user) => {
-                      console.log('🔍 Rendering user in search results:', user)
-                      return (
-                        <div
-                          key={user.id}
-                          onClick={() => {
-                            console.log('🔍 User clicked:', user)
-                            startNewConversation(user)
-                          }}
-                          className="p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50"
-                        >
-                        <div className="flex items-center space-x-3">
-                          {/* Avatar */}
-                          <div className="relative">
-                            <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                              {user.username.charAt(0).toUpperCase()}
+                    
+                    {/* Search Results */}
+                    {searchResults.length > 0 && (
+                      <div className="mt-2 max-h-40 overflow-y-auto bg-white/10 backdrop-blur-sm rounded-lg">
+                        {searchResults.map((user) => (
+                          <div
+                            key={user.id}
+                            onClick={() => startNewConversation(user)}
+                            className="p-3 hover:bg-white/20 cursor-pointer transition-colors flex items-center gap-3"
+                          >
+                            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm font-medium">
+                              {user.username?.charAt(0)?.toUpperCase() || '?'}
                             </div>
-                            {user.isOnline && (
-                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                            )}
-                          </div>
-                          
-                          {/* User Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2">
-                              <h3 className="text-sm font-semibold text-gray-900 truncate">
-                                {user.username}
-                              </h3>
-                              {user.isOnline && (
-                                <span className="text-xs text-green-600 font-medium">Online</span>
-                              )}
-                            </div>
-                            {user.bio && (
-                              <p className="text-xs text-gray-500 truncate mt-1">{user.bio}</p>
-                            )}
-                            <div className="flex items-center space-x-4 mt-1">
-                              <span className="text-xs text-gray-400">
-                                {user.followersCount} followers
-                              </span>
-                              <span className="text-xs text-gray-400">
-                                {user.followingCount} following
-                              </span>
+                            <div>
+                              <div className="font-medium">{user.username}</div>
+                              {user.bio && <div className="text-sm opacity-75">{user.bio}</div>}
                             </div>
                           </div>
-                          
-                          {/* Start Chat Button */}
-                          <button className="px-3 py-1 bg-pink-500 text-white text-xs font-medium rounded-full hover:bg-pink-600 transition-colors">
-                            Chat
-                          </button>
-                        </div>
+                        ))}
                       </div>
-                      )
-                    })}
-                  </div>
-                ) : searchQuery ? (
-                  <div className="p-6 text-center text-gray-500">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </div>
-                    <p className="text-lg font-medium mb-2">No users found</p>
-                    <p className="text-sm">Try searching with a different username</p>
-                  </div>
-                ) : (
-                  <div className="p-6 text-center text-gray-500">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </div>
-                    <p className="text-lg font-medium mb-2">Search for users</p>
-                    <p className="text-sm">Type a username to find someone to chat with</p>
+                    )}
                   </div>
                 )}
               </div>
-            ) : filteredConversations.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </div>
-                <p className="text-lg font-medium mb-2">No conversations yet</p>
-                <p className="text-sm mb-4">Start a conversation with someone!</p>
-                <button
-                  onClick={() => setShowUserSearch(true)}
-                  className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
-                >
-                  Find Someone to Chat With
-                </button>
-              </div>
-            ) : (
-              filteredConversations.map((conversation) => {
-                const partner = getConversationPartner(conversation)
-                const isSelected = selectedConversation?.id === conversation.id || selectedConversation?._id === conversation._id
-                
-                if (!conversation || !partner || !partner.username) {
-                  return null
-                }
-                
-                return (
-                  <div
-                    key={conversation.id || conversation._id}
-                    onClick={() => handleSelectConversation(conversation)}
-                    className={`p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
-                      isSelected ? 'bg-pink-50 border-r-4 border-r-pink-500' : ''
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      {/* Avatar */}
-                      <div className="relative">
-                        <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                          {partner.username.charAt(0).toUpperCase()}
-                        </div>
-                        {partner.isOnline && (
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                        )}
-                      </div>
-                      
-                      {/* Conversation Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-semibold text-gray-900 truncate">
-                            {partner.username}
-                          </h3>
-                          <span className="text-xs text-gray-500">
-                            {formatMessageTime(safeTimestampToString(conversation.lastMessageTime || conversation.lastMessageAt || conversation.createdAt))}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-500 truncate mt-1">
-                          {safeObjectToString(conversation.lastMessage) || 'No messages yet'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )
-              }).filter(Boolean) // Remove null entries
-            )}
-          </div>
-        </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
-          {selectedConversation ? (
-            <>
-              {/* Chat Header */}
-              <div className="p-6 border-b border-gray-100 bg-white">
-                <div className="flex items-center space-x-3">
-                  {(() => {
-                    const partner = getConversationPartner(selectedConversation)
-                    if (!partner) {
-                      return (
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-white font-bold">
-                            ?
-                          </div>
-                          <div>
-                            <h2 className="text-lg font-semibold text-gray-900">Unknown User</h2>
-                            <p className="text-sm text-gray-500">Loading...</p>
-                          </div>
-                        </div>
-                      )
+              {/* Conversations List */}
+              <div className="flex-1 overflow-y-auto">
+                {conversations.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">
+                    <div className="text-4xl mb-4">💬</div>
+                    <p>No conversations yet</p>
+                    <p className="text-sm mt-2">Start a new chat to begin messaging</p>
+                  </div>
+                ) : (
+                  conversations.map((conversation) => {
+                    const partner = getConversationPartner(conversation)
+                    const isSelected = selectedConversation?.id === conversation.id || selectedConversation?._id === conversation._id
+                    
+                    if (!conversation || !partner || !partner.username) {
+                      return null
                     }
                     
                     return (
-                      <>
-                        <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                          {partner.username.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <h2 className="text-lg font-semibold text-gray-900">
-                            {partner.username}
-                          </h2>
-                          <p className="text-sm text-gray-500">
-                            {partner.isOnline ? 'Online' : 'Offline'}
-                          </p>
-                        </div>
-                      </>
-                    )
-                  })()}
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {messages.map((message) => {
-                  if (!message?.id || !message?.content) {
-                    return null
-                  }
-                  
-                  const isSender = message.senderUsername === currentUser
-                  
-                  return (
-                    <div
-                      key={message.id}
-                      className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-4 px-4 animate-fade-in`}
-                    >
-                      <div className={`flex items-end space-x-3 ${isSender ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                        {/* Avatar for receiver messages (left side) */}
-                        {!isSender && (
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-                            {message.senderUsername?.charAt(0)?.toUpperCase() || 'U'}
+                      <div
+                        key={conversation.id || conversation._id}
+                        onClick={() => handleSelectConversation(conversation)}
+                        className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${
+                          isSelected ? 'bg-purple-50 border-purple-200' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-medium">
+                            {partner.username.charAt(0).toUpperCase()}
                           </div>
-                        )}
-                        
-                        {/* Message bubble */}
-                        <div
-                          className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md relative ${
-                            isSender
-                              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-br-md ml-8'
-                              : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md mr-8'
-                          }`}
-                        >
-                          {/* Message type indicator */}
-                          <div className={`absolute top-2 ${isSender ? 'right-2' : 'left-2'} w-2 h-2 rounded-full ${
-                            isSender ? 'bg-pink-200' : 'bg-blue-200'
-                          }`}></div>
-                          
-                          <p className="text-sm leading-relaxed">{safeObjectToString(message.content)}</p>
-                          <p className={`text-xs mt-2 ${
-                            isSender ? 'text-pink-100' : 'text-gray-500'
-                          }`}>
-                            {formatMessageTime(safeTimestampToString(message.timestamp))}
-                          </p>
-                        </div>
-                        
-                        {/* Avatar for sender messages (right side) */}
-                        {isSender && (
-                          <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-                            {currentUser?.charAt(0)?.toUpperCase() || 'M'}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 truncate">
+                              {partner.username}
+                            </div>
+                            <div className="text-sm text-gray-500 truncate">
+                              {conversation.lastMessage || 'No messages yet'}
+                            </div>
+                            {conversation.lastMessageAt && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                {formatMessageTime(conversation.lastMessageAt)}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  )
-                }).filter(Boolean)} {/* Remove null entries */}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Message Input */}
-              <div className="p-6 border-t border-gray-100 bg-white">
-                <div className="flex space-x-3">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type a message..."
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  />
-                  <button
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim()}
-                    className="px-6 py-3 bg-pink-500 text-white rounded-xl hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-medium mb-2">Select a conversation</h3>
-                <p className="text-sm">Choose a conversation from the sidebar to start chatting</p>
+                    )
+                  })
+                )}
               </div>
             </div>
-          )}
+
+            {/* Chat Area */}
+            <div className="flex-1 flex flex-col">
+              {selectedConversation ? (
+                <>
+                  {/* Chat Header */}
+                  <div className="p-6 border-b border-gray-200 bg-white">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-medium">
+                        {getConversationPartner(selectedConversation)?.username?.charAt(0)?.toUpperCase() || '?'}
+                      </div>
+                      <div>
+                        <h2 className="font-semibold text-gray-900">
+                          {getConversationPartner(selectedConversation)?.username || 'Unknown User'}
+                        </h2>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-gray-400'}`}></div>
+                          <span>{isConnected ? 'Online' : 'Offline'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Messages */}
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    {messages.map((message) => {
+                      if (!message?.id || !message?.content) {
+                        return null
+                      }
+                      
+                      const isSender = message.senderUsername === currentUser
+                      
+                      return (
+                        <div
+                          key={message.id}
+                          className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-4 px-4 animate-fade-in`}
+                        >
+                          <div className={`flex items-end gap-2 max-w-xs lg:max-w-md ${isSender ? 'flex-row-reverse' : 'flex-row'}`}>
+                            {/* Avatar */}
+                            {!isSender && (
+                              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                                {message.senderUsername?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                            )}
+                            
+                            {/* Message Bubble */}
+                            <div
+                              className={`px-4 py-3 rounded-2xl ${
+                                isSender
+                                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                                  : 'bg-gray-100 text-gray-900'
+                              }`}
+                            >
+                              <div className="text-sm leading-relaxed break-words">
+                                {message.content}
+                              </div>
+                              <div className={`text-xs mt-1 ${
+                                isSender ? 'text-purple-100' : 'text-gray-500'
+                              }`}>
+                                {formatMessageTime(message.timestamp)}
+                              </div>
+                            </div>
+                            
+                            {/* Sender Avatar */}
+                            {isSender && (
+                              <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                                {message.senderUsername?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* Message Input */}
+                  <div className="p-6 border-t border-gray-200 bg-white">
+                    <div className="flex gap-3">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Type a message..."
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                      <button
+                        onClick={handleSendMessage}
+                        disabled={!newMessage.trim()}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
+                      >
+                        <span>Send</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <div className="text-6xl mb-4">💬</div>
+                    <h2 className="text-2xl font-semibold mb-2">Select a conversation</h2>
+                    <p>Choose a conversation from the sidebar to start messaging</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
