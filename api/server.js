@@ -2100,6 +2100,10 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
 app.post('/api/chat/start-conversation', async (req, res) => {
   try {
     const { username } = req.body
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' })
+    }
+
     const token = req.headers.authorization?.replace('Bearer ', '')
     if (!token) {
       return res.status(401).json({ message: 'No token provided' })
@@ -2107,6 +2111,15 @@ app.post('/api/chat/start-conversation', async (req, res) => {
 
     const payload = JSON.parse(atob(token.split('.')[1]))
     const userId = payload.userId || payload.id
+    const currentUsername = payload.username
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Invalid token: missing user ID' })
+    }
+
+    if (!currentUsername) {
+      return res.status(401).json({ message: 'Invalid token: missing username' })
+    }
 
     // Ensure DB connection
     if (mongoose.connection.readyState !== 1) {
@@ -2116,11 +2129,16 @@ app.post('/api/chat/start-conversation', async (req, res) => {
     // Convert userId to ObjectId for proper querying
     const userObjectId = new mongoose.Types.ObjectId(userId)
 
+    console.log('🔍 Starting conversation between:', currentUsername, 'and', username)
+
     // Find the target user
     const targetUser = await User.findOne({ username })
     if (!targetUser) {
+      console.log('❌ Target user not found:', username)
       return res.status(404).json({ message: 'User not found' })
     }
+
+    console.log('✅ Target user found:', targetUser.username)
 
     // Check if conversation already exists
     let conversation = await Conversation.findOne({
@@ -2128,15 +2146,19 @@ app.post('/api/chat/start-conversation', async (req, res) => {
     }).populate('participants.user', 'username profilePicture')
 
     if (!conversation) {
+      console.log('📝 Creating new conversation...')
       // Create new conversation
       conversation = new Conversation({
         participants: [
-          { user: userObjectId, username: payload.username },
+          { user: userObjectId, username: currentUsername },
           { user: targetUser._id, username: targetUser.username }
         ]
       })
       await conversation.save()
       await conversation.populate('participants.user', 'username profilePicture')
+      console.log('✅ New conversation created:', conversation._id)
+    } else {
+      console.log('✅ Existing conversation found:', conversation._id)
     }
 
     // Format conversation for frontend
