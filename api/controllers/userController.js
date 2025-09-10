@@ -151,7 +151,7 @@ export const getProfile = async (req, res) => {
         posts: user.posts.length,
         isOnline: user.isOnline,
         lastSeen: user.lastSeen,
-        createdAt: user.createdAt
+        createdAt: user.createdAt.toISOString()
       }
     });
   } catch (error) {

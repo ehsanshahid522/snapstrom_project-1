@@ -38,7 +38,7 @@ export const createPost = async (req, res) => {
         comments: post.comments.length,
         shares: post.shares.length,
         isPublic: post.isPublic,
-        createdAt: post.createdAt
+        createdAt: post.createdAt.toISOString()
       }
     });
   } catch (error) {
@@ -83,15 +83,15 @@ export const getPosts = async (req, res) => {
         id: comment._id,
         user: comment.user.username,
         content: comment.content,
-        createdAt: comment.createdAt
+        createdAt: comment.createdAt.toISOString()
       })),
       shares: post.shares.map(share => ({
         user: share.user.username,
         sharedAt: share.sharedAt
       })),
       isPublic: post.isPublic,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString()
     }));
 
     res.json({
@@ -142,15 +142,15 @@ export const getUserPosts = async (req, res) => {
         id: comment._id,
         user: comment.user.username,
         content: comment.content,
-        createdAt: comment.createdAt
+        createdAt: comment.createdAt.toISOString()
       })),
       shares: post.shares.map(share => ({
         user: share.user.username,
         sharedAt: share.sharedAt
       })),
       isPublic: post.isPublic,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString()
     }));
 
     res.json({
@@ -242,7 +242,7 @@ export const addComment = async (req, res) => {
         id: newComment._id,
         user: newComment.user.username,
         content: newComment.content,
-        createdAt: newComment.createdAt
+        createdAt: newComment.createdAt.toISOString()
       }
     });
   } catch (error) {

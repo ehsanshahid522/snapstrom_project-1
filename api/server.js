@@ -1246,7 +1246,7 @@ app.get('/api/profile', async (req, res) => {
         likes: post.likes || [],
         comments: post.comments || [],
         isPrivate: post.isPrivate,
-        createdAt: post.createdAt,
+        createdAt: post.createdAt.toISOString(),
         imageUrl: `/api/images/${post._id}`
       }))
     });
@@ -1606,7 +1606,7 @@ app.post('/api/comment/:postId', async (req, res) => {
           id: decoded.id,
           username: decoded.username
         },
-        createdAt: comment.createdAt.toISOString().toISOString()
+        createdAt: comment.createdAt.toISOString()
       },
       commentsCount: post.comments.length
     });
