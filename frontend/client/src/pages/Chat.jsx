@@ -170,7 +170,19 @@ export default function Chat() {
       setConversations(prev => 
         prev.map(conv => 
           conv.id === selectedConversation.id 
-            ? { ...conv, lastMessage: message.content, lastMessageTime: message.timestamp }
+            ? { 
+                ...conv, 
+                lastMessage: message.content, 
+                lastMessageTime: (() => {
+                  // Handle various timestamp formats
+                  if (!message.timestamp) return new Date().toISOString();
+                  if (typeof message.timestamp === 'string') return message.timestamp;
+                  if (message.timestamp.timestamp) return message.timestamp.timestamp;
+                  if (message.timestamp.createdAt) return message.timestamp.createdAt;
+                  if (message.timestamp.lastMessageAt) return message.timestamp.lastMessageAt;
+                  return new Date(message.timestamp).toISOString();
+                })()
+              }
             : conv
         )
       )
