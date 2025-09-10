@@ -16,6 +16,19 @@ export default function Chat() {
   const messagesEndRef = useRef(null)
   const currentUser = useMemo(() => localStorage.getItem('username'), [])
 
+  // Helper function to safely convert timestamp to string
+  const safeTimestampToString = useCallback((timestamp) => {
+    if (!timestamp) return new Date().toISOString();
+    if (typeof timestamp === 'string') return timestamp;
+    if (typeof timestamp === 'object' && timestamp !== null) {
+      if (timestamp.timestamp) return timestamp.timestamp;
+      if (timestamp.createdAt) return timestamp.createdAt;
+      if (timestamp.lastMessageAt) return timestamp.lastMessageAt;
+      return timestamp.toString();
+    }
+    return new Date(timestamp).toISOString();
+  }, [])
+
   // Use custom hooks
   const { loading, error, sendMessage: apiSendMessage, getConversations, getMessages, startConversation, markAsRead } = useChatAPI()
   const { messages, isConnected, typingUsers, sendMessage: wsSendMessage, setMessages } = useRealTimeChat(selectedConversation?.id)
@@ -451,7 +464,7 @@ export default function Chat() {
                             {partner.username}
                           </h3>
                           <span className="text-xs text-gray-500">
-                            {formatMessageTime(conversation.lastMessageTime || conversation.lastMessageAt || conversation.createdAt)}
+                            {formatMessageTime(safeTimestampToString(conversation.lastMessageTime || conversation.lastMessageAt || conversation.createdAt))}
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 truncate mt-1">
@@ -512,7 +525,7 @@ export default function Chat() {
                         <p className={`text-xs mt-1 ${
                           message.senderUsername === currentUser ? 'text-pink-100' : 'text-gray-500'
                         }`}>
-                          {formatMessageTime(message.timestamp)}
+                          {formatMessageTime(safeTimestampToString(message.timestamp))}
                         </p>
                       </div>
                     </div>
