@@ -180,6 +180,24 @@ async function connectDB() {
       mongoURI = mongoURI.replace(/^(mongodb(?:\+srv)?:\/\/)[^:]+:[^@]+@/, `${protocol}${encodedUser}:${encodedPass}@`);
     }
 
+    // Try a basic connection first
+    try {
+      console.log('🔄 Attempting basic connection...');
+      await mongoose.connect(mongoURI, {
+        maxPoolSize: 1,
+        serverSelectionTimeoutMS: 3000,
+        connectTimeoutMS: 3000,
+        bufferCommands: false
+      });
+      
+      if (mongoose.connection.readyState === 1) {
+        console.log('✅ Basic connection successful');
+        return true;
+      }
+    } catch (basicError) {
+      console.log('⚠️ Basic connection failed, trying strategies...');
+    }
+
     // Try multiple connection strategies
     const connectionStrategies = [
       {
@@ -338,16 +356,21 @@ app.get('/api/health', (req, res) => {
 // Serve uploaded images
 app.get('/api/images/:fileId', async (req, res) => {
   try {
-    // Ensure DB connection with retry logic
+    // Ensure DB connection with better error handling
     if (mongoose.connection.readyState !== 1) {
-      let connected = false;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const ok = await connectDB();
-        if (ok) { connected = true; break; }
-        await new Promise(r => setTimeout(r, 500));
-      }
-      if (!connected) {
-        return res.status(503).json({ message: 'Database unavailable, try again' });
+      console.log('🔄 Database not connected, attempting to connect...');
+      try {
+        await connectDB();
+        // Wait a bit for connection to stabilize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (mongoose.connection.readyState !== 1) {
+          console.error('❌ Database connection failed after retry');
+          return res.status(503).json({ message: 'Database unavailable' });
+        }
+      } catch (dbError) {
+        console.error('❌ Database connection error:', dbError);
+        return res.status(503).json({ message: 'Database unavailable' });
       }
     }
 
@@ -356,25 +379,36 @@ app.get('/api/images/:fileId', async (req, res) => {
       return res.status(400).json({ message: 'File ID is required' });
     }
 
+    console.log('🔍 Looking for image:', fileId);
     const file = await File.findById(fileId);
     if (!file) {
       console.error(`❌ Image not found: ${fileId}`);
       return res.status(404).json({ message: 'File not found', fileId });
     }
 
-    let buffer;
-    if (Buffer.isBuffer(file.fileData)) {
-      buffer = file.fileData;
-    } else if (typeof file.fileData === 'string') {
-      buffer = Buffer.from(file.fileData, 'base64');
-    } else {
-      return res.status(500).json({ message: 'Unsupported file data format' });
-    }
+    console.log('✅ Image found:', file.filename, 'Content-Type:', file.contentType);
 
-    res.setHeader('Content-Type', file.contentType);
-    res.setHeader('Content-Length', buffer.length);
-    res.setHeader('Cache-Control', 'public, max-age=31536000');
-    res.send(buffer);
+    let buffer;
+    try {
+      if (Buffer.isBuffer(file.fileData)) {
+        buffer = file.fileData;
+      } else if (typeof file.fileData === 'string') {
+        buffer = Buffer.from(file.fileData, 'base64');
+      } else {
+        console.error('❌ Unsupported file data format for:', fileId);
+        return res.status(500).json({ message: 'Unsupported file data format' });
+      }
+
+      console.log('📦 Buffer created, size:', buffer.length);
+      
+      res.setHeader('Content-Type', file.contentType);
+      res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      res.send(buffer);
+    } catch (bufferError) {
+      console.error('❌ Buffer processing error:', bufferError);
+      return res.status(500).json({ message: 'Error processing image data', error: bufferError.message });
+    }
   } catch (error) {
     console.error('Error serving image:', error);
     res.status(500).json({ message: 'Error serving image', error: error.message });
