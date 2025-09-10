@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../lib/api.js'
-import { safeTimestampToString, formatTimeAgo as safeFormatTimeAgo } from '../utils/timestampUtils.js'
+import { safeTimestampToString, safeFormatTimeAgo, safeRender } from '../utils/safeRender.js'
 
 export default function Share() {
   const { id } = useParams()

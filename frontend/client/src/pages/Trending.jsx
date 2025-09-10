@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
-import { safeTimestampToString, formatTimeAgo as safeFormatTimeAgo, safeObjectToString } from '../utils/timestampUtils.js'
+import { safeTimestampToString, safeFormatTimeAgo, safeObjectToString, safeRender } from '../utils/safeRender.js'
 
 export default function Trending() {
   const [posts, setPosts] = useState([])

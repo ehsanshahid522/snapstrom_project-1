@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useChat } from '../hooks/useChat.js'
 import { api } from '../lib/api.js'
-import { safeTimestampToString, safeObjectToString, safeRender, safeFormatTimeAgo } from '../utils/timestampUtils.js'
+import { safeTimestampToString, safeObjectToString, safeRender, safeFormatTimeAgo } from '../utils/safeRender.js'
 
 export default function Chat() {
   const [searchParams] = useSearchParams()

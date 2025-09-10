@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
-import { safeTimestampToString, formatTimeAgo as safeFormatTimeAgo, safeObjectToString } from '../utils/timestampUtils.js'
+import { safeTimestampToString, safeFormatTimeAgo, safeObjectToString, safeRender } from '../utils/safeRender.js'
 import { createProfileUrl } from '../utils/usernameValidation.js'
 
 export default function Feed() {

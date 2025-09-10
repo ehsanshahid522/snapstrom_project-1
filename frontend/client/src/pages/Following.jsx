@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
-import { safeTimestampToString, formatTimeAgo as safeFormatTimeAgo, safeObjectToString } from '../utils/timestampUtils.js'
+import { safeTimestampToString, safeFormatTimeAgo, safeObjectToString, safeRender } from '../utils/safeRender.js'
 
 export default function Following() {
   const [searchParams] = useSearchParams()
