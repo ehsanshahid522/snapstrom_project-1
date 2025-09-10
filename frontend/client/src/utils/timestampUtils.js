@@ -6,15 +6,34 @@
  * @returns {string} - ISO string representation of the timestamp
  */
 export function safeTimestampToString(timestamp) {
-  if (!timestamp) return new Date().toISOString();
+  // Handle null/undefined
+  if (timestamp === null || timestamp === undefined) {
+    return new Date().toISOString();
+  }
   
+  // Handle strings
   if (typeof timestamp === 'string') {
     // Validate that it's a valid date string
     const date = new Date(timestamp);
     return isNaN(date.getTime()) ? new Date().toISOString() : timestamp;
   }
   
+  // Handle objects
   if (typeof timestamp === 'object' && timestamp !== null) {
+    // Handle Mongoose timestamp objects with nested properties
+    if (timestamp.timestamp && typeof timestamp.timestamp === 'object') {
+      return safeTimestampToString(timestamp.timestamp);
+    }
+    if (timestamp.createdAt && typeof timestamp.createdAt === 'object') {
+      return safeTimestampToString(timestamp.createdAt);
+    }
+    if (timestamp.lastMessageAt && typeof timestamp.lastMessageAt === 'object') {
+      return safeTimestampToString(timestamp.lastMessageAt);
+    }
+    if (timestamp.uploadTime && typeof timestamp.uploadTime === 'object') {
+      return safeTimestampToString(timestamp.uploadTime);
+    }
+    
     // Handle various object formats
     if (timestamp.timestamp) return safeTimestampToString(timestamp.timestamp);
     if (timestamp.createdAt) return safeTimestampToString(timestamp.createdAt);
@@ -28,9 +47,19 @@ export function safeTimestampToString(timestamp) {
       return isNaN(timestamp.getTime()) ? new Date().toISOString() : timestamp.toISOString();
     }
     
+    // Handle Mongoose Date objects
+    if (timestamp.$date) {
+      return safeTimestampToString(timestamp.$date);
+    }
+    
     // Try to convert to string
     try {
-      return timestamp.toString();
+      const str = timestamp.toString();
+      // If toString returns '[object Object]', try JSON.stringify
+      if (str === '[object Object]') {
+        return new Date().toISOString();
+      }
+      return str;
     } catch (error) {
       return new Date().toISOString();
     }
@@ -114,4 +143,76 @@ export function formatTimeAgo(timestamp) {
   } catch (error) {
     return 'Recently';
   }
+}
+
+/**
+ * SAFE RENDER WRAPPER - Ensures no objects are rendered directly in JSX
+ * This is a bulletproof solution for React error #31
+ * @param {any} value - The value to render
+ * @returns {string} - Safe string for JSX rendering
+ */
+export function safeRender(value) {
+  // Handle null/undefined
+  if (value === null || value === undefined) {
+    return '';
+  }
+  
+  // Handle primitives
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'boolean') return String(value);
+  
+  // Handle objects
+  if (typeof value === 'object') {
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return value.map(item => safeRender(item)).join(', ');
+    }
+    
+    // Handle timestamp objects specifically
+    if (value.timestamp || value.createdAt || value.lastMessageAt || value.uploadTime) {
+      return safeTimestampToString(value);
+    }
+    
+    // Handle objects with common string properties
+    if (value.content) return safeRender(value.content);
+    if (value.text) return safeRender(value.text);
+    if (value.message) return safeRender(value.message);
+    if (value.value) return safeRender(value.value);
+    if (value.name) return safeRender(value.name);
+    if (value.title) return safeRender(value.title);
+    if (value.username) return safeRender(value.username);
+    if (value.caption) return safeRender(value.caption);
+    
+    // Try JSON stringify as last resort
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      return '[Object]';
+    }
+  }
+  
+  // Fallback
+  try {
+    return String(value);
+  } catch (error) {
+    return '';
+  }
+}
+
+/**
+ * SAFE FORMAT TIME AGO - Enhanced version with bulletproof object handling
+ * @param {any} timestamp - The timestamp to format
+ * @returns {string} - Formatted time string
+ */
+export function safeFormatTimeAgo(timestamp) {
+  // First ensure the timestamp is converted to a safe string
+  const safeTimestamp = safeRender(timestamp);
+  
+  // If it's not a valid timestamp, return default
+  if (!safeTimestamp || safeTimestamp === '[Object]' || safeTimestamp === '') {
+    return 'Recently';
+  }
+  
+  return formatTimeAgo(safeTimestamp);
 }

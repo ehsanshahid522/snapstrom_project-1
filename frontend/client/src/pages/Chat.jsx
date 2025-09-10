@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useChat } from '../hooks/useChat.js'
 import { api } from '../lib/api.js'
-import { safeTimestampToString, safeObjectToString } from '../utils/timestampUtils.js'
+import { safeTimestampToString, safeObjectToString, safeRender, safeFormatTimeAgo } from '../utils/timestampUtils.js'
 
 export default function Chat() {
   const [searchParams] = useSearchParams()
@@ -128,7 +128,7 @@ export default function Chat() {
             ? { 
                 ...conv, 
                 lastMessage: newMessage.trim(), 
-                lastMessageTime: new Date().toISOString()
+                lastMessageAt: new Date().toISOString()
               }
             : conv
         )
@@ -149,18 +149,33 @@ export default function Chat() {
     }
   }, [handleSendMessage])
 
-  // Format message time
+  // Format message time - Enhanced with bulletproof object handling
   const formatMessageTime = useCallback((timestamp) => {
-    if (!timestamp) return ''
+    // Use safeRender to ensure no objects are passed
+    const safeTimestamp = safeRender(timestamp)
     
-    const date = new Date(safeTimestampToString(timestamp))
-    const now = new Date()
-    const diffInHours = (now - date) / (1000 * 60 * 60)
+    if (!safeTimestamp || safeTimestamp === '[Object]' || safeTimestamp === '') {
+      return ''
+    }
     
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+    try {
+      const date = new Date(safeTimestamp)
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return ''
+      }
+      
+      const now = new Date()
+      const diffInHours = (now - date) / (1000 * 60 * 60)
+      
+      if (diffInHours < 24) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      } else {
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+      }
+    } catch (error) {
+      return ''
     }
   }, [])
 
@@ -317,7 +332,7 @@ export default function Chat() {
                               {partner.username}
                             </div>
                             <div className="text-sm text-gray-500 truncate">
-                              {conversation.lastMessage || 'No messages yet'}
+                              {safeRender(conversation.lastMessage) || 'No messages yet'}
                             </div>
                             {conversation.lastMessageAt && (
                               <div className="text-xs text-gray-400 mt-1">
@@ -386,7 +401,7 @@ export default function Chat() {
                               }`}
                             >
                               <div className="text-sm leading-relaxed break-words">
-                                {message.content}
+                                {safeRender(message.content)}
                               </div>
                               <div className={`text-xs mt-1 ${
                                 isSender ? 'text-purple-100' : 'text-gray-500'
