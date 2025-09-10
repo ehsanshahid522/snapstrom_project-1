@@ -11,7 +11,7 @@ export const useRealTimeChat = (conversationId) => {
   const reconnectTimeoutRef = useRef(null)
   const pingIntervalRef = useRef(null)
 
-  // Connect to WebSocket
+  // Connect to WebSocket or use polling fallback
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
@@ -19,11 +19,28 @@ export const useRealTimeChat = (conversationId) => {
       const token = localStorage.getItem('token')
       const wsUrl = getWsUrl('/chat')
       
-      // Check if WebSocket URL is available
-      if (!wsUrl || wsUrl.includes('localhost:3001') || wsUrl === 'ws://localhost:3001') {
-        console.log('⚠️ WebSocket URL not configured, using fallback mode')
+      // Check if WebSocket URL is available and not on Vercel
+      if (!wsUrl || wsUrl.includes('localhost:3001') || wsUrl === 'ws://localhost:3001' || wsUrl.includes('vercel.app')) {
+        console.log('⚠️ WebSocket not supported on Vercel, using polling mode')
         console.log('WebSocket URL was:', wsUrl)
         setIsConnected(false)
+        
+        // Start polling for new messages every 3 seconds
+        if (conversationId) {
+          const pollInterval = setInterval(async () => {
+            try {
+              const response = await api(`/api/chat/messages/${conversationId}`)
+              if (response.messages) {
+                setMessages(response.messages)
+              }
+            } catch (error) {
+              console.error('Polling error:', error)
+            }
+          }, 3000)
+          
+          // Store interval reference for cleanup
+          wsRef.current = { pollInterval }
+        }
         return
       }
       
@@ -138,7 +155,11 @@ export const useRealTimeChat = (conversationId) => {
     }
 
     if (wsRef.current) {
-      wsRef.current.close()
+      if (wsRef.current.close) {
+        wsRef.current.close()
+      } else if (wsRef.current.pollInterval) {
+        clearInterval(wsRef.current.pollInterval)
+      }
       wsRef.current = null
     }
     
@@ -272,7 +293,15 @@ export const useChatAPI = () => {
       })
 
       console.log('Start conversation response:', response)
-      return response
+      
+      // Extract conversation from response
+      if (response.conversation) {
+        console.log('✅ Extracted conversation:', response.conversation)
+        return response.conversation
+      } else {
+        console.log('❌ No conversation in response:', response)
+        throw new Error('No conversation in response')
+      }
     } catch (err) {
       console.error('Start conversation error:', err)
       setError(err.message)

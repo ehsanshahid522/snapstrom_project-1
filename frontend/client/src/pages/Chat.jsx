@@ -308,10 +308,17 @@ export default function Chat() {
 
   // Get conversation partner
   const getConversationPartner = useCallback((conversation) => {
-    if (!conversation || !conversation.participants) {
+    if (!conversation || !conversation.participants || !Array.isArray(conversation.participants)) {
+      console.warn('Invalid conversation for getConversationPartner:', conversation)
       return null
     }
-    return conversation.participants.find(p => p.username !== currentUser)
+    
+    const partner = conversation.participants.find(p => p && p.username && p.username !== currentUser)
+    if (!partner) {
+      console.warn('No partner found in conversation:', conversation.participants, 'currentUser:', currentUser)
+    }
+    
+    return partner
   }, [currentUser])
 
   if (loading) {
@@ -537,17 +544,38 @@ export default function Chat() {
               {/* Chat Header */}
               <div className="p-6 border-b border-gray-100 bg-white">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                    {getConversationPartner(selectedConversation).username.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      {getConversationPartner(selectedConversation).username}
-                    </h2>
-                    <p className="text-sm text-gray-500">
-                      {getConversationPartner(selectedConversation).isOnline ? 'Online' : 'Offline'}
-                    </p>
-                  </div>
+                  {(() => {
+                    const partner = getConversationPartner(selectedConversation)
+                    if (!partner) {
+                      return (
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-white font-bold">
+                            ?
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-semibold text-gray-900">Unknown User</h2>
+                            <p className="text-sm text-gray-500">Loading...</p>
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    return (
+                      <>
+                        <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                          {partner.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-semibold text-gray-900">
+                            {partner.username}
+                          </h2>
+                          <p className="text-sm text-gray-500">
+                            {partner.isOnline ? 'Online' : 'Offline'}
+                          </p>
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
 
