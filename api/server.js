@@ -2007,13 +2007,15 @@ app.get('/api/chat/conversations', async (req, res) => {
       await connectDB()
     }
 
+    // Convert userId to ObjectId for proper querying
+    const userObjectId = new mongoose.Types.ObjectId(userId)
+
     // Find conversations where user is a participant
     const conversations = await Conversation.find({
-      'participants.user': userId
+      'participants.user': userObjectId
     })
     .populate('participants.user', 'username profilePicture')
-    .populate('lastMessage')
-    .sort({ lastMessageAt: -1 })
+    .sort({ updatedAt: -1 })
 
     // Format conversations for frontend
     const formattedConversations = conversations.map(conv => ({
@@ -2024,12 +2026,11 @@ app.get('/api/chat/conversations', async (req, res) => {
         profilePicture: p.user.profilePicture
       })),
       lastMessage: conv.lastMessage ? {
-        id: conv.lastMessage._id,
         content: conv.lastMessage.content,
         sender: conv.lastMessage.sender,
-        createdAt: conv.lastMessage.createdAt
+        timestamp: conv.lastMessage.timestamp
       } : null,
-      lastMessageAt: conv.lastMessageAt,
+      lastMessageAt: conv.lastMessage?.timestamp || conv.updatedAt,
       createdAt: conv.createdAt
     }))
 
@@ -2058,6 +2059,9 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       await connectDB()
     }
+
+    // Convert userId to ObjectId for proper comparison
+    const userObjectId = new mongoose.Types.ObjectId(userId)
 
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
@@ -2109,6 +2113,9 @@ app.post('/api/chat/start-conversation', async (req, res) => {
       await connectDB()
     }
 
+    // Convert userId to ObjectId for proper querying
+    const userObjectId = new mongoose.Types.ObjectId(userId)
+
     // Find the target user
     const targetUser = await User.findOne({ username })
     if (!targetUser) {
@@ -2117,14 +2124,14 @@ app.post('/api/chat/start-conversation', async (req, res) => {
 
     // Check if conversation already exists
     let conversation = await Conversation.findOne({
-      'participants.user': { $all: [userId, targetUser._id] }
+      'participants.user': { $all: [userObjectId, targetUser._id] }
     }).populate('participants.user', 'username profilePicture')
 
     if (!conversation) {
       // Create new conversation
       conversation = new Conversation({
         participants: [
-          { user: userId, username: payload.username },
+          { user: userObjectId, username: payload.username },
           { user: targetUser._id, username: targetUser.username }
         ]
       })
@@ -2172,6 +2179,9 @@ app.post('/api/chat/send-message', async (req, res) => {
       await connectDB()
     }
 
+    // Convert userId to ObjectId for proper comparison
+    const userObjectId = new mongoose.Types.ObjectId(userId)
+
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
     if (!conversation || !conversation.participants.some(p => p.user.toString() === userId)) {
@@ -2181,7 +2191,7 @@ app.post('/api/chat/send-message', async (req, res) => {
     // Create new message
     const message = new Message({
       conversation: conversationId,
-      sender: userId,
+      sender: userObjectId,
       content: content.trim()
     })
     await message.save()
@@ -2234,6 +2244,9 @@ app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
       await connectDB()
     }
 
+    // Convert userId to ObjectId for proper comparison
+    const userObjectId = new mongoose.Types.ObjectId(userId)
+
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
     if (!conversation || !conversation.participants.some(p => p.user.toString() === userId)) {
@@ -2249,7 +2262,7 @@ app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
         } 
       },
       { 
-        arrayFilters: [{ 'elem.user': userId }] 
+        arrayFilters: [{ 'elem.user': userObjectId }] 
       }
     )
 
