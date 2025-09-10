@@ -27,10 +27,18 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom']
   },
-  // Performance optimizations
+  // Performance optimizations and proxy configuration
   server: {
     hmr: {
       overlay: false
+    },
+    proxy: {
+      '/api': {
+        target: 'https://snapstrom-project-1.vercel.app',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api')
+      }
     }
   },
   // Enable tree shaking

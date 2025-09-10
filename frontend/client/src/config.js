@@ -1,12 +1,12 @@
-// Frontend Configuration
+// Frontend Configuration - Using relative URLs to eliminate CORS
 export const config = {
-  // API Configuration
+  // API Configuration - Use relative URLs to avoid CORS
   API_BASE_URL: import.meta.env.VITE_API_URL || 
-    (window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://snapstrom-project-1.vercel.app'),
+    (window.location.hostname === 'localhost' ? 'http://localhost:3000' : ''),
   
-  // WebSocket Configuration
+  // WebSocket Configuration - Disabled for production to avoid CORS
   WS_BASE_URL: import.meta.env.VITE_WS_URL || 
-    (window.location.hostname === 'localhost' ? 'ws://localhost:3001' : 'wss://snapstrom-project-1.vercel.app'),
+    (window.location.hostname === 'localhost' ? 'ws://localhost:3001' : ''),
   
   // Environment
   NODE_ENV: import.meta.env.NODE_ENV || 'development',
@@ -19,16 +19,16 @@ export const config = {
   ENABLE_UPLOAD: true,
   ENABLE_SOCIAL_FEATURES: true,
   ENABLE_SEARCH: true,
-  ENABLE_WEBSOCKET: true
+  ENABLE_WEBSOCKET: window.location.hostname === 'localhost' // Only enable WebSocket locally
 };
 
-// Helper function to get API URL
+// Helper function to get API URL - Using relative URLs to eliminate CORS
 export function getApiUrl(path = '') {
   const baseUrl = config.API_BASE_URL;
   
   // If path is empty, return base API URL
   if (!path) {
-    return `${baseUrl}/api`;
+    return baseUrl ? `${baseUrl}/api` : '/api';
   }
   
   // Clean the path
@@ -36,11 +36,11 @@ export function getApiUrl(path = '') {
   
   // If path already starts with /api, don't add another /api
   if (cleanPath.startsWith('/api/')) {
-    return `${baseUrl}${cleanPath}`;
+    return baseUrl ? `${baseUrl}${cleanPath}` : cleanPath;
   }
   
   // Otherwise, add /api prefix
-  return `${baseUrl}/api${cleanPath}`;
+  return baseUrl ? `${baseUrl}/api${cleanPath}` : `/api${cleanPath}`;
 }
 
 // Helper function to get WebSocket URL

@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 import express from 'express';
-import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
@@ -16,82 +15,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Enhanced CORS configuration for development and production
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Allow all Vercel domains and localhost
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'https://snapstrom-project-1.vercel.app',
-      'https://snapstrom-project-1-pvcj3vtdz-ehsan-shahids-projects.vercel.app',
-      /^https:\/\/snapstrom-project-1.*\.vercel\.app$/
-    ];
-    
-    const isAllowed = allowedOrigins.some(allowedOrigin => {
-      if (typeof allowedOrigin === 'string') {
-        return origin === allowedOrigin;
-      } else if (allowedOrigin instanceof RegExp) {
-        return allowedOrigin.test(origin);
-      }
-      return false;
-    });
-    
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.log('🚫 CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-}));
-
-// Handle preflight requests explicitly with enhanced headers
-app.options('*', (req, res) => {
-  console.log('🔄 Handling preflight request for:', req.url);
-  console.log('🔄 Origin:', req.headers.origin);
-  console.log('🔄 Method:', req.headers['access-control-request-method']);
-  console.log('🔄 Headers:', req.headers['access-control-request-headers']);
-  
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
-  res.status(204).end();
-});
-
-// Fallback CORS middleware to ensure headers are always present
+// Simple middleware for basic request handling
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  
-  // Set CORS headers for all requests
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    res.header('Access-Control-Allow-Origin', '*');
-  }
-  
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    console.log('🔄 Fallback CORS handling for OPTIONS request');
-    return res.status(204).end();
-  }
-  
+  console.log(`${req.method} ${req.url} - ${new Date().toISOString()}`);
   next();
 });
 
@@ -304,25 +230,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// CORS test endpoint
-app.get('/api/test-cors', (req, res) => {
-  console.log('🧪 CORS test endpoint called');
-  console.log('🔄 Origin:', req.headers.origin);
-  console.log('🔄 User-Agent:', req.headers['user-agent']);
-  
-  res.json({
-    success: true,
-    message: 'CORS test successful',
-    origin: req.headers.origin,
-    timestamp: new Date().toISOString(),
-    corsHeaders: {
-      'Access-Control-Allow-Origin': res.get('Access-Control-Allow-Origin'),
-      'Access-Control-Allow-Methods': res.get('Access-Control-Allow-Methods'),
-      'Access-Control-Allow-Headers': res.get('Access-Control-Allow-Headers'),
-      'Access-Control-Allow-Credentials': res.get('Access-Control-Allow-Credentials')
-    }
-  });
-});
 
 // Database connection test endpoint
 app.get('/api/test-db', async (req, res) => {
