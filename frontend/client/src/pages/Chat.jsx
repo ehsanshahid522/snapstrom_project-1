@@ -60,7 +60,9 @@ export default function Chat() {
     setIsSearching(true)
     try {
       const response = await api(`/api/search/users?q=${encodeURIComponent(query)}`)
+      console.log('User search response:', response)
       if (response.users) {
+        console.log('Found users:', response.users)
         setSearchResults(response.users || [])
       }
     } catch (error) {
@@ -96,11 +98,19 @@ export default function Chat() {
       
       console.log('Starting conversation with user:', user.username)
       const conversation = await startConversation(user.username)
+      console.log('Conversation created:', conversation)
       setSelectedConversation(conversation)
       setSearchQuery('')
       setSearchResults([])
       setShowUserSearch(false)
-      fetchMessages(conversation.id)
+      
+      const conversationId = conversation.id || conversation._id
+      if (conversationId) {
+        fetchMessages(conversationId)
+      } else {
+        console.error('No conversation ID in response:', conversation)
+      }
+      
       // Refresh conversations list
       fetchConversations()
     } catch (error) {
@@ -112,7 +122,12 @@ export default function Chat() {
   // Handle conversation selection
   const handleSelectConversation = useCallback((conversation) => {
     setSelectedConversation(conversation)
-    fetchMessages(conversation.id)
+    const conversationId = conversation.id || conversation._id
+    if (conversationId) {
+      fetchMessages(conversationId)
+    } else {
+      console.error('No conversation ID found:', conversation)
+    }
   }, [fetchMessages])
 
   // Auto-scroll effect
@@ -128,16 +143,19 @@ export default function Chat() {
   // Handle user parameter from URL
   useEffect(() => {
     const userId = searchParams.get('user')
-    if (userId && conversations.length > 0) {
+    if (userId && conversations && conversations.length > 0) {
       // Find existing conversation with this user
       const existingConversation = conversations.find(conv => 
-        conv.participants.some(p => p.id === userId)
+        conv.participants && conv.participants.some(p => p.id === userId)
       )
       
       if (existingConversation) {
         // Open existing conversation
         setSelectedConversation(existingConversation)
-        fetchMessages(existingConversation.id)
+        const conversationId = existingConversation.id || existingConversation._id
+        if (conversationId) {
+          fetchMessages(conversationId)
+        }
       } else {
         // Start new conversation with this user
         startNewConversation({ id: userId })
@@ -217,7 +235,7 @@ export default function Chat() {
   }, [sendMessage])
 
   // Use conversations directly since search is removed
-  const filteredConversations = conversations
+  const filteredConversations = conversations || []
 
   // Format message time
   const formatMessageTime = useCallback((timestamp) => {
@@ -264,6 +282,9 @@ export default function Chat() {
 
   // Get conversation partner
   const getConversationPartner = useCallback((conversation) => {
+    if (!conversation || !conversation.participants) {
+      return null
+    }
     return conversation.participants.find(p => p.username !== currentUser)
   }, [currentUser])
 
@@ -428,7 +449,7 @@ export default function Chat() {
             ) : (
               filteredConversations.map((conversation) => {
                 const partner = getConversationPartner(conversation)
-                const isSelected = selectedConversation?.id === conversation.id
+                const isSelected = selectedConversation?.id === conversation.id || selectedConversation?._id === conversation._id
                 
                 // Defensive programming - ensure we have valid data
                 if (!conversation || !partner || !partner.username) {
@@ -438,7 +459,7 @@ export default function Chat() {
                 
                 return (
                   <div
-                    key={conversation.id}
+                    key={conversation.id || conversation._id}
                     onClick={() => handleSelectConversation(conversation)}
                     className={`p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
                       isSelected ? 'bg-pink-50 border-r-4 border-r-pink-500' : ''

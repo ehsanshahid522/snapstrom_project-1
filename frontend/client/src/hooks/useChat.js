@@ -261,11 +261,14 @@ export const useChatAPI = () => {
       }
       
       console.log('Starting conversation with username:', username)
+      console.log('Request body will be:', { username: username.trim() })
+      
       const response = await api('/api/chat/start-conversation', {
         method: 'POST',
         body: { username: username.trim() }
       })
 
+      console.log('Start conversation response:', response)
       return response
     } catch (err) {
       console.error('Start conversation error:', err)
