@@ -468,7 +468,15 @@ export default function Chat() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 truncate mt-1">
-                          {conversation.lastMessage || 'No messages yet'}
+                          {(() => {
+                            const lastMsg = conversation.lastMessage;
+                            if (!lastMsg) return 'No messages yet';
+                            if (typeof lastMsg === 'string') return lastMsg;
+                            if (typeof lastMsg === 'object' && lastMsg !== null) {
+                              return lastMsg.content || lastMsg.text || JSON.stringify(lastMsg);
+                            }
+                            return String(lastMsg);
+                          })()}
                         </p>
                       </div>
                     </div>
