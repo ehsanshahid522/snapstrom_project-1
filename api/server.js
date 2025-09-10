@@ -153,6 +153,12 @@ async function connectDB() {
       return false;
     }
 
+    // If already connected, return true
+    if (mongoose.connection.readyState === 1) {
+      console.log('✅ Database already connected');
+      return true;
+    }
+
     console.log('🔗 Attempting to connect to MongoDB...');
     console.log('📝 MongoDB URI length:', mongoURI.length);
     console.log('🔍 MongoDB URI contains @:', mongoURI.includes('@'));
@@ -176,6 +182,17 @@ async function connectDB() {
 
     // Try multiple connection strategies
     const connectionStrategies = [
+      {
+        name: 'Ultra Simple Connection',
+        options: {
+          maxPoolSize: 1,
+          serverSelectionTimeoutMS: 5000,
+          socketTimeoutMS: 10000,
+          connectTimeoutMS: 5000,
+          bufferCommands: false,
+          retryWrites: false
+        }
+      },
       {
         name: 'Standard Connection',
         options: {
@@ -235,13 +252,19 @@ async function connectDB() {
       try {
         await mongoose.connect(mongoURI, strategy.options);
         
-        // Test the connection
+        // Test the connection - be more lenient
         try {
-          const admin = mongoose.connection.db.admin();
-          await admin.ping();
-          return true;
+          // Just check if we can access the database
+          if (mongoose.connection.readyState === 1) {
+            console.log(`✅ ${strategy.name} successful`);
+            return true;
+          }
         } catch (pingError) {
-          // Continue to next strategy
+          console.log(`⚠️ ${strategy.name} ping failed, but connection might still work`);
+          // If connection state is 1, consider it successful
+          if (mongoose.connection.readyState === 1) {
+            return true;
+          }
         }
       } catch (connectError) {
         // If it's a network error, try next strategy
@@ -2121,9 +2144,22 @@ app.post('/api/chat/start-conversation', async (req, res) => {
       return res.status(401).json({ message: 'Invalid token: missing username' })
     }
 
-    // Ensure DB connection
+    // Ensure DB connection with better error handling
     if (mongoose.connection.readyState !== 1) {
-      await connectDB()
+      console.log('🔄 Database not connected, attempting to connect...');
+      try {
+        await connectDB();
+        // Wait a bit for connection to stabilize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (mongoose.connection.readyState !== 1) {
+          console.error('❌ Database connection failed after retry');
+          return res.status(503).json({ message: 'Database unavailable' });
+        }
+      } catch (dbError) {
+        console.error('❌ Database connection error:', dbError);
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
     }
 
     // Convert userId to ObjectId for proper querying
@@ -2298,7 +2334,7 @@ app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
   }
 })
 
-// Search users
+// Search users (primary endpoint)
 app.get('/api/search/users', async (req, res) => {
   try {
     const { q } = req.query;
@@ -2307,20 +2343,27 @@ app.get('/api/search/users', async (req, res) => {
       return res.json({ users: [] });
     }
 
-    // Ensure DB connection
+    // Ensure DB connection with better error handling
     if (mongoose.connection.readyState !== 1) {
-      let connected = false;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const ok = await connectDB();
-        if (ok) { connected = true; break; }
-        await new Promise(r => setTimeout(r, 500));
-      }
-      if (!connected) {
+      console.log('🔄 Database not connected, attempting to connect...');
+      try {
+        await connectDB();
+        // Wait a bit for connection to stabilize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (mongoose.connection.readyState !== 1) {
+          console.error('❌ Database connection failed after retry');
+          return res.status(503).json({ message: 'Database unavailable' });
+        }
+      } catch (dbError) {
+        console.error('❌ Database connection error:', dbError);
         return res.status(503).json({ message: 'Database unavailable' });
       }
     }
 
     const searchQuery = q.trim();
+    console.log('🔍 Searching for users with query:', searchQuery);
+    
     const users = await User.find({
       $or: [
         { username: { $regex: searchQuery, $options: 'i' } },
@@ -2329,6 +2372,8 @@ app.get('/api/search/users', async (req, res) => {
     })
     .select('username profilePicture bio')
     .limit(10);
+
+    console.log('✅ Found', users.length, 'users matching query');
 
     res.json({
       users: users.map(user => ({
@@ -2339,7 +2384,62 @@ app.get('/api/search/users', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Search error:', error);
+    console.error('❌ Search error:', error);
+    res.status(500).json({ message: 'Error searching users', error: error.message });
+  }
+});
+
+// Search users (alternative endpoint for compatibility)
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.trim().length === 0) {
+      return res.json({ users: [] });
+    }
+
+    // Ensure DB connection with better error handling
+    if (mongoose.connection.readyState !== 1) {
+      console.log('🔄 Database not connected, attempting to connect...');
+      try {
+        await connectDB();
+        // Wait a bit for connection to stabilize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (mongoose.connection.readyState !== 1) {
+          console.error('❌ Database connection failed after retry');
+          return res.status(503).json({ message: 'Database unavailable' });
+        }
+      } catch (dbError) {
+        console.error('❌ Database connection error:', dbError);
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    const searchQuery = q.trim();
+    console.log('🔍 Searching for users with query:', searchQuery);
+    
+    const users = await User.find({
+      $or: [
+        { username: { $regex: searchQuery, $options: 'i' } },
+        { email: { $regex: searchQuery, $options: 'i' } }
+      ]
+    })
+    .select('username profilePicture bio')
+    .limit(10);
+
+    console.log('✅ Found', users.length, 'users matching query');
+
+    res.json({
+      users: users.map(user => ({
+        id: user._id,
+        username: user.username,
+        profilePicture: user.profilePicture,
+        bio: user.bio
+      }))
+    });
+  } catch (error) {
+    console.error('❌ Search error:', error);
     res.status(500).json({ message: 'Error searching users', error: error.message });
   }
 });
