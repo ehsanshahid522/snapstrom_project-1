@@ -55,7 +55,17 @@ export default function Profile() {
         }
       }catch(e){ 
         console.error('Error fetching profile:', e)
-        setMsg(e.message || 'Failed to load profile') 
+        
+        // Handle specific error cases
+        if (e.status === 404) {
+          setMsg(`User "@${username}" not found. This user may not exist or may have changed their username.`)
+        } else if (e.status === 401) {
+          setMsg('You need to be logged in to view this profile.')
+        } else if (e.status === 403) {
+          setMsg('You do not have permission to view this profile.')
+        } else {
+          setMsg(e.message || 'Failed to load profile. Please try again later.')
+        }
       }
       finally{ setLoading(false) }
     })()
@@ -196,22 +206,58 @@ export default function Profile() {
   }
 
   if (msg) {
+    const is404Error = msg.includes('not found')
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-24 h-24 bg-gradient-to-r from-red-400 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+      <div className={`min-h-screen bg-gradient-to-br ${is404Error ? 'from-blue-50 via-indigo-50 to-purple-50' : 'from-red-50 via-pink-50 to-purple-50'} flex items-center justify-center`}>
+        <div className="text-center max-w-lg mx-auto px-4">
+          <div className={`w-24 h-24 bg-gradient-to-r ${is404Error ? 'from-blue-400 to-indigo-500' : 'from-red-400 to-pink-500'} rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse`}>
+            {is404Error ? (
+              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            ) : (
+              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            )}
           </div>
-          <h3 className="text-2xl font-bold text-slate-800 mb-3">Oops! Something went wrong</h3>
+          
+          <h3 className={`text-2xl font-bold mb-3 ${is404Error ? 'text-slate-800' : 'text-slate-800'}`}>
+            {is404Error ? 'User Not Found 👤' : 'Oops! Something went wrong'}
+          </h3>
+          
           <p className="text-slate-600 mb-8 text-lg">{msg}</p>
-          <a href="/" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-red-500 via-pink-500 to-purple-600 text-white font-semibold rounded-xl hover:from-red-600 hover:via-pink-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-xl">
-            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Feed 🏠
-          </a>
+          
+          {is404Error && (
+            <div className="mb-8 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <h4 className="font-semibold text-blue-800 mb-2">💡 Suggestions:</h4>
+              <ul className="text-blue-700 text-sm text-left space-y-1">
+                <li>• Check if the username is spelled correctly</li>
+                <li>• The user may have changed their username</li>
+                <li>• The user may have deleted their account</li>
+                <li>• Try searching for similar usernames</li>
+              </ul>
+            </div>
+          )}
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-xl">
+              <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Feed 🏠
+            </a>
+            
+            {is404Error && (
+              <a href="/following" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:from-green-600 hover:via-emerald-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-xl">
+                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Browse Users 🔍
+              </a>
+            )}
+          </div>
         </div>
       </div>
     )

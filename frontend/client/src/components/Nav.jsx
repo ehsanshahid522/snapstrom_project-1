@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { clearAuth, getUsername, api } from '../lib/api.js'
 import Logo from './Logo.jsx'
+import { navigateToProfile } from '../utils/usernameValidation.js'
 
 export default function Nav() {
   const username = getUsername()
@@ -75,7 +76,9 @@ export default function Nav() {
 
   // Handle user selection from search
   const handleUserSelect = useCallback((user) => {
-    window.location.href = `/profile/${user.username}`
+    navigateToProfile(user.username, (path) => {
+      window.location.href = path
+    })
     setSearchQuery('')
     setSearchResults([])
   }, [])

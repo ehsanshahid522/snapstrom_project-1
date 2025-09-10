@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
+import { createProfileUrl } from '../utils/usernameValidation.js'
 
 export default function Feed() {
   const navigate = useNavigate()
@@ -662,7 +663,7 @@ export default function Feed() {
                   <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                     {/* Clickable Profile Picture */}
                     <a 
-                      href={`/profile/${p.uploader?.username}`}
+                      href={createProfileUrl(p.uploader?.username)}
                       className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200 hover:ring-pink-300 transition-all duration-200 transform hover:scale-105 cursor-pointer flex-shrink-0"
                     >
                       {p.uploader?.profilePicture ? (
@@ -681,7 +682,7 @@ export default function Feed() {
                     {/* Clickable Username and Info */}
                     <div className="flex-1 min-w-0">
                       <a 
-                        href={`/profile/${p.uploader?.username}`}
+                        href={createProfileUrl(p.uploader?.username)}
                         className="block hover:opacity-80 transition-opacity duration-200"
                       >
                         <div className="font-bold text-gray-900 text-sm sm:text-lg hover:text-pink-600 transition-colors duration-200 truncate">
