@@ -177,9 +177,12 @@ export default function Chat() {
                   // Handle various timestamp formats
                   if (!message.timestamp) return new Date().toISOString();
                   if (typeof message.timestamp === 'string') return message.timestamp;
-                  if (message.timestamp.timestamp) return message.timestamp.timestamp;
-                  if (message.timestamp.createdAt) return message.timestamp.createdAt;
-                  if (message.timestamp.lastMessageAt) return message.timestamp.lastMessageAt;
+                  if (typeof message.timestamp === 'object' && message.timestamp !== null) {
+                    if (message.timestamp.timestamp) return message.timestamp.timestamp;
+                    if (message.timestamp.createdAt) return message.timestamp.createdAt;
+                    if (message.timestamp.lastMessageAt) return message.timestamp.lastMessageAt;
+                    return new Date(message.timestamp).toISOString();
+                  }
                   return new Date(message.timestamp).toISOString();
                 })()
               }
@@ -225,7 +228,7 @@ export default function Chat() {
     }
     
     // Ensure we have a valid date string
-    if (!dateString) {
+    if (!dateString || typeof dateString !== 'string') {
       return 'Just now'
     }
     
