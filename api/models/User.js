@@ -5,7 +5,14 @@ const UserSchema = new mongoose.Schema({
     type: String, 
     required: true, 
     unique: true,
-    index: true
+    index: true,
+    trim: true,
+    validate: {
+      validator: function(v) {
+        return v && v.trim().length > 0;
+      },
+      message: 'Username cannot be empty or contain only spaces'
+    }
   },
   email: { 
     type: String, 
@@ -54,8 +61,11 @@ const UserSchema = new mongoose.Schema({
   }
 });
 
-// Update the updatedAt field before saving
+// Trim username before saving
 UserSchema.pre('save', function(next) {
+  if (this.username) {
+    this.username = this.username.trim();
+  }
   this.updatedAt = Date.now();
   next();
 });

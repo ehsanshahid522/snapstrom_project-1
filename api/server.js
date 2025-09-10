@@ -901,6 +901,60 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Admin endpoint to fix usernames with trailing spaces
+app.post('/api/admin/fix-usernames', async (req, res) => {
+  try {
+    console.log('🔧 Starting username cleanup...');
+    
+    const users = await User.find({});
+    let fixedCount = 0;
+    const fixedUsernames = [];
+    
+    for (const user of users) {
+      const originalUsername = user.username;
+      const trimmedUsername = user.username.trim();
+      
+      if (originalUsername !== trimmedUsername) {
+        console.log(`🔧 Fixing username: "${originalUsername}" -> "${trimmedUsername}"`);
+        
+        // Check if trimmed username already exists
+        const existingUser = await User.findOne({ 
+          username: { $regex: `^${trimmedUsername}$`, $options: 'i' },
+          _id: { $ne: user._id }
+        });
+        
+        if (existingUser) {
+          console.log(`⚠️  Skipping "${originalUsername}" - trimmed version "${trimmedUsername}" already exists`);
+          continue;
+        }
+        
+        // Update the username
+        user.username = trimmedUsername;
+        await user.save();
+        fixedCount++;
+        fixedUsernames.push({ from: originalUsername, to: trimmedUsername });
+      }
+    }
+    
+    console.log(`✅ Fixed ${fixedCount} usernames`);
+    
+    res.json({
+      success: true,
+      message: `Successfully fixed ${fixedCount} usernames`,
+      fixedCount,
+      fixedUsernames
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fixing usernames:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fixing usernames',
+      error: error.message
+    });
+  }
+});
+
 // API prefixed upload with memory storage
 app.post('/api/upload', async (req, res) => {
   try {
