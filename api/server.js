@@ -138,14 +138,13 @@ const FileSchema = new mongoose.Schema({
 
 const File = mongoose.model('File', FileSchema);
 
-// Database connection function with detailed debugging
+// Simplified database connection function
 async function connectDB() {
   try {
-    let mongoURI = process.env.MONGO_URI;
+    const mongoURI = process.env.MONGO_URI;
     
     if (!mongoURI) {
       console.error('❌ MONGO_URI environment variable is not set');
-      // For development, return true to allow server to start
       if (process.env.NODE_ENV === 'development') {
         console.log('⚠️ Running in development mode without database');
         return true;
@@ -159,157 +158,30 @@ async function connectDB() {
       return true;
     }
 
-    console.log('🔗 Attempting to connect to MongoDB...');
-    console.log('📝 MongoDB URI length:', mongoURI.length);
-    console.log('🔍 MongoDB URI contains @:', mongoURI.includes('@'));
-    console.log('🔍 MongoDB URI contains %40:', mongoURI.includes('%40'));
-    console.log('🔍 MongoDB URI starts with mongodb+srv:', mongoURI.startsWith('mongodb+srv://'));
-    console.log('🔍 MongoDB URI contains .mongodb.net:', mongoURI.includes('.mongodb.net'));
-    console.log('🔍 MongoDB URI first 50 chars:', mongoURI.substring(0, 50) + '...');
+    console.log('🔄 Attempting to connect to MongoDB...');
     
-    // Normalize credentials: safely encode username and password
-    const credMatch = mongoURI.match(/^(mongodb(?:\+srv)?:\/\/)([^:]+):([^@]+)@/);
-    if (credMatch) {
-      const protocol = credMatch[1];
-      let username = credMatch[2];
-      let password = credMatch[3];
-      try { username = decodeURIComponent(username); } catch (e) {}
-      try { password = decodeURIComponent(password); } catch (e) {}
-      const encodedUser = encodeURIComponent(username);
-      const encodedPass = encodeURIComponent(password);
-      mongoURI = mongoURI.replace(/^(mongodb(?:\+srv)?:\/\/)[^:]+:[^@]+@/, `${protocol}${encodedUser}:${encodedPass}@`);
-    }
-
-    // Try a basic connection first
-    try {
-      console.log('🔄 Attempting basic connection...');
-      await mongoose.connect(mongoURI, {
-        maxPoolSize: 1,
-        serverSelectionTimeoutMS: 3000,
-        connectTimeoutMS: 3000,
-        bufferCommands: false
-      });
-      
-      if (mongoose.connection.readyState === 1) {
-        console.log('✅ Basic connection successful');
-        return true;
-      }
-    } catch (basicError) {
-      console.log('⚠️ Basic connection failed, trying strategies...');
-    }
-
-    // Try multiple connection strategies
-    const connectionStrategies = [
-      {
-        name: 'Ultra Simple Connection',
-        options: {
-          maxPoolSize: 1,
-          serverSelectionTimeoutMS: 5000,
-          socketTimeoutMS: 10000,
-          connectTimeoutMS: 5000,
-          bufferCommands: false,
-          retryWrites: false
-        }
-      },
-      {
-        name: 'Standard Connection',
-        options: {
-          maxPoolSize: 5,
-          serverSelectionTimeoutMS: 30000,
-          socketTimeoutMS: 60000,
-          family: 4,
-          retryWrites: true,
-          w: 'majority',
-          bufferCommands: false,
-          connectTimeoutMS: 30000,
-          heartbeatFrequencyMS: 10000,
-          maxIdleTimeMS: 30000,
-          minPoolSize: 1,
-          maxConnecting: 2,
-          compressors: ['zlib'],
-          zlibCompressionLevel: 6
-        }
-      },
-      {
-        name: 'Simple Connection',
-        options: {
-          maxPoolSize: 1,
-          serverSelectionTimeoutMS: 15000,
-          socketTimeoutMS: 30000,
-          family: 4,
-          retryWrites: false,
-          w: 1,
-          bufferCommands: false,
-          connectTimeoutMS: 15000
-        }
-      },
-      {
-        name: 'Minimal Connection',
-        options: {
-          maxPoolSize: 1,
-          serverSelectionTimeoutMS: 10000,
-          socketTimeoutMS: 20000,
-          family: 4,
-          retryWrites: false,
-          w: 1,
-          bufferCommands: false,
-          connectTimeoutMS: 10000
-        }
-      }
-    ];
-
-    // Close existing connection if any
-    if (mongoose.connection.readyState !== 0) {
-      await mongoose.disconnect();
-    }
-
-    // Try each connection strategy
-    for (let strategyIndex = 0; strategyIndex < connectionStrategies.length; strategyIndex++) {
-      const strategy = connectionStrategies[strategyIndex];
-      
-      try {
-        await mongoose.connect(mongoURI, strategy.options);
-        
-        // Test the connection - be more lenient
-        try {
-          // Just check if we can access the database
-          if (mongoose.connection.readyState === 1) {
-            console.log(`✅ ${strategy.name} successful`);
-            return true;
-          }
-        } catch (pingError) {
-          console.log(`⚠️ ${strategy.name} ping failed, but connection might still work`);
-          // If connection state is 1, consider it successful
-          if (mongoose.connection.readyState === 1) {
-            return true;
-          }
-        }
-      } catch (connectError) {
-        // If it's a network error, try next strategy
-        if (connectError.name === 'MongoNetworkError' || connectError.name === 'MongoTimeoutError') {
-          continue;
-        }
-        
-        // If it's an authentication error, stop trying
-        if (connectError.name === 'MongoServerSelectionError' && connectError.message.includes('Authentication failed')) {
-          return false;
-        }
-        
-        // If it's a server selection error, log more details
-        if (connectError.name === 'MongoServerSelectionError') {
-          // Continue to next strategy
-        }
-      }
-    }
+    // Simple connection with minimal options
+    await mongoose.connect(mongoURI, {
+      maxPoolSize: 1,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      bufferCommands: false,
+      retryWrites: false
+    });
     
-    console.error('❌ All connection strategies failed');
-    return false;
+    // Wait for connection to establish
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    if (mongoose.connection.readyState === 1) {
+      console.log('✅ MongoDB connected successfully');
+      return true;
+    } else {
+      console.error('❌ MongoDB connection failed - state:', mongoose.connection.readyState);
+      return false;
+    }
     
   } catch (error) {
-    console.error('❌ MongoDB connection failed:', error.message);
-    console.error('❌ Error name:', error.name);
-    console.error('❌ Error code:', error.code);
-    console.error('❌ Error details:', error);
+    console.error('❌ MongoDB connection error:', error.message);
     return false;
   }
 }
@@ -2059,9 +1931,21 @@ app.get('/api/chat/conversations', async (req, res) => {
     const payload = JSON.parse(atob(token.split('.')[1]))
     const userId = payload.userId || payload.id
 
-    // Ensure DB connection
+    // Ensure DB connection with better error handling
     if (mongoose.connection.readyState !== 1) {
-      await connectDB()
+      console.log('🔄 Database not connected, attempting to connect...');
+      try {
+        const connected = await connectDB();
+        if (!connected) {
+          console.error('❌ Database connection failed');
+          return res.status(503).json({ message: 'Database unavailable' });
+        }
+        // Wait a bit for connection to stabilize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (dbError) {
+        console.error('❌ Database connection error:', dbError);
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
     }
 
     // Convert userId to ObjectId for proper querying
