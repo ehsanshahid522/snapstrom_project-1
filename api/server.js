@@ -15,9 +15,8 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Simple middleware for basic request handling
+// Basic request handling
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url} - ${new Date().toISOString()}`);
   next();
 });
 
@@ -2527,15 +2526,11 @@ app.get('/api/users/:id', async (req, res) => {
       }
     }
 
-    console.log('🔍 Looking for user with ID:', id);
     const user = await User.findById(id).select('-password');
     
     if (!user) {
-      console.log('❌ User not found with ID:', id);
       return res.status(404).json({ message: 'User not found' });
     }
-
-    console.log('✅ User found:', user.username);
     res.json({
       id: user._id,
       username: user.username,

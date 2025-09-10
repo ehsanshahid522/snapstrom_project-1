@@ -117,8 +117,6 @@ export default function Chat() {
       const conversationId = conversation.id || conversation._id
       if (conversationId) {
         fetchMessages(conversationId)
-      } else {
-        console.error('❌ No conversation ID in response:', conversation)
       }
       
       // Refresh conversations list
@@ -308,19 +306,13 @@ export default function Chat() {
 
   // Get conversation partner
   const getConversationPartner = useCallback((conversation) => {
-    if (!conversation) {
+    if (!conversation?.participants || !Array.isArray(conversation.participants)) {
       return null
     }
     
-    if (!conversation.participants || !Array.isArray(conversation.participants)) {
-      return null
-    }
-    
-    const partner = conversation.participants.find(p => {
-      return p && p.username && p.username !== currentUser
-    })
-    
-    return partner
+    return conversation.participants.find(p => 
+      p?.username && p.username !== currentUser
+    )
   }, [currentUser])
 
   if (loading) {
@@ -492,28 +484,8 @@ export default function Chat() {
                 const partner = getConversationPartner(conversation)
                 const isSelected = selectedConversation?.id === conversation.id || selectedConversation?._id === conversation._id
                 
-                // Defensive programming - ensure we have valid data
-                if (!conversation) {
-                  console.warn('❌ No conversation object')
+                if (!conversation || !partner || !partner.username) {
                   return null
-                }
-                
-                if (!partner) {
-                  console.warn('❌ No partner found for conversation:', conversation)
-                  return (
-                    <div key={conversation.id || conversation._id} className="p-4 border-b border-gray-100">
-                      <div className="text-sm text-gray-500">Loading conversation...</div>
-                    </div>
-                  )
-                }
-                
-                if (!partner.username) {
-                  console.warn('❌ Partner has no username:', partner)
-                  return (
-                    <div key={conversation.id || conversation._id} className="p-4 border-b border-gray-100">
-                      <div className="text-sm text-gray-500">Unknown user</div>
-                    </div>
-                  )
                 }
                 
                 return (
@@ -602,9 +574,7 @@ export default function Chat() {
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {messages.map((message) => {
-                  // Defensive programming - ensure we have valid message data
-                  if (!message || !message.id || !message.content) {
-                    console.warn('Invalid message data:', message)
+                  if (!message?.id || !message?.content) {
                     return null
                   }
                   

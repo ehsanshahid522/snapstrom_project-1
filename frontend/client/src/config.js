@@ -43,23 +43,7 @@ export function getApiUrl(path = '') {
   return baseUrl ? `${baseUrl}/api${cleanPath}` : `/api${cleanPath}`;
 }
 
-// Helper function to get WebSocket URL
+// Helper function to get WebSocket URL (disabled in production)
 export function getWsUrl(path = '') {
-  const baseUrl = config.WS_BASE_URL;
-  
-  console.log('🔧 WebSocket config:', {
-    VITE_WS_URL: import.meta.env.VITE_WS_URL,
-    hostname: window.location.hostname,
-    WS_BASE_URL: baseUrl
-  });
-  
-  // If path is empty, return base WebSocket URL
-  if (!path) {
-    return baseUrl;
-  }
-  
-  // Clean the path
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  
-  return `${baseUrl}${cleanPath}`;
+  return ''; // WebSocket disabled in production
 }
