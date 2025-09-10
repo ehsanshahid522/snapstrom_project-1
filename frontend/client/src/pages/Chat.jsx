@@ -639,24 +639,29 @@ export default function Chat() {
                   return (
                     <div
                       key={message.id}
-                      className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-4`}
+                      className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-4 px-4 animate-fade-in`}
                     >
-                      <div className={`flex items-end space-x-2 ${isSender ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                        {/* Avatar for receiver messages */}
+                      <div className={`flex items-end space-x-3 ${isSender ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                        {/* Avatar for receiver messages (left side) */}
                         {!isSender && (
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
                             {message.senderUsername?.charAt(0)?.toUpperCase() || 'U'}
                           </div>
                         )}
                         
                         {/* Message bubble */}
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+                          className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md relative ${
                             isSender
-                              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-br-md'
-                              : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md shadow-sm'
+                              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-br-md ml-8'
+                              : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md mr-8'
                           }`}
                         >
+                          {/* Message type indicator */}
+                          <div className={`absolute top-2 ${isSender ? 'right-2' : 'left-2'} w-2 h-2 rounded-full ${
+                            isSender ? 'bg-pink-200' : 'bg-blue-200'
+                          }`}></div>
+                          
                           <p className="text-sm leading-relaxed">{safeObjectToString(message.content)}</p>
                           <p className={`text-xs mt-2 ${
                             isSender ? 'text-pink-100' : 'text-gray-500'
@@ -665,9 +670,9 @@ export default function Chat() {
                           </p>
                         </div>
                         
-                        {/* Avatar for sender messages */}
+                        {/* Avatar for sender messages (right side) */}
                         {isSender && (
-                          <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
                             {currentUser?.charAt(0)?.toUpperCase() || 'M'}
                           </div>
                         )}
