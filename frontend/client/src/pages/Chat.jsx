@@ -8,7 +8,10 @@ export default function Chat() {
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
-  // Removed search functionality - using header search only
+  const [showUserSearch, setShowUserSearch] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
   const [onlineUsers, setOnlineUsers] = useState([])
   const messagesEndRef = useRef(null)
   const currentUser = useMemo(() => localStorage.getItem('username'), [])
@@ -45,21 +48,55 @@ export default function Chat() {
     }
   }, [getConversations])
 
-  // Removed search functionality - using header search only
+  // Search users function
+  const searchUsers = useCallback(async (query) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const response = await api(`/api/search/users?q=${encodeURIComponent(query)}`)
+      if (response.users) {
+        setSearchResults(response.users || [])
+      }
+    } catch (error) {
+      console.error('Error searching users:', error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }, [])
+
+  // Handle search query changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchUsers(searchQuery)
+      } else {
+        setSearchResults([])
+      }
+    }, 300) // Debounce search
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, searchUsers])
 
   // Start new conversation with user
   const startNewConversation = useCallback(async (user) => {
     try {
-      const conversation = await startConversation(user.id)
+      const conversation = await startConversation(user.username)
       setSelectedConversation(conversation)
       setSearchQuery('')
       setSearchResults([])
       setShowUserSearch(false)
       fetchMessages(conversation.id)
+      // Refresh conversations list
+      fetchConversations()
     } catch (error) {
       console.error('Error starting conversation:', error)
     }
-  }, [startConversation, fetchMessages])
+  }, [startConversation, fetchMessages, fetchConversations])
 
   // Handle conversation selection
   const handleSelectConversation = useCallback((conversation) => {
@@ -196,14 +233,48 @@ export default function Chat() {
           <div className="p-6 border-b border-gray-100">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Messages</h1>
             
-            {/* Removed search - using header search only */}
+            {/* Start New Chat Button */}
+            <button
+              onClick={() => setShowUserSearch(true)}
+              className="w-full px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center justify-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span>Start New Chat</span>
+            </button>
           </div>
 
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto">
-            {false ? (
-              // User Search Results
+            {showUserSearch ? (
+              // User Search Interface
               <div>
+                {/* Search Input */}
+                <div className="p-4 border-b border-gray-100">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search users to chat with..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <button
+                      onClick={() => setShowUserSearch(false)}
+                      className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search Results */}
                 {isSearching ? (
                   <div className="p-6 text-center">
                     <div className="w-8 h-8 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full mx-auto mb-4 animate-spin"></div>
@@ -262,7 +333,7 @@ export default function Chat() {
                       </div>
                     ))}
                   </div>
-                ) : (
+                ) : searchQuery ? (
                   <div className="p-6 text-center text-gray-500">
                     <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                       <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -271,6 +342,16 @@ export default function Chat() {
                     </div>
                     <p className="text-lg font-medium mb-2">No users found</p>
                     <p className="text-sm">Try searching with a different username</p>
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-gray-500">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-lg font-medium mb-2">Search for users</p>
+                    <p className="text-sm">Type a username to find someone to chat with</p>
                   </div>
                 )}
               </div>
@@ -282,7 +363,13 @@ export default function Chat() {
                   </svg>
                 </div>
                 <p className="text-lg font-medium mb-2">No conversations yet</p>
-                <p className="text-sm">Start a conversation with someone!</p>
+                <p className="text-sm mb-4">Start a conversation with someone!</p>
+                <button
+                  onClick={() => setShowUserSearch(true)}
+                  className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+                >
+                  Find Someone to Chat With
+                </button>
               </div>
             ) : (
               filteredConversations.map((conversation) => {
