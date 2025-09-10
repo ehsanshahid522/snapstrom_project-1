@@ -160,17 +160,26 @@ async function connectDB() {
 
     console.log('🔄 Attempting to connect to MongoDB...');
     
-    // Simple connection with minimal options
+    // Disconnect any existing connection first
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+    
+    // Connection with better options for Vercel/serverless
     await mongoose.connect(mongoURI, {
-      maxPoolSize: 1,
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
+      maxPoolSize: 5,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
       bufferCommands: false,
-      retryWrites: false
+      retryWrites: true,
+      retryReads: true,
+      maxIdleTimeMS: 30000,
+      heartbeatFrequencyMS: 10000
     });
     
     // Wait for connection to establish
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     if (mongoose.connection.readyState === 1) {
       console.log('✅ MongoDB connected successfully');
@@ -182,6 +191,12 @@ async function connectDB() {
     
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
+    // Try to disconnect and clean up
+    try {
+      await mongoose.disconnect();
+    } catch (disconnectError) {
+      console.error('❌ Error disconnecting:', disconnectError.message);
+    }
     return false;
   }
 }
@@ -223,6 +238,45 @@ app.get('/api/health', (req, res) => {
     hasMongoUri: !!process.env.MONGO_URI,
     hasJwtSecret: !!process.env.JWT_SECRET
   });
+});
+
+// Database connection test endpoint
+app.get('/api/test-db', async (req, res) => {
+  try {
+    console.log('🧪 Testing database connection...');
+    
+    // Test connection
+    const connected = await connectDB();
+    
+    if (connected) {
+      // Test a simple query
+      const User = mongoose.model('User');
+      const userCount = await User.countDocuments();
+      
+      res.json({
+        success: true,
+        message: 'Database connection successful',
+        userCount: userCount,
+        connectionState: mongoose.connection.readyState,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(503).json({
+        success: false,
+        message: 'Database connection failed',
+        connectionState: mongoose.connection.readyState,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('❌ Database test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Database test error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Serve uploaded images
@@ -2014,7 +2068,13 @@ app.get('/api/chat/conversations', async (req, res) => {
           return res.status(503).json({ message: 'Database unavailable' });
         }
         // Wait a bit for connection to stabilize
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Double-check connection status
+        if (mongoose.connection.readyState !== 1) {
+          console.error('❌ Database still not connected after retry');
+          return res.status(503).json({ message: 'Database unavailable' });
+        }
       } catch (dbError) {
         console.error('❌ Database connection error:', dbError);
         return res.status(503).json({ message: 'Database unavailable' });
