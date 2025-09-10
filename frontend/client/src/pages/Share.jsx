@@ -71,13 +71,30 @@ export default function Share() {
                     {post.uploader?.username || 'User'}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {new Date(post.uploadTime).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    {(() => {
+                      if (!post.uploadTime) return 'Recently';
+                      
+                      // Handle object timestamps
+                      let dateString = post.uploadTime;
+                      if (typeof post.uploadTime === 'object' && post.uploadTime !== null) {
+                        if (post.uploadTime.timestamp) {
+                          dateString = post.uploadTime.timestamp;
+                        } else if (post.uploadTime.createdAt) {
+                          dateString = post.uploadTime.createdAt;
+                        } else {
+                          dateString = post.uploadTime.toString();
+                        }
+                      }
+                      
+                      const date = new Date(dateString);
+                      return isNaN(date.getTime()) ? 'Recently' : date.toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+                    })()}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">

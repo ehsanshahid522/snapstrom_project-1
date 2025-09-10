@@ -689,11 +689,28 @@ export default function Feed() {
                         </div>
                         <div className="text-xs sm:text-sm text-gray-500 flex items-center">
                           <span className="mr-1 sm:mr-2">🕐</span>
-                          {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          }) : 'Unknown date'}
+                          {(() => {
+                            if (!p.uploadTime) return 'Unknown date';
+                            
+                            // Handle object timestamps
+                            let dateString = p.uploadTime;
+                            if (typeof p.uploadTime === 'object' && p.uploadTime !== null) {
+                              if (p.uploadTime.timestamp) {
+                                dateString = p.uploadTime.timestamp;
+                              } else if (p.uploadTime.createdAt) {
+                                dateString = p.uploadTime.createdAt;
+                              } else {
+                                dateString = p.uploadTime.toString();
+                              }
+                            }
+                            
+                            const date = new Date(dateString);
+                            return isNaN(date.getTime()) ? 'Unknown date' : date.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            });
+                          })()}
                         </div>
                       </a>
                     </div>

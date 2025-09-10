@@ -455,7 +455,24 @@ export default function Following() {
                         {p.uploader?.username || 'Unknown User'}
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-500">
-                        {p.uploadTime ? new Date(p.uploadTime).toLocaleDateString() : 'Recently'}
+                        {(() => {
+                          if (!p.uploadTime) return 'Recently';
+                          
+                          // Handle object timestamps
+                          let dateString = p.uploadTime;
+                          if (typeof p.uploadTime === 'object' && p.uploadTime !== null) {
+                            if (p.uploadTime.timestamp) {
+                              dateString = p.uploadTime.timestamp;
+                            } else if (p.uploadTime.createdAt) {
+                              dateString = p.uploadTime.createdAt;
+                            } else {
+                              dateString = p.uploadTime.toString();
+                            }
+                          }
+                          
+                          const date = new Date(dateString);
+                          return isNaN(date.getTime()) ? 'Recently' : date.toLocaleDateString();
+                        })()}
                       </p>
                     </div>
                   </div>

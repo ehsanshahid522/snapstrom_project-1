@@ -286,8 +286,37 @@ export default function Trending() {
   }
 
   const formatTimeAgo = (date) => {
+    // Handle different date formats
+    let dateString = date
+    
+    // If date is an object with timestamp property
+    if (typeof date === 'object' && date !== null) {
+      if (date.timestamp) {
+        dateString = date.timestamp
+      } else if (date.createdAt) {
+        dateString = date.createdAt
+      } else if (date.uploadTime) {
+        dateString = date.uploadTime
+      } else {
+        // If it's a Date object, convert to string
+        dateString = date.toString()
+      }
+    }
+    
+    // Ensure we have a valid date string
+    if (!dateString) {
+      return 'Just now'
+    }
+    
     const now = new Date()
-    const diff = now - new Date(date)
+    const targetDate = new Date(dateString)
+    
+    // Check if date is valid
+    if (isNaN(targetDate.getTime())) {
+      return 'Just now'
+    }
+    
+    const diff = now - targetDate
     const minutes = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
@@ -296,7 +325,7 @@ export default function Trending() {
     if (minutes < 60) return `${minutes}m ago`
     if (hours < 24) return `${hours}h ago`
     if (days < 7) return `${days}d ago`
-    return new Date(date).toLocaleDateString()
+    return targetDate.toLocaleDateString()
   }
 
   const formatEngagementScore = (score) => {
