@@ -201,7 +201,7 @@ export const startConversation = async (req, res) => {
     const userId = req.user._id;
 
     // Find the user to start conversation with
-    const otherUser = await User.findOne({ username });
+    const otherUser = await User.findOne({ username: { $regex: `^${username}$`, $options: 'i' } });
     if (!otherUser) {
       return res.status(404).json({
         success: false,

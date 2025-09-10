@@ -765,7 +765,12 @@ app.post('/api/auth/register', async (req, res) => {
     }
     
     console.log('🔍 Checking for existing user...');
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const existingUser = await User.findOne({ 
+      $or: [
+        { email }, 
+        { username: { $regex: `^${username}$`, $options: 'i' } }
+      ] 
+    });
     if (existingUser) {
       console.log('❌ User already exists:', existingUser.email);
       return res.status(400).json({ message: 'Username or email already exists' });
@@ -1047,7 +1052,7 @@ app.get('/api/profile/:username', async (req, res) => {
     }
 
     console.log('🔍 Looking for user:', decodedUsername);
-    const user = await User.findOne({ username: decodedUsername }).select('-password');
+    const user = await User.findOne({ username: { $regex: `^${decodedUsername}$`, $options: 'i' } }).select('-password');
     if (!user) {
       console.log('❌ User not found:', decodedUsername);
       return res.status(404).json({ message: 'User not found' });
@@ -1145,7 +1150,7 @@ app.put('/api/profile', async (req, res) => {
 
     // Update fields
     if (username && username !== user.username) {
-      const existingUser = await User.findOne({ username });
+      const existingUser = await User.findOne({ username: { $regex: `^${username}$`, $options: 'i' } });
       if (existingUser) {
         return res.status(400).json({ message: 'Username already taken' });
       }
@@ -2115,7 +2120,7 @@ app.post('/api/chat/start-conversation', async (req, res) => {
 
     // Find the target user
     console.log('🔍 Searching for target user:', username);
-    const targetUser = await User.findOne({ username })
+    const targetUser = await User.findOne({ username: { $regex: `^${username}$`, $options: 'i' } })
     if (!targetUser) {
       console.log('❌ Target user not found:', username)
       return res.status(404).json({ message: 'User not found' })
