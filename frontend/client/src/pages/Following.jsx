@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
+import { safeTimestampToString, formatTimeAgo as safeFormatTimeAgo, safeObjectToString } from '../utils/timestampUtils.js'
 
 export default function Following() {
   const [searchParams] = useSearchParams()
@@ -455,24 +456,7 @@ export default function Following() {
                         {p.uploader?.username || 'Unknown User'}
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-500">
-                        {(() => {
-                          if (!p.uploadTime) return 'Recently';
-                          
-                          // Handle object timestamps
-                          let dateString = p.uploadTime;
-                          if (typeof p.uploadTime === 'object' && p.uploadTime !== null) {
-                            if (p.uploadTime.timestamp) {
-                              dateString = p.uploadTime.timestamp;
-                            } else if (p.uploadTime.createdAt) {
-                              dateString = p.uploadTime.createdAt;
-                            } else {
-                              dateString = p.uploadTime.toString();
-                            }
-                          }
-                          
-                          const date = new Date(dateString);
-                          return isNaN(date.getTime()) ? 'Recently' : date.toLocaleDateString();
-                        })()}
+                        {safeFormatTimeAgo(p.uploadTime)}
                       </p>
                     </div>
                   </div>
@@ -683,7 +667,7 @@ export default function Following() {
                         <span className="font-bold text-gray-900 mr-2">
                           {c.username || c.user?.username || 'User'}:
                         </span>
-                        <span className="text-gray-700">{c.text}</span>
+                        <span className="text-gray-700">{safeObjectToString(c.text)}</span>
                       </div>
                     ))}
                     {p.comments.length > 5 && (

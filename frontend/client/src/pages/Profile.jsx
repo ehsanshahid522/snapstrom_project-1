@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
+import { safeTimestampToString, formatTimeAgo as safeFormatTimeAgo } from '../utils/timestampUtils.js'
 
 export default function Profile() {
   const { username } = useParams()
@@ -598,25 +599,7 @@ export default function Profile() {
                         
                         {/* Upload Time */}
                         <div className="text-xs text-pink-200 bg-black/30 px-2 py-1 rounded-full">
-                          {(() => {
-                            const dateValue = post.uploadTime || post.createdAt;
-                            if (!dateValue) return 'Recently';
-                            
-                            // Handle object timestamps
-                            let dateString = dateValue;
-                            if (typeof dateValue === 'object' && dateValue !== null) {
-                              if (dateValue.timestamp) {
-                                dateString = dateValue.timestamp;
-                              } else if (dateValue.createdAt) {
-                                dateString = dateValue.createdAt;
-                              } else {
-                                dateString = dateValue.toString();
-                              }
-                            }
-                            
-                            const date = new Date(dateString);
-                            return isNaN(date.getTime()) ? 'Recently' : date.toLocaleDateString();
-                          })()}
+                          {safeFormatTimeAgo(post.uploadTime || post.createdAt)}
                         </div>
                       </div>
                     </div>

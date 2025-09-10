@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../lib/api.js'
+import { safeTimestampToString, formatTimeAgo as safeFormatTimeAgo } from '../utils/timestampUtils.js'
 
 export default function Share() {
   const { id } = useParams()
@@ -71,30 +72,7 @@ export default function Share() {
                     {post.uploader?.username || 'User'}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {(() => {
-                      if (!post.uploadTime) return 'Recently';
-                      
-                      // Handle object timestamps
-                      let dateString = post.uploadTime;
-                      if (typeof post.uploadTime === 'object' && post.uploadTime !== null) {
-                        if (post.uploadTime.timestamp) {
-                          dateString = post.uploadTime.timestamp;
-                        } else if (post.uploadTime.createdAt) {
-                          dateString = post.uploadTime.createdAt;
-                        } else {
-                          dateString = post.uploadTime.toString();
-                        }
-                      }
-                      
-                      const date = new Date(dateString);
-                      return isNaN(date.getTime()) ? 'Recently' : date.toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      });
-                    })()}
+                    {safeFormatTimeAgo(post.uploadTime)}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">

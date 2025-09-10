@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
+import { safeTimestampToString, formatTimeAgo as safeFormatTimeAgo, safeObjectToString } from '../utils/timestampUtils.js'
 import { createProfileUrl } from '../utils/usernameValidation.js'
 
 export default function Feed() {
@@ -690,28 +691,7 @@ export default function Feed() {
                         </div>
                         <div className="text-xs sm:text-sm text-gray-500 flex items-center">
                           <span className="mr-1 sm:mr-2">🕐</span>
-                          {(() => {
-                            if (!p.uploadTime) return 'Unknown date';
-                            
-                            // Handle object timestamps
-                            let dateString = p.uploadTime;
-                            if (typeof p.uploadTime === 'object' && p.uploadTime !== null) {
-                              if (p.uploadTime.timestamp) {
-                                dateString = p.uploadTime.timestamp;
-                              } else if (p.uploadTime.createdAt) {
-                                dateString = p.uploadTime.createdAt;
-                              } else {
-                                dateString = p.uploadTime.toString();
-                              }
-                            }
-                            
-                            const date = new Date(dateString);
-                            return isNaN(date.getTime()) ? 'Unknown date' : date.toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            });
-                          })()}
+                          {safeFormatTimeAgo(p.uploadTime)}
                         </div>
                       </a>
                     </div>
@@ -962,7 +942,7 @@ export default function Feed() {
                         <span className="font-bold text-gray-900 mr-2">
                           {c.username || c.user?.username || 'User'}:
                         </span>
-                        <span className="text-gray-700">{c.text}</span>
+                        <span className="text-gray-700">{safeObjectToString(c.text)}</span>
                       </div>
                     ))}
                     {p.comments.length > 5 && (
