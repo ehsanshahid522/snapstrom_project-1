@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '../lib/api.js'
+import { getWsUrl } from '../config.js'
 
 // Custom hook for real-time messaging
 export const useRealTimeChat = (conversationId) => {
@@ -16,16 +17,16 @@ export const useRealTimeChat = (conversationId) => {
 
     try {
       const token = localStorage.getItem('token')
-      const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3001'
+      const wsUrl = getWsUrl('/chat')
       
       // Check if WebSocket URL is available
-      if (!wsUrl || wsUrl === 'ws://localhost:3001') {
+      if (!wsUrl || wsUrl.includes('localhost:3001')) {
         console.log('⚠️ WebSocket URL not configured, using fallback mode')
         setIsConnected(false)
         return
       }
       
-      const fullWsUrl = `${wsUrl}/chat?token=${token}&conversationId=${conversationId}`
+      const fullWsUrl = `${wsUrl}?token=${token}&conversationId=${conversationId}`
       wsRef.current = new WebSocket(fullWsUrl)
 
       wsRef.current.onopen = () => {
@@ -254,13 +255,20 @@ export const useChatAPI = () => {
       setLoading(true)
       setError(null)
       
+      // Validate username
+      if (!username || typeof username !== 'string' || username.trim() === '') {
+        throw new Error('Username is required and must be a non-empty string')
+      }
+      
+      console.log('Starting conversation with username:', username)
       const response = await api('/api/chat/start-conversation', {
         method: 'POST',
-        body: { username }
+        body: { username: username.trim() }
       })
 
       return response
     } catch (err) {
+      console.error('Start conversation error:', err)
       setError(err.message)
       throw err
     } finally {

@@ -2139,7 +2139,7 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
 
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
-    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId)) {
+    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
       return res.status(403).json({ message: 'Access denied to this conversation' })
     }
 
@@ -2327,7 +2327,7 @@ app.post('/api/chat/send-message', async (req, res) => {
 
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
-    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId)) {
+    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
       return res.status(403).json({ message: 'Access denied to this conversation' })
     }
 
@@ -2392,7 +2392,7 @@ app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
 
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
-    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId)) {
+    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
       return res.status(403).json({ message: 'Access denied to this conversation' })
     }
 

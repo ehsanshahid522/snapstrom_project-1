@@ -87,6 +87,14 @@ export default function Chat() {
   // Start new conversation with user
   const startNewConversation = useCallback(async (user) => {
     try {
+      // Validate user object and username
+      if (!user || !user.username) {
+        console.error('Invalid user object:', user)
+        alert('Invalid user selected. Please try again.')
+        return
+      }
+      
+      console.log('Starting conversation with user:', user.username)
       const conversation = await startConversation(user.username)
       setSelectedConversation(conversation)
       setSearchQuery('')
@@ -97,6 +105,7 @@ export default function Chat() {
       fetchConversations()
     } catch (error) {
       console.error('Error starting conversation:', error)
+      alert(`Failed to start conversation: ${error.message}`)
     }
   }, [startConversation, fetchMessages, fetchConversations])
 
