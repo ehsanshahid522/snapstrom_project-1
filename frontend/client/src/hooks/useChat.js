@@ -20,11 +20,14 @@ export const useRealTimeChat = (conversationId) => {
       const wsUrl = getWsUrl('/chat')
       
       // Check if WebSocket URL is available
-      if (!wsUrl || wsUrl.includes('localhost:3001')) {
+      if (!wsUrl || wsUrl.includes('localhost:3001') || wsUrl === 'ws://localhost:3001') {
         console.log('⚠️ WebSocket URL not configured, using fallback mode')
+        console.log('WebSocket URL was:', wsUrl)
         setIsConnected(false)
         return
       }
+      
+      console.log('🔌 Attempting WebSocket connection to:', wsUrl)
       
       const fullWsUrl = `${wsUrl}?token=${token}&conversationId=${conversationId}`
       wsRef.current = new WebSocket(fullWsUrl)

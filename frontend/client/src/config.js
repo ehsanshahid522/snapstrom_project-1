@@ -47,6 +47,12 @@ export function getApiUrl(path = '') {
 export function getWsUrl(path = '') {
   const baseUrl = config.WS_BASE_URL;
   
+  console.log('🔧 WebSocket config:', {
+    VITE_WS_URL: import.meta.env.VITE_WS_URL,
+    hostname: window.location.hostname,
+    WS_BASE_URL: baseUrl
+  });
+  
   // If path is empty, return base WebSocket URL
   if (!path) {
     return baseUrl;

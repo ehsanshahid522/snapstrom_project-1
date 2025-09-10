@@ -158,7 +158,19 @@ export default function Chat() {
         }
       } else {
         // Start new conversation with this user
-        startNewConversation({ id: userId })
+        // We need to get the username from the user ID
+        try {
+          const userResponse = await api(`/api/users/${userId}`)
+          if (userResponse.user && userResponse.user.username) {
+            startNewConversation({ username: userResponse.user.username })
+          } else {
+            console.error('Could not get username for user ID:', userId)
+            alert('Could not find user details. Please try again.')
+          }
+        } catch (error) {
+          console.error('Error fetching user details:', error)
+          alert('Could not find user details. Please try again.')
+        }
       }
     }
   }, [searchParams, conversations, fetchMessages, startNewConversation])

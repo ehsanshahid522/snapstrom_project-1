@@ -2139,7 +2139,16 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
 
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
-    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
+    console.log('🔍 Found conversation:', conversation ? 'Yes' : 'No')
+    
+    if (!conversation) {
+      console.log('❌ Conversation not found:', conversationId)
+      return res.status(404).json({ message: 'Conversation not found' })
+    }
+    
+    if (!conversation.participants || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
+      console.log('❌ User not participant in conversation')
+      console.log('Participants:', conversation.participants?.map(p => p.user.toString()))
       return res.status(403).json({ message: 'Access denied to this conversation' })
     }
 
@@ -2327,7 +2336,16 @@ app.post('/api/chat/send-message', async (req, res) => {
 
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
-    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
+    console.log('🔍 Found conversation:', conversation ? 'Yes' : 'No')
+    
+    if (!conversation) {
+      console.log('❌ Conversation not found:', conversationId)
+      return res.status(404).json({ message: 'Conversation not found' })
+    }
+    
+    if (!conversation.participants || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
+      console.log('❌ User not participant in conversation')
+      console.log('Participants:', conversation.participants?.map(p => p.user.toString()))
       return res.status(403).json({ message: 'Access denied to this conversation' })
     }
 
@@ -2374,6 +2392,8 @@ app.post('/api/chat/send-message', async (req, res) => {
 app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
   try {
     const { conversationId } = req.params
+    console.log('📖 Mark read request for conversation:', conversationId)
+    
     const token = req.headers.authorization?.replace('Bearer ', '')
     if (!token) {
       return res.status(401).json({ message: 'No token provided' })
@@ -2381,6 +2401,7 @@ app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
 
     const payload = JSON.parse(atob(token.split('.')[1]))
     const userId = payload.userId || payload.id
+    console.log('👤 User ID for mark read:', userId)
 
     // Ensure DB connection
     if (mongoose.connection.readyState !== 1) {
@@ -2392,7 +2413,16 @@ app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
 
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
-    if (!conversation || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
+    console.log('🔍 Found conversation:', conversation ? 'Yes' : 'No')
+    
+    if (!conversation) {
+      console.log('❌ Conversation not found:', conversationId)
+      return res.status(404).json({ message: 'Conversation not found' })
+    }
+    
+    if (!conversation.participants || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
+      console.log('❌ User not participant in conversation')
+      console.log('Participants:', conversation.participants?.map(p => p.user.toString()))
       return res.status(403).json({ message: 'Access denied to this conversation' })
     }
 
