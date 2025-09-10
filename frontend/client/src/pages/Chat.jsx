@@ -89,16 +89,26 @@ export default function Chat() {
   // Start new conversation with user
   const startNewConversation = useCallback(async (user) => {
     try {
+      console.log('🔍 startNewConversation called with user:', user)
+      console.log('🔍 User type:', typeof user)
+      console.log('🔍 User keys:', user ? Object.keys(user) : 'null')
+      
       // Validate user object and username
-      if (!user || !user.username) {
-        console.error('Invalid user object:', user)
+      if (!user) {
+        console.error('❌ No user object provided')
+        alert('No user selected. Please try again.')
+        return
+      }
+      
+      if (!user.username) {
+        console.error('❌ No username in user object:', user)
         alert('Invalid user selected. Please try again.')
         return
       }
       
-      console.log('Starting conversation with user:', user.username)
+      console.log('✅ Starting conversation with username:', user.username)
       const conversation = await startConversation(user.username)
-      console.log('Conversation created:', conversation)
+      console.log('✅ Conversation created:', conversation)
       setSelectedConversation(conversation)
       setSearchQuery('')
       setSearchResults([])
@@ -108,13 +118,13 @@ export default function Chat() {
       if (conversationId) {
         fetchMessages(conversationId)
       } else {
-        console.error('No conversation ID in response:', conversation)
+        console.error('❌ No conversation ID in response:', conversation)
       }
       
       // Refresh conversations list
       fetchConversations()
     } catch (error) {
-      console.error('Error starting conversation:', error)
+      console.error('❌ Error starting conversation:', error)
       alert(`Failed to start conversation: ${error.message}`)
     }
   }, [startConversation, fetchMessages, fetchConversations])
@@ -376,12 +386,17 @@ export default function Chat() {
                     <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
                       <h3 className="text-sm font-medium text-gray-700">Search Results</h3>
                     </div>
-                    {searchResults.map((user) => (
-                      <div
-                        key={user.id}
-                        onClick={() => startNewConversation(user)}
-                        className="p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50"
-                      >
+                    {searchResults.map((user) => {
+                      console.log('🔍 Rendering user in search results:', user)
+                      return (
+                        <div
+                          key={user.id}
+                          onClick={() => {
+                            console.log('🔍 User clicked:', user)
+                            startNewConversation(user)
+                          }}
+                          className="p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50"
+                        >
                         <div className="flex items-center space-x-3">
                           {/* Avatar */}
                           <div className="relative">
@@ -422,7 +437,8 @@ export default function Chat() {
                           </button>
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : searchQuery ? (
                   <div className="p-6 text-center text-gray-500">
@@ -544,24 +560,43 @@ export default function Chat() {
                     return null
                   }
                   
+                  const isSender = message.senderUsername === currentUser
+                  
                   return (
                     <div
                       key={message.id}
-                      className={`flex ${message.senderUsername === currentUser ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-4`}
                     >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.senderUsername === currentUser
-                            ? 'bg-pink-500 text-white'
-                            : 'bg-gray-200 text-gray-900'
-                        }`}
-                      >
-                        <p className="text-sm">{safeObjectToString(message.content)}</p>
-                        <p className={`text-xs mt-1 ${
-                          message.senderUsername === currentUser ? 'text-pink-100' : 'text-gray-500'
-                        }`}>
-                          {formatMessageTime(safeTimestampToString(message.timestamp))}
-                        </p>
+                      <div className={`flex items-end space-x-2 ${isSender ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                        {/* Avatar for receiver messages */}
+                        {!isSender && (
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            {message.senderUsername?.charAt(0)?.toUpperCase() || 'U'}
+                          </div>
+                        )}
+                        
+                        {/* Message bubble */}
+                        <div
+                          className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+                            isSender
+                              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-br-md'
+                              : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md shadow-sm'
+                          }`}
+                        >
+                          <p className="text-sm leading-relaxed">{safeObjectToString(message.content)}</p>
+                          <p className={`text-xs mt-2 ${
+                            isSender ? 'text-pink-100' : 'text-gray-500'
+                          }`}>
+                            {formatMessageTime(safeTimestampToString(message.timestamp))}
+                          </p>
+                        </div>
+                        
+                        {/* Avatar for sender messages */}
+                        {isSender && (
+                          <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            {currentUser?.charAt(0)?.toUpperCase() || 'M'}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )
