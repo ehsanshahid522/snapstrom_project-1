@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api.js'
 import { config } from '../config.js'
+import { safeTimestampToString, formatTimeAgo as safeFormatTimeAgo, safeObjectToString } from '../utils/timestampUtils.js'
 
 export default function Trending() {
   const [posts, setPosts] = useState([])
@@ -442,17 +443,7 @@ export default function Trending() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500">{formatTimeAgo((() => {
-                        if (!post.uploadTime) return new Date().toISOString();
-                        if (typeof post.uploadTime === 'string') return post.uploadTime;
-                        if (typeof post.uploadTime === 'object' && post.uploadTime !== null) {
-                          if (post.uploadTime.timestamp) return post.uploadTime.timestamp;
-                          if (post.uploadTime.createdAt) return post.uploadTime.createdAt;
-                          if (post.uploadTime.uploadTime) return post.uploadTime.uploadTime;
-                          return post.uploadTime.toString();
-                        }
-                        return new Date(post.uploadTime).toISOString();
-                      })())}</p>
+                      <p className="text-sm text-gray-500">{safeFormatTimeAgo(post.uploadTime)}</p>
                     </div>
                   </div>
                   
@@ -775,18 +766,9 @@ export default function Trending() {
                             <div className="bg-gray-50 rounded-lg p-3">
                               <div className="flex items-center space-x-2 mb-1">
                                 <span className="font-semibold text-gray-900">{comment.user?.username}</span>
-                                <span className="text-xs text-gray-500">{formatTimeAgo((() => {
-                                  if (!comment.createdAt) return new Date().toISOString();
-                                  if (typeof comment.createdAt === 'string') return comment.createdAt;
-                                  if (typeof comment.createdAt === 'object' && comment.createdAt !== null) {
-                                    if (comment.createdAt.timestamp) return comment.createdAt.timestamp;
-                                    if (comment.createdAt.createdAt) return comment.createdAt.createdAt;
-                                    return comment.createdAt.toString();
-                                  }
-                                  return new Date(comment.createdAt).toISOString();
-                                })())}</span>
+                                <span className="text-xs text-gray-500">{safeFormatTimeAgo(comment.createdAt)}</span>
                               </div>
-                              <p className="text-gray-700">{comment.text}</p>
+                              <p className="text-gray-700">{safeObjectToString(comment.text)}</p>
                             </div>
                           </div>
                         </div>

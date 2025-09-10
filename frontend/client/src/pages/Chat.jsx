@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useChatAPI, useRealTimeChat, useTypingIndicator } from '../hooks/useChat.js'
 import { api } from '../lib/api.js'
+import { safeTimestampToString, safeObjectToString } from '../utils/timestampUtils.js'
 
 export default function Chat() {
   const [searchParams] = useSearchParams()
@@ -16,18 +17,6 @@ export default function Chat() {
   const messagesEndRef = useRef(null)
   const currentUser = useMemo(() => localStorage.getItem('username'), [])
 
-  // Helper function to safely convert timestamp to string
-  const safeTimestampToString = useCallback((timestamp) => {
-    if (!timestamp) return new Date().toISOString();
-    if (typeof timestamp === 'string') return timestamp;
-    if (typeof timestamp === 'object' && timestamp !== null) {
-      if (timestamp.timestamp) return timestamp.timestamp;
-      if (timestamp.createdAt) return timestamp.createdAt;
-      if (timestamp.lastMessageAt) return timestamp.lastMessageAt;
-      return timestamp.toString();
-    }
-    return new Date(timestamp).toISOString();
-  }, [])
 
   // Use custom hooks
   const { loading, error, sendMessage: apiSendMessage, getConversations, getMessages, startConversation, markAsRead } = useChatAPI()
@@ -468,15 +457,7 @@ export default function Chat() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 truncate mt-1">
-                          {(() => {
-                            const lastMsg = conversation.lastMessage;
-                            if (!lastMsg) return 'No messages yet';
-                            if (typeof lastMsg === 'string') return lastMsg;
-                            if (typeof lastMsg === 'object' && lastMsg !== null) {
-                              return lastMsg.content || lastMsg.text || JSON.stringify(lastMsg);
-                            }
-                            return String(lastMsg);
-                          })()}
+                          {safeObjectToString(conversation.lastMessage) || 'No messages yet'}
                         </p>
                       </div>
                     </div>
@@ -529,7 +510,7 @@ export default function Chat() {
                             : 'bg-gray-200 text-gray-900'
                         }`}
                       >
-                        <p className="text-sm">{message.content}</p>
+                        <p className="text-sm">{safeObjectToString(message.content)}</p>
                         <p className={`text-xs mt-1 ${
                           message.senderUsername === currentUser ? 'text-pink-100' : 'text-gray-500'
                         }`}>

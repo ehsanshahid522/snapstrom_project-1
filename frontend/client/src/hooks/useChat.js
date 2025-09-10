@@ -16,9 +16,17 @@ export const useRealTimeChat = (conversationId) => {
 
     try {
       const token = localStorage.getItem('token')
-      const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:3001'}/chat?token=${token}&conversationId=${conversationId}`
+      const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3001'
       
-      wsRef.current = new WebSocket(wsUrl)
+      // Check if WebSocket URL is available
+      if (!wsUrl || wsUrl === 'ws://localhost:3001') {
+        console.log('⚠️ WebSocket URL not configured, using fallback mode')
+        setIsConnected(false)
+        return
+      }
+      
+      const fullWsUrl = `${wsUrl}/chat?token=${token}&conversationId=${conversationId}`
+      wsRef.current = new WebSocket(fullWsUrl)
 
       wsRef.current.onopen = () => {
         setIsConnected(true)
@@ -96,6 +104,15 @@ export const useRealTimeChat = (conversationId) => {
       wsRef.current.onerror = (error) => {
         console.error('WebSocket error:', error)
         setIsConnected(false)
+        
+        // Try to reconnect after a delay
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current)
+        }
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log('🔄 Attempting to reconnect WebSocket...')
+          connect()
+        }, 5000)
       }
 
     } catch (error) {
