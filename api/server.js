@@ -309,7 +309,7 @@ app.get('/api/debug/images/:fileId', async (req, res) => {
       contentType: file.contentType,
       size: file.size,
       uploadedBy: file.uploadedBy,
-      createdAt: file.createdAt,
+      createdAt: file.createdAt.toISOString(),
       hasFileData: !!file.fileData,
       isProfilePicture: file.isProfilePicture,
       isPrivate: file.isPrivate,
@@ -441,7 +441,7 @@ app.get('/api/feed', async (req, res) => {
         likes: file.likes || [],
         comments: file.comments || [],
         isPrivate: file.isPrivate,
-        createdAt: file.createdAt,
+        createdAt: file.createdAt.toISOString(),
         imageUrl: `/api/images/${file._id}`
       };
     });
@@ -535,7 +535,7 @@ app.get('/api/feed/following', async (req, res) => {
         likes: file.likes || [],
         comments: file.comments || [],
         isPrivate: file.isPrivate,
-        createdAt: file.createdAt,
+        createdAt: file.createdAt.toISOString(),
         imageUrl: `/api/images/${file._id}`
       };
     });
@@ -692,7 +692,7 @@ app.get('/api/trending', async (req, res) => {
                   username: '$$comment.user.username',
                   profilePicture: '$$comment.user.profilePicture'
                 },
-                createdAt: '$$comment.createdAt'
+                createdAt: { $dateToString: { date: '$$comment.createdAt', format: '%Y-%m-%dT%H:%M:%S.%LZ' } }
               }
             }
           },
@@ -1084,7 +1084,7 @@ app.get('/api/profile/:username', async (req, res) => {
         following: user.following || [],
         followersCount,
         followingCount,
-        createdAt: user.createdAt
+        createdAt: user.createdAt.toISOString()
       },
       posts: userPosts.map(post => ({
         id: post._id,
@@ -1095,8 +1095,8 @@ app.get('/api/profile/:username', async (req, res) => {
         likes: post.likes || [],
         comments: post.comments || [],
         isPrivate: post.isPrivate,
-        uploadTime: post.createdAt,
-        createdAt: post.createdAt,
+        uploadTime: post.createdAt.toISOString(),
+        createdAt: post.createdAt.toISOString(),
         imageUrl: `/api/images/${post._id}`
       }))
     });
@@ -1236,7 +1236,7 @@ app.get('/api/profile', async (req, res) => {
         isPrivateAccount: user.isPrivateAccount,
         followers: user.followers || [],
         following: user.following || [],
-        createdAt: user.createdAt
+        createdAt: user.createdAt.toISOString()
       },
       posts: userPosts.map(post => ({
         id: post._id,
@@ -1606,7 +1606,7 @@ app.post('/api/comment/:postId', async (req, res) => {
           id: decoded.id,
           username: decoded.username
         },
-        createdAt: comment.createdAt
+        createdAt: comment.createdAt.toISOString().toISOString()
       },
       commentsCount: post.comments.length
     });
@@ -1647,7 +1647,7 @@ app.get('/api/comments/:postId', async (req, res) => {
         username: comment.user.username,
         profilePicture: comment.user.profilePicture
       },
-      createdAt: comment.createdAt
+      createdAt: comment.createdAt.toISOString()
     }));
 
     res.json({
@@ -1735,7 +1735,7 @@ app.get('/api/post/:postId', async (req, res) => {
       uploadedBy: post.uploadedBy,
       likes: post.likes,
       comments: post.comments,
-      createdAt: post.createdAt,
+      createdAt: post.createdAt.toISOString(),
       imageUrl: `/api/images/${post._id}`
     });
   } catch (error) {
@@ -1983,10 +1983,10 @@ app.get('/api/chat/conversations', async (req, res) => {
       lastMessage: conv.lastMessage ? {
         content: conv.lastMessage.content,
         sender: conv.lastMessage.sender,
-        timestamp: conv.lastMessage.timestamp
+        timestamp: conv.lastMessage.timestamp ? conv.lastMessage.timestamp.toISOString() : new Date().toISOString()
       } : null,
-      lastMessageAt: conv.lastMessage?.timestamp || conv.updatedAt,
-      createdAt: conv.createdAt
+      lastMessageAt: (conv.lastMessage?.timestamp || conv.updatedAt).toISOString(),
+      createdAt: conv.createdAt.toISOString()
     }))
 
     res.json({ 
@@ -2038,7 +2038,7 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
         username: msg.sender.username,
         profilePicture: msg.sender.profilePicture
       },
-      createdAt: msg.createdAt,
+      timestamp: msg.createdAt.toISOString(),
       readBy: msg.readBy
     }))
 
@@ -2163,7 +2163,7 @@ app.post('/api/chat/start-conversation', async (req, res) => {
       })),
       lastMessage: null,
       lastMessageAt: conversation.lastMessageAt,
-      createdAt: conversation.createdAt
+      createdAt: conversation.createdAt.toISOString()
     }
 
     console.log('✅ Formatted conversation:', formattedConversation);
@@ -2237,7 +2237,7 @@ app.post('/api/chat/send-message', async (req, res) => {
         username: message.sender.username,
         profilePicture: message.sender.profilePicture
       },
-      createdAt: message.createdAt,
+      timestamp: message.createdAt.toISOString(),
       readBy: message.readBy
     }
 
