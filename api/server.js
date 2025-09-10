@@ -244,6 +244,9 @@ app.get('/api/health', (req, res) => {
 app.get('/api/test-db', async (req, res) => {
   try {
     console.log('🧪 Testing database connection...');
+    console.log('🔍 MONGO_URI status:', process.env.MONGO_URI ? 'Set' : 'Not set');
+    console.log('🔍 Current connection state:', mongoose.connection.readyState);
+    console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
     
     // Test connection
     const connected = await connectDB();
@@ -258,6 +261,8 @@ app.get('/api/test-db', async (req, res) => {
         message: 'Database connection successful',
         userCount: userCount,
         connectionState: mongoose.connection.readyState,
+        mongoUri: process.env.MONGO_URI ? 'Set' : 'Not set',
+        nodeEnv: process.env.NODE_ENV,
         timestamp: new Date().toISOString()
       });
     } else {
@@ -265,6 +270,8 @@ app.get('/api/test-db', async (req, res) => {
         success: false,
         message: 'Database connection failed',
         connectionState: mongoose.connection.readyState,
+        mongoUri: process.env.MONGO_URI ? 'Set' : 'Not set',
+        nodeEnv: process.env.NODE_ENV,
         timestamp: new Date().toISOString()
       });
     }
@@ -274,6 +281,9 @@ app.get('/api/test-db', async (req, res) => {
       success: false,
       message: 'Database test error',
       error: error.message,
+      connectionState: mongoose.connection.readyState,
+      mongoUri: process.env.MONGO_URI ? 'Set' : 'Not set',
+      nodeEnv: process.env.NODE_ENV,
       timestamp: new Date().toISOString()
     });
   }
