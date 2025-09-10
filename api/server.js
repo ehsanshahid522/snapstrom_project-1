@@ -2505,6 +2505,53 @@ app.get('/api/search/users', async (req, res) => {
   }
 });
 
+// Get user details by ID
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Ensure DB connection
+    if (mongoose.connection.readyState !== 1) {
+      let connected = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const ok = await connectDB();
+        if (ok) { connected = true; break; }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!connected) {
+        return res.status(503).json({ message: 'Database unavailable' });
+      }
+    }
+
+    console.log('🔍 Looking for user with ID:', id);
+    const user = await User.findById(id).select('-password');
+    
+    if (!user) {
+      console.log('❌ User not found with ID:', id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log('✅ User found:', user.username);
+    res.json({
+      id: user._id,
+      username: user.username,
+      profilePicture: user.profilePicture,
+      bio: user.bio,
+      followers: user.followers?.length || 0,
+      following: user.following?.length || 0,
+      isPrivateAccount: user.isPrivateAccount || false,
+      createdAt: user.createdAt
+    });
+  } catch (error) {
+    console.error('❌ Error fetching user details:', error);
+    res.status(500).json({ message: 'Error fetching user details', error: error.message });
+  }
+});
+
 // Search users (alternative endpoint for compatibility)
 app.get('/api/users/search', async (req, res) => {
   try {

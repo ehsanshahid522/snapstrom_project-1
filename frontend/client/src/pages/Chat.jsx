@@ -114,17 +114,11 @@ export default function Chat() {
       setSearchResults([])
       setShowUserSearch(false)
       
-      console.log('🔍 Conversation object keys:', Object.keys(conversation))
-      console.log('🔍 Conversation.id:', conversation.id)
-      console.log('🔍 Conversation._id:', conversation._id)
-      
       const conversationId = conversation.id || conversation._id
       if (conversationId) {
-        console.log('✅ Using conversation ID:', conversationId)
         fetchMessages(conversationId)
       } else {
         console.error('❌ No conversation ID in response:', conversation)
-        console.error('❌ Available keys:', Object.keys(conversation))
       }
       
       // Refresh conversations list
@@ -314,36 +308,17 @@ export default function Chat() {
 
   // Get conversation partner
   const getConversationPartner = useCallback((conversation) => {
-    console.log('🔍 getConversationPartner called with:', conversation)
-    console.log('🔍 Current user:', currentUser)
-    
     if (!conversation) {
-      console.warn('❌ No conversation provided')
       return null
     }
     
-    if (!conversation.participants) {
-      console.warn('❌ No participants in conversation:', conversation)
+    if (!conversation.participants || !Array.isArray(conversation.participants)) {
       return null
     }
-    
-    if (!Array.isArray(conversation.participants)) {
-      console.warn('❌ Participants is not an array:', conversation.participants)
-      return null
-    }
-    
-    console.log('🔍 Participants:', conversation.participants)
     
     const partner = conversation.participants.find(p => {
-      console.log('🔍 Checking participant:', p, 'against currentUser:', currentUser)
       return p && p.username && p.username !== currentUser
     })
-    
-    if (!partner) {
-      console.warn('❌ No partner found in conversation:', conversation.participants, 'currentUser:', currentUser)
-    } else {
-      console.log('✅ Found partner:', partner)
-    }
     
     return partner
   }, [currentUser])
@@ -514,7 +489,6 @@ export default function Chat() {
               </div>
             ) : (
               filteredConversations.map((conversation) => {
-                console.log('🔍 Rendering conversation:', conversation)
                 const partner = getConversationPartner(conversation)
                 const isSelected = selectedConversation?.id === conversation.id || selectedConversation?._id === conversation._id
                 

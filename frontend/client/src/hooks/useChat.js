@@ -19,13 +19,12 @@ export const useRealTimeChat = (conversationId) => {
       const token = localStorage.getItem('token')
       const wsUrl = getWsUrl('/chat')
       
-      // Check if WebSocket URL is available and not on Vercel
-      if (!wsUrl || wsUrl.includes('localhost:3001') || wsUrl === 'ws://localhost:3001' || wsUrl.includes('vercel.app')) {
-        console.log('⚠️ WebSocket not supported on Vercel, using polling mode')
-        console.log('WebSocket URL was:', wsUrl)
+      // Disable WebSocket in production - use polling mode only
+      if (!wsUrl || wsUrl.includes('localhost:3001') || wsUrl === 'ws://localhost:3001' || wsUrl.includes('vercel.app') || wsUrl === '') {
+        console.log('⚠️ WebSocket disabled in production, using polling mode')
         setIsConnected(false)
         
-        // Start polling for new messages every 3 seconds
+        // Start polling for new messages every 5 seconds
         if (conversationId) {
           const pollInterval = setInterval(async () => {
             try {
@@ -36,7 +35,7 @@ export const useRealTimeChat = (conversationId) => {
             } catch (error) {
               console.error('Polling error:', error)
             }
-          }, 3000)
+          }, 5000) // Increased interval to 5 seconds
           
           // Store interval reference for cleanup
           wsRef.current = { pollInterval }
