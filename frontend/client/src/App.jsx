@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import LoadingSpinner from './components/LoadingSpinner.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
+import './utils/errorPrevention.js' // Initialize global error prevention
 
 // Lazy load components for better performance
 const Feed = lazy(() => import('./pages/Feed.jsx'))
@@ -45,21 +47,23 @@ function WithoutNav({ children }) {
 
 export default function App() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/share/:id" element={<Share />} />
-        <Route path="/" element={<PrivateRoute><WithNav><Feed /></WithNav></PrivateRoute>} />
-        <Route path="/following" element={<PrivateRoute><WithNav><Following /></WithNav></PrivateRoute>} />
-        <Route path="/trending" element={<PrivateRoute><WithNav><Trending /></WithNav></PrivateRoute>} />
-        <Route path="/settings" element={<PrivateRoute><WithNav><Settings /></WithNav></PrivateRoute>} />
-        <Route path="/profile/:username" element={<PrivateRoute><WithNav><Profile /></WithNav></PrivateRoute>} />
-        <Route path="/upload" element={<PrivateRoute><WithNav><Upload /></WithNav></PrivateRoute>} />
-        <Route path="/messages" element={<PrivateRoute><WithNav><Chat /></WithNav></PrivateRoute>} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/share/:id" element={<Share />} />
+          <Route path="/" element={<PrivateRoute><WithNav><Feed /></WithNav></PrivateRoute>} />
+          <Route path="/following" element={<PrivateRoute><WithNav><Following /></WithNav></PrivateRoute>} />
+          <Route path="/trending" element={<PrivateRoute><WithNav><Trending /></WithNav></PrivateRoute>} />
+          <Route path="/settings" element={<PrivateRoute><WithNav><Settings /></WithNav></PrivateRoute>} />
+          <Route path="/profile/:username" element={<PrivateRoute><WithNav><Profile /></WithNav></PrivateRoute>} />
+          <Route path="/upload" element={<PrivateRoute><WithNav><Upload /></WithNav></PrivateRoute>} />
+          <Route path="/messages" element={<PrivateRoute><WithNav><Chat /></WithNav></PrivateRoute>} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   )
 }
 
