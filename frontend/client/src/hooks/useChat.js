@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { io } from 'socket.io-client'
-import { config } from '../config'
-import { api } from '../lib/api'
+import { config } from '../config.js'
+import { api } from '../lib/api.js'
 
 export const useChat = (conversationId) => {
   const [messages, setMessages] = useState([])
