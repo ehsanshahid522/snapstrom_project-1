@@ -7,6 +7,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import fs from 'fs';
+import { Server } from 'socket.io';
+import { createServer } from 'http';
 
 dotenv.config();
 
@@ -14,11 +16,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    credentials: true
+  }
+});
 
 // Robust CORS middleware handling
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  
+
   // Allow all origins in development or specific origins in production
   // For Vercel, it's often easiest to allow the current origin if it matches a pattern
   // but for simplicity and to solve the immediate issue, we'll allow all while maintaining security headers
@@ -41,20 +51,20 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // User Schema definition (inline to avoid import issues)
 const UserSchema = new mongoose.Schema({
-  username: { 
-    type: String, 
-    required: true, 
+  username: {
+    type: String,
+    required: true,
     unique: true,
     index: true
   },
-  email: { 
-    type: String, 
-    required: true, 
-    unique: true 
+  email: {
+    type: String,
+    required: true,
+    unique: true
   },
-  password: { 
-    type: String, 
-    required: true 
+  password: {
+    type: String,
+    required: true
   },
   profilePicture: {
     type: String,
@@ -146,7 +156,7 @@ const File = mongoose.model('File', FileSchema);
 async function connectDB() {
   try {
     const mongoURI = process.env.MONGO_URI;
-    
+
     if (!mongoURI) {
       console.error('❌ MONGO_URI environment variable is not set');
       if (process.env.NODE_ENV === 'development') {
@@ -163,12 +173,12 @@ async function connectDB() {
     }
 
     console.log('🔄 Attempting to connect to MongoDB...');
-    
+
     // Disconnect any existing connection first
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }
-    
+
     // Connection with better options for Vercel/serverless
     await mongoose.connect(mongoURI, {
       maxPoolSize: 5,
@@ -181,10 +191,10 @@ async function connectDB() {
       maxIdleTimeMS: 30000,
       heartbeatFrequencyMS: 10000
     });
-    
+
     // Wait for connection to establish
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     if (mongoose.connection.readyState === 1) {
       console.log('✅ MongoDB connected successfully');
       return true;
@@ -192,7 +202,7 @@ async function connectDB() {
       console.error('❌ MongoDB connection failed - state:', mongoose.connection.readyState);
       return false;
     }
-    
+
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
     // Try to disconnect and clean up
@@ -209,9 +219,9 @@ async function connectDB() {
 app.get('/health', async (req, res) => {
   try {
     const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-    
-    res.json({ 
-      status: 'ok', 
+
+    res.json({
+      status: 'ok',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
       mongodb: dbStatus,
@@ -222,8 +232,8 @@ app.get('/health', async (req, res) => {
       hasJwtSecret: !!process.env.JWT_SECRET
     });
   } catch (error) {
-    res.status(500).json({ 
-      status: 'error', 
+    res.status(500).json({
+      status: 'error',
       message: error.message,
       timestamp: new Date().toISOString()
     });
@@ -232,8 +242,8 @@ app.get('/health', async (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
@@ -252,15 +262,15 @@ app.get('/api/test-db', async (req, res) => {
     console.log('🔍 MONGO_URI status:', process.env.MONGO_URI ? 'Set' : 'Not set');
     console.log('🔍 Current connection state:', mongoose.connection.readyState);
     console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
-    
+
     // Test connection
     const connected = await connectDB();
-    
+
     if (connected) {
       // Test a simple query
       const User = mongoose.model('User');
       const userCount = await User.countDocuments();
-      
+
       res.json({
         success: true,
         message: 'Database connection successful',
@@ -304,7 +314,7 @@ app.get('/api/images/:fileId', async (req, res) => {
         await connectDB();
         // Wait a bit for connection to stabilize
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         if (mongoose.connection.readyState !== 1) {
           console.error('❌ Database connection failed after retry');
           return res.status(503).json({ message: 'Database unavailable' });
@@ -341,7 +351,7 @@ app.get('/api/images/:fileId', async (req, res) => {
       }
 
       console.log('📦 Buffer created, size:', buffer.length);
-      
+
       res.setHeader('Content-Type', file.contentType);
       res.setHeader('Content-Length', buffer.length);
       res.setHeader('Cache-Control', 'public, max-age=31536000');
@@ -361,15 +371,15 @@ app.get('/api/debug/images/:fileId', async (req, res) => {
   try {
     const { fileId } = req.params;
     const file = await File.findById(fileId);
-    
+
     if (!file) {
-      return res.json({ 
-        exists: false, 
-        fileId, 
-        message: 'Image not found in database' 
+      return res.json({
+        exists: false,
+        fileId,
+        message: 'Image not found in database'
       });
     }
-    
+
     return res.json({
       exists: true,
       fileId,
@@ -394,20 +404,20 @@ app.get('/api/debug/images/:fileId', async (req, res) => {
 app.post('/api/migrate/profile-pictures', async (req, res) => {
   try {
     console.log('🔄 Starting profile picture migration...');
-    
+
     // Find all users with profile pictures
-    const usersWithProfilePics = await User.find({ 
-      profilePicture: { $exists: true, $ne: null } 
+    const usersWithProfilePics = await User.find({
+      profilePicture: { $exists: true, $ne: null }
     });
-    
+
     console.log(`📊 Found ${usersWithProfilePics.length} users with profile pictures`);
-    
+
     let updatedCount = 0;
-    
+
     for (const user of usersWithProfilePics) {
       // Find the file associated with this user's profile picture
       const profilePicFile = await File.findById(user.profilePicture);
-      
+
       if (profilePicFile) {
         // Update the file to mark it as a profile picture
         await File.findByIdAndUpdate(user.profilePicture, {
@@ -415,27 +425,27 @@ app.post('/api/migrate/profile-pictures', async (req, res) => {
           isPrivate: true,
           caption: 'Profile Picture'
         });
-        
+
         updatedCount++;
         console.log(`✅ Updated profile picture for user: ${user.username}`);
       }
     }
-    
+
     console.log(`🎉 Migration completed! Updated ${updatedCount} profile pictures`);
-    
+
     res.json({
       success: true,
       message: `Successfully migrated ${updatedCount} profile pictures`,
       updatedCount,
       totalUsers: usersWithProfilePics.length
     });
-    
+
   } catch (error) {
     console.error('❌ Migration error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Migration failed', 
-      error: error.message 
+      message: 'Migration failed',
+      error: error.message
     });
   }
 });
@@ -455,9 +465,9 @@ app.get('/api/feed', async (req, res) => {
         return res.status(503).json({ message: 'Database unavailable, try again' });
       }
     }
-    
+
     // Get only public posts (exclude private posts and profile pictures)
-    const files = await File.find({ 
+    const files = await File.find({
       $or: [
         { isPrivate: false },
         { isPrivate: { $exists: false } }
@@ -469,7 +479,7 @@ app.get('/api/feed', async (req, res) => {
       .populate('comments.user', 'username profilePicture')
       .sort({ createdAt: -1 })
       .limit(20);
-    
+
     // Try to find any user for fallback
     let fallbackUser = null;
     try {
@@ -478,19 +488,19 @@ app.get('/api/feed', async (req, res) => {
     } catch (error) {
       console.log('⚠️ No fallback user found');
     }
-    
+
     const posts = files.map(file => {
       // Try to find a real user for posts with missing uploaders
       let uploader = file.uploadedBy;
-      
+
       if (!uploader && fallbackUser) {
         // Use fallback user for posts with missing uploaders
         console.log(`⚠️ Post ${file._id} has no uploader, using fallback: ${fallbackUser.username}`);
         uploader = fallbackUser;
       }
-      
+
       console.log(`🔍 Post ${file._id} - Uploader: ${uploader?.username}, Profile Picture: ${uploader?.profilePicture}`);
-      
+
       return {
         id: file._id,
         filename: file.filename,
@@ -514,11 +524,11 @@ app.get('/api/feed', async (req, res) => {
         imageUrl: `/api/images/${file._id}`
       };
     });
-    
+
     res.json(posts);
   } catch (error) {
-    res.status(500).json({ 
-      message: 'Error getting feed', 
+    res.status(500).json({
+      message: 'Error getting feed',
       error: error.message,
       timestamp: new Date().toISOString()
     });
@@ -529,14 +539,14 @@ app.get('/api/feed', async (req, res) => {
 app.get('/api/feed/following', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -555,21 +565,21 @@ app.get('/api/feed/following', async (req, res) => {
         return res.status(503).json({ message: 'Database unavailable, try again' });
       }
     }
-    
+
     // Get current user with following list
     const currentUser = await User.findById(decoded.id);
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     // Get posts from users that the current user follows
     const followingUserIds = currentUser.following || [];
-    
+
     if (followingUserIds.length === 0) {
       // User is not following anyone, return empty array
       return res.json([]);
     }
-    
+
     const files = await File.find({
       uploadedBy: { $in: followingUserIds },
       $or: [
@@ -583,7 +593,7 @@ app.get('/api/feed/following', async (req, res) => {
       .populate('comments.user', 'username profilePicture')
       .sort({ createdAt: -1 })
       .limit(20);
-    
+
     const posts = files.map(file => {
       return {
         id: file._id,
@@ -608,11 +618,11 @@ app.get('/api/feed/following', async (req, res) => {
         imageUrl: `/api/images/${file._id}`
       };
     });
-    
+
     res.json(posts);
   } catch (error) {
-    res.status(500).json({ 
-      message: 'Error getting following feed', 
+    res.status(500).json({
+      message: 'Error getting following feed',
       error: error.message,
       timestamp: new Date().toISOString()
     });
@@ -634,11 +644,11 @@ app.get('/api/trending', async (req, res) => {
         return res.status(503).json({ message: 'Database unavailable, try again' });
       }
     }
-    
+
     // Calculate date 7 days ago
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
+
     // Get trending posts using aggregation pipeline
     const trendingPosts = await File.aggregate([
       {
@@ -774,12 +784,12 @@ app.get('/api/trending', async (req, res) => {
         }
       }
     ]);
-    
+
     res.json(trendingPosts);
   } catch (error) {
     console.error('❌ Trending posts error:', error);
-    res.status(500).json({ 
-      message: 'Failed to fetch trending posts', 
+    res.status(500).json({
+      message: 'Failed to fetch trending posts',
       error: error.message,
       timestamp: new Date().toISOString()
     });
@@ -790,23 +800,23 @@ app.get('/api/trending', async (req, res) => {
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    
+
     console.log('📝 Registration attempt:', { username, email, hasPassword: !!password });
-    
+
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
-    
+
     if (!process.env.MONGO_URI) {
       console.error('❌ MONGO_URI not set');
       return res.status(500).json({ message: 'Database not configured' });
     }
-    
+
     // Enhanced database connection with multiple attempts
     let dbConnected = mongoose.connection.readyState === 1;
     if (!dbConnected) {
       console.log('🔄 Database not connected, attempting to connect...');
-      
+
       // Try multiple connection attempts
       for (let attempt = 1; attempt <= 3; attempt++) {
         console.log(`🔄 Connection attempt ${attempt}/3...`);
@@ -823,58 +833,58 @@ app.post('/api/auth/register', async (req, res) => {
           }
         }
       }
-      
+
       if (!dbConnected) {
         console.error('❌ All database connection attempts failed');
-        return res.status(500).json({ 
+        return res.status(500).json({
           message: 'Database connection failed. Please try again in a few moments.',
           error: 'Database unavailable'
         });
       }
     }
-    
+
     console.log('🔍 Checking for existing user...');
-    const existingUser = await User.findOne({ 
+    const existingUser = await User.findOne({
       $or: [
-        { email }, 
+        { email },
         { username: { $regex: `^${username}$`, $options: 'i' } }
-      ] 
+      ]
     });
     if (existingUser) {
       console.log('❌ User already exists:', existingUser.email);
       return res.status(400).json({ message: 'Username or email already exists' });
     }
-    
+
     console.log('🔐 Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     console.log('👤 Creating new user...');
     const user = new User({
       username,
       email,
       password: hashedPassword
     });
-    
+
     await user.save();
     console.log('✅ User registered successfully:', user.username);
     res.status(201).json({ message: 'Registration successful.' });
   } catch (err) {
     console.error('❌ Registration error:', err);
     console.error('❌ Error stack:', err.stack);
-    
+
     // Provide more specific error messages
     if (err.name === 'MongoNetworkError' || err.name === 'MongoTimeoutError') {
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: 'Database connection issue. Please try again.',
         error: 'Network timeout'
       });
     } else if (err.name === 'ValidationError') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Invalid data provided.',
         error: err.message
       });
     } else {
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: 'Registration failed. Please try again.',
         error: err.message
       });
@@ -885,23 +895,23 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     console.log('🔐 Login attempt:', { email, hasPassword: !!password });
-    
+
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
-    
+
     if (!process.env.MONGO_URI) {
       console.error('❌ MONGO_URI not set');
       return res.status(500).json({ message: 'Database not configured' });
     }
-    
+
     // Ensure database connection with retry logic
     if (mongoose.connection.readyState !== 1) {
       console.log('🔄 Database not connected, attempting to connect...');
       let connected = false;
-      
+
       // Try up to 3 times
       for (let attempt = 1; attempt <= 3; attempt++) {
         console.log(`🔄 Connection attempt ${attempt}/3...`);
@@ -917,37 +927,37 @@ app.post('/api/auth/login', async (req, res) => {
           }
         }
       }
-      
+
       if (!connected) {
         console.error('❌ All connection attempts failed');
-        return res.status(500).json({ 
+        return res.status(500).json({
           message: 'Database connection failed',
           error: 'Unable to establish database connection after multiple attempts'
         });
       }
     }
-    
+
     console.log('🔍 Finding user...');
     const user = await User.findOne({ email });
     if (!user) {
       console.log('❌ User not found:', email);
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     console.log('🔐 Verifying password...');
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       console.log('❌ Invalid password for user:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
-    
+
     console.log('🎫 Generating JWT token...');
     const token = jwt.sign(
-      { id: user._id, username: user.username }, 
-      process.env.JWT_SECRET, 
+      { id: user._id, username: user.username },
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
-    
+
     console.log('✅ Login successful:', user.username);
     res.json({ token, username: user.username });
   } catch (err) {
@@ -959,8 +969,8 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Test endpoint to check server status
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     env: {
       hasMongoUri: !!process.env.MONGO_URI,
@@ -974,29 +984,29 @@ app.get('/api/health', (req, res) => {
 app.post('/api/admin/fix-usernames', async (req, res) => {
   try {
     console.log('🔧 Starting username cleanup...');
-    
+
     const users = await User.find({});
     let fixedCount = 0;
     const fixedUsernames = [];
-    
+
     for (const user of users) {
       const originalUsername = user.username;
       const trimmedUsername = user.username.trim();
-      
+
       if (originalUsername !== trimmedUsername) {
         console.log(`🔧 Fixing username: "${originalUsername}" -> "${trimmedUsername}"`);
-        
+
         // Check if trimmed username already exists
-        const existingUser = await User.findOne({ 
+        const existingUser = await User.findOne({
           username: { $regex: `^${trimmedUsername}$`, $options: 'i' },
           _id: { $ne: user._id }
         });
-        
+
         if (existingUser) {
           console.log(`⚠️  Skipping "${originalUsername}" - trimmed version "${trimmedUsername}" already exists`);
           continue;
         }
-        
+
         // Update the username
         user.username = trimmedUsername;
         await user.save();
@@ -1004,16 +1014,16 @@ app.post('/api/admin/fix-usernames', async (req, res) => {
         fixedUsernames.push({ from: originalUsername, to: trimmedUsername });
       }
     }
-    
+
     console.log(`✅ Fixed ${fixedCount} usernames`);
-    
+
     res.json({
       success: true,
       message: `Successfully fixed ${fixedCount} usernames`,
       fixedCount,
       fixedUsernames
     });
-    
+
   } catch (error) {
     console.error('❌ Error fixing usernames:', error);
     res.status(500).json({
@@ -1028,10 +1038,10 @@ app.post('/api/admin/fix-usernames', async (req, res) => {
 app.post('/api/upload', async (req, res) => {
   try {
     console.log('📤 Upload request received');
-    
+
     // Check authentication first
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('❌ No auth header or invalid format');
       return res.status(401).json({ message: 'Authentication required' });
@@ -1039,9 +1049,9 @@ app.post('/api/upload', async (req, res) => {
 
     const token = authHeader.substring(7);
     console.log('🎫 Token received:', token.substring(0, 20) + '...');
-    
+
     let decoded;
-    
+
     try {
       // Use a fallback JWT secret if not configured
       const jwtSecret = process.env.JWT_SECRET || 'fallback-secret-key-for-development';
@@ -1066,7 +1076,7 @@ app.post('/api/upload', async (req, res) => {
     // Check if MONGO_URI is configured
     if (!process.env.MONGO_URI) {
       console.error('❌ MONGO_URI not configured');
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: 'Database not configured. Please set MONGO_URI environment variable in Vercel dashboard.',
         error: 'Missing MONGO_URI'
       });
@@ -1153,7 +1163,7 @@ app.post('/api/upload', async (req, res) => {
 app.get('/api/profile/:username', async (req, res) => {
   try {
     const { username } = req.params;
-    
+
     if (!username) {
       return res.status(400).json({ message: 'Username is required' });
     }
@@ -1185,7 +1195,7 @@ app.get('/api/profile/:username', async (req, res) => {
     console.log('📸 User posts count:', user.posts?.length || 0);
 
     // Get user's posts (both public and private, but exclude profile pictures)
-    const userPosts = await File.find({ 
+    const userPosts = await File.find({
       uploadedBy: user._id,
       isProfilePicture: { $ne: true } // Exclude profile pictures
     })
@@ -1239,14 +1249,14 @@ app.put('/api/profile', async (req, res) => {
   try {
     const { username, bio, isPrivateAccount } = req.body;
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -1306,14 +1316,14 @@ app.put('/api/profile', async (req, res) => {
 app.get('/api/profile', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -1343,7 +1353,7 @@ app.get('/api/profile', async (req, res) => {
     console.log('✅ Current user found:', user.username);
 
     // Get user's posts (both public and private for current user, but exclude profile pictures)
-    const userPosts = await File.find({ 
+    const userPosts = await File.find({
       uploadedBy: user._id,
       isProfilePicture: { $ne: true } // Exclude profile pictures
     })
@@ -1388,14 +1398,14 @@ app.get('/api/profile', async (req, res) => {
 app.post('/api/profile/picture', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -1437,7 +1447,7 @@ app.post('/api/profile/picture', async (req, res) => {
       if (err) {
         return res.status(400).json({ message: err.message });
       }
-      
+
       if (!req.file) {
         return res.status(400).json({ message: 'No image file provided' });
       }
@@ -1484,14 +1494,14 @@ app.post('/api/auth/change-password', async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -1524,7 +1534,7 @@ app.post('/api/auth/change-password', async (req, res) => {
 
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
+
     // Update password
     user.password = hashedPassword;
     await user.save();
@@ -1545,14 +1555,14 @@ app.post('/api/follow/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -1574,7 +1584,7 @@ app.post('/api/follow/:userId', async (req, res) => {
 
     const currentUser = await User.findById(decoded.id);
     const targetUser = await User.findById(userId);
-    
+
     if (!currentUser || !targetUser) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -1584,7 +1594,7 @@ app.post('/api/follow/:userId', async (req, res) => {
     }
 
     const isFollowing = currentUser.following.includes(userId);
-    
+
     if (isFollowing) {
       // Unfollow
       currentUser.following = currentUser.following.filter(id => id.toString() !== userId);
@@ -1615,14 +1625,14 @@ app.post('/api/like/:postId', async (req, res) => {
   try {
     const { postId } = req.params;
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -1649,7 +1659,7 @@ app.post('/api/like/:postId', async (req, res) => {
 
     const userId = decoded.id;
     const isLiked = post.likes.includes(userId);
-    
+
     if (isLiked) {
       // Unlike
       post.likes = post.likes.filter(id => id.toString() !== userId);
@@ -1677,7 +1687,7 @@ app.post('/api/comment/:postId', async (req, res) => {
     const { postId } = req.params;
     const { text } = req.body;
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
@@ -1688,7 +1698,7 @@ app.post('/api/comment/:postId', async (req, res) => {
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -1748,7 +1758,7 @@ app.post('/api/comment/:postId', async (req, res) => {
 app.get('/api/comments/:postId', async (req, res) => {
   try {
     const { postId } = req.params;
-    
+
     // Ensure DB connection
     if (mongoose.connection.readyState !== 1) {
       let connected = false;
@@ -1792,7 +1802,7 @@ app.get('/api/comments/:postId', async (req, res) => {
 app.post('/api/share/:postId', async (req, res) => {
   try {
     const { postId } = req.params;
-    
+
     // Ensure DB connection
     if (mongoose.connection.readyState !== 1) {
       let connected = false;
@@ -1812,7 +1822,7 @@ app.post('/api/share/:postId', async (req, res) => {
     }
 
     const shareUrl = `https://snapstrom-project-1.vercel.app/post/${postId}`;
-    
+
     res.json({
       message: 'Share link generated',
       shareUrl,
@@ -1833,7 +1843,7 @@ app.post('/api/share/:postId', async (req, res) => {
 app.get('/api/post/:postId', async (req, res) => {
   try {
     const { postId } = req.params;
-    
+
     // Ensure DB connection
     if (mongoose.connection.readyState !== 1) {
       let connected = false;
@@ -1877,14 +1887,14 @@ app.delete('/api/post/:postId', async (req, res) => {
   try {
     const { postId } = req.params;
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -1921,12 +1931,12 @@ app.delete('/api/post/:postId', async (req, res) => {
     // Check if user is the owner of the post
     if (post.uploadedBy.toString() !== decoded.id) {
       console.log('❌ Authorization failed: User is not the owner of the post');
-      
+
       // Additional check: if the post was created with a random ObjectId (old system),
       // we might need to handle this differently. For now, we'll still deny access
       // but provide more detailed error information.
-      
-      return res.status(403).json({ 
+
+      return res.status(403).json({
         message: 'You can only delete your own posts',
         debug: {
           postOwner: post.uploadedBy.toString(),
@@ -1939,9 +1949,9 @@ app.delete('/api/post/:postId', async (req, res) => {
 
     // Delete the post
     await File.findByIdAndDelete(postId);
-    
+
     console.log('✅ Post deleted successfully:', postId);
-    
+
     res.json({
       message: 'Post deleted successfully',
       postId: postId
@@ -1957,14 +1967,14 @@ app.get('/api/auth/follow-status/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -1990,7 +2000,7 @@ app.get('/api/auth/follow-status/:userId', async (req, res) => {
     }
 
     const isFollowing = currentUser.following.includes(userId);
-    
+
     res.json({
       isFollowing,
       followersCount: currentUser.followers.length,
@@ -2084,7 +2094,7 @@ app.get('/api/chat/conversations', async (req, res) => {
         }
         // Wait a bit for connection to stabilize
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         // Double-check connection status
         if (mongoose.connection.readyState !== 1) {
           console.error('❌ Database still not connected after retry');
@@ -2103,8 +2113,8 @@ app.get('/api/chat/conversations', async (req, res) => {
     const conversations = await Conversation.find({
       'participants.user': userObjectId
     })
-    .populate('participants.user', 'username profilePicture')
-    .sort({ updatedAt: -1 })
+      .populate('participants.user', 'username profilePicture')
+      .sort({ updatedAt: -1 })
 
     // Format conversations for frontend
     const formattedConversations = conversations.map(conv => ({
@@ -2123,9 +2133,9 @@ app.get('/api/chat/conversations', async (req, res) => {
       createdAt: conv.createdAt.toISOString()
     }))
 
-    res.json({ 
+    res.json({
       success: true,
-      conversations: formattedConversations 
+      conversations: formattedConversations
     })
   } catch (error) {
     console.error('Chat conversations error:', error)
@@ -2155,12 +2165,12 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
     console.log('🔍 Found conversation:', conversation ? 'Yes' : 'No')
-    
+
     if (!conversation) {
       console.log('❌ Conversation not found:', conversationId)
       return res.status(404).json({ message: 'Conversation not found' })
     }
-    
+
     if (!conversation.participants || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
       console.log('❌ User not participant in conversation')
       console.log('Participants:', conversation.participants?.map(p => p.user.toString()))
@@ -2185,9 +2195,9 @@ app.get('/api/chat/messages/:conversationId', async (req, res) => {
       readBy: msg.readBy
     }))
 
-    res.json({ 
+    res.json({
       success: true,
-      messages: formattedMessages 
+      messages: formattedMessages
     })
   } catch (error) {
     console.error('Chat messages error:', error)
@@ -2199,7 +2209,7 @@ app.post('/api/chat/start-conversation', async (req, res) => {
   try {
     console.log('🚀 Start conversation request received');
     console.log('📝 Request body:', req.body);
-    
+
     const { username } = req.body
     if (!username) {
       console.log('❌ No username provided');
@@ -2238,7 +2248,7 @@ app.post('/api/chat/start-conversation', async (req, res) => {
         await connectDB();
         // Wait a bit for connection to stabilize
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         if (mongoose.connection.readyState !== 1) {
           console.error('❌ Database connection failed after retry');
           return res.status(503).json({ message: 'Database unavailable' });
@@ -2312,17 +2322,17 @@ app.post('/api/chat/start-conversation', async (req, res) => {
     console.log('✅ Formatted conversation:', formattedConversation);
     console.log('📤 Sending response...');
 
-    res.json({ 
+    res.json({
       success: true,
-      conversation: formattedConversation 
+      conversation: formattedConversation
     })
   } catch (error) {
     console.error('❌ Start conversation error:', error);
     console.error('❌ Error stack:', error.stack);
     console.error('❌ Error name:', error.name);
     console.error('❌ Error message:', error.message);
-    res.status(500).json({ 
-      message: 'Error starting conversation', 
+    res.status(500).json({
+      message: 'Error starting conversation',
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     })
@@ -2352,12 +2362,12 @@ app.post('/api/chat/send-message', async (req, res) => {
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
     console.log('🔍 Found conversation:', conversation ? 'Yes' : 'No')
-    
+
     if (!conversation) {
       console.log('❌ Conversation not found:', conversationId)
       return res.status(404).json({ message: 'Conversation not found' })
     }
-    
+
     if (!conversation.participants || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
       console.log('❌ User not participant in conversation')
       console.log('Participants:', conversation.participants?.map(p => p.user.toString()))
@@ -2393,9 +2403,9 @@ app.post('/api/chat/send-message', async (req, res) => {
       readBy: message.readBy
     }
 
-    res.json({ 
+    res.json({
       success: true,
-      message: formattedMessage 
+      message: formattedMessage
     })
   } catch (error) {
     console.error('Send message error:', error)
@@ -2408,7 +2418,7 @@ app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
   try {
     const { conversationId } = req.params
     console.log('📖 Mark read request for conversation:', conversationId)
-    
+
     const token = req.headers.authorization?.replace('Bearer ', '')
     if (!token) {
       return res.status(401).json({ message: 'No token provided' })
@@ -2429,12 +2439,12 @@ app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
     // Verify user is participant in conversation
     const conversation = await Conversation.findById(conversationId)
     console.log('🔍 Found conversation:', conversation ? 'Yes' : 'No')
-    
+
     if (!conversation) {
       console.log('❌ Conversation not found:', conversationId)
       return res.status(404).json({ message: 'Conversation not found' })
     }
-    
+
     if (!conversation.participants || !conversation.participants.some(p => p.user.toString() === userId.toString())) {
       console.log('❌ User not participant in conversation')
       console.log('Participants:', conversation.participants?.map(p => p.user.toString()))
@@ -2444,19 +2454,19 @@ app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
     // Update lastReadAt for the user
     await Conversation.findByIdAndUpdate(
       conversationId,
-      { 
-        $set: { 
-          'participants.$[elem].lastReadAt': new Date() 
-        } 
+      {
+        $set: {
+          'participants.$[elem].lastReadAt': new Date()
+        }
       },
-      { 
-        arrayFilters: [{ 'elem.user': userObjectId }] 
+      {
+        arrayFilters: [{ 'elem.user': userObjectId }]
       }
     )
 
-    res.json({ 
+    res.json({
       success: true,
-      message: 'Messages marked as read' 
+      message: 'Messages marked as read'
     })
   } catch (error) {
     console.error('Mark read error:', error)
@@ -2468,7 +2478,7 @@ app.post('/api/chat/mark-read/:conversationId', async (req, res) => {
 app.get('/api/search/users', async (req, res) => {
   try {
     const { q } = req.query;
-    
+
     if (!q || q.trim().length === 0) {
       return res.json({ users: [] });
     }
@@ -2480,7 +2490,7 @@ app.get('/api/search/users', async (req, res) => {
         await connectDB();
         // Wait a bit for connection to stabilize
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         if (mongoose.connection.readyState !== 1) {
           console.error('❌ Database connection failed after retry');
           return res.status(503).json({ message: 'Database unavailable' });
@@ -2493,15 +2503,15 @@ app.get('/api/search/users', async (req, res) => {
 
     const searchQuery = q.trim();
     console.log('🔍 Searching for users with query:', searchQuery);
-    
+
     const users = await User.find({
       $or: [
         { username: { $regex: searchQuery, $options: 'i' } },
         { email: { $regex: searchQuery, $options: 'i' } }
       ]
     })
-    .select('username profilePicture bio')
-    .limit(10);
+      .select('username profilePicture bio')
+      .limit(10);
 
     console.log('✅ Found', users.length, 'users matching query');
 
@@ -2523,7 +2533,7 @@ app.get('/api/search/users', async (req, res) => {
 app.get('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!id) {
       return res.status(400).json({ message: 'User ID is required' });
     }
@@ -2542,7 +2552,7 @@ app.get('/api/users/:id', async (req, res) => {
     }
 
     const user = await User.findById(id).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -2566,7 +2576,7 @@ app.get('/api/users/:id', async (req, res) => {
 app.get('/api/users/search', async (req, res) => {
   try {
     const { q } = req.query;
-    
+
     if (!q || q.trim().length === 0) {
       return res.json({ users: [] });
     }
@@ -2578,7 +2588,7 @@ app.get('/api/users/search', async (req, res) => {
         await connectDB();
         // Wait a bit for connection to stabilize
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         if (mongoose.connection.readyState !== 1) {
           console.error('❌ Database connection failed after retry');
           return res.status(503).json({ message: 'Database unavailable' });
@@ -2591,15 +2601,15 @@ app.get('/api/users/search', async (req, res) => {
 
     const searchQuery = q.trim();
     console.log('🔍 Searching for users with query:', searchQuery);
-    
+
     const users = await User.find({
       $or: [
         { username: { $regex: searchQuery, $options: 'i' } },
         { email: { $regex: searchQuery, $options: 'i' } }
       ]
     })
-    .select('username profilePicture bio')
-    .limit(10);
+      .select('username profilePicture bio')
+      .limit(10);
 
     console.log('✅ Found', users.length, 'users matching query');
 
@@ -2621,14 +2631,14 @@ app.get('/api/users/search', async (req, res) => {
 app.delete('/api/admin/delete-all-posts', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const token = authHeader.substring(7);
     let decoded;
-    
+
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
@@ -2656,12 +2666,12 @@ app.delete('/api/admin/delete-all-posts', async (req, res) => {
 
     // Count posts before deletion
     const totalPosts = await File.countDocuments();
-    
+
     console.log(`🗑️  User ${user.username} is deleting all ${totalPosts} posts`);
 
     // Delete all posts
     const result = await File.deleteMany({});
-    
+
     console.log(`✅ Successfully deleted ${result.deletedCount} posts`);
 
     res.json({
@@ -2679,7 +2689,7 @@ app.delete('/api/admin/delete-all-posts', async (req, res) => {
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     message: 'Not Found',
     path: req.originalUrl,
     method: req.method,
@@ -2690,7 +2700,7 @@ app.use((req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  res.status(500).json({ 
+  res.status(500).json({
     message: 'Internal Server Error',
     error: err.message,
     timestamp: new Date().toISOString()
@@ -2710,14 +2720,40 @@ connectDB().then(success => {
   console.log('⚠️ Continuing without database connection');
 });
 
+// Socket.io Logic
+io.on('connection', (socket) => {
+  console.log('🔌 New client connected:', socket.id);
+
+  socket.on('join_room', (room) => {
+    socket.join(room);
+    console.log(`👤 User joined room: ${room}`);
+  });
+
+  socket.on('send_message', (data) => {
+    // data: { conversationId, message }
+    io.to(data.conversationId).emit('new_message', data.message);
+    console.log(`💬 Message sent to room ${data.conversationId}`);
+  });
+
+  socket.on('typing', (data) => {
+    // data: { conversationId, username, isTyping }
+    socket.to(data.conversationId).emit('user_typing', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔌 Client disconnected:', socket.id);
+  });
+});
+
 // Export for Vercel
 export default app;
 
 // Start server if running directly (not on Vercel)
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
+  httpServer.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📱 API available at http://localhost:${PORT}`);
+    console.log(`🔌 Socket.io ready`);
   });
 }

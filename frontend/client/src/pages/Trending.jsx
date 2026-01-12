@@ -31,7 +31,7 @@ export default function Trending() {
   const fetchTrendingPosts = async () => {
     try {
       setLoading(true)
-      
+
       // Get current user info
       const username = localStorage.getItem('username')
       if (username) {
@@ -49,29 +49,29 @@ export default function Trending() {
           return null
         }
       })()
-      
+
       setCurrentUserId(currentUserId) // Store current user ID in state
 
       // Fetch trending data
       const response = await api('/trending')
-      
+
       console.log('🔍 Full trending API response:', response);
-      
+
       // Handle both direct array response and wrapped response
       const postsData = response.success ? response.data : (Array.isArray(response) ? response : []);
-      
+
       console.log('🔍 Trending posts data:', postsData);
-      
+
       if (!postsData || !Array.isArray(postsData)) {
         throw new Error('Failed to fetch trending data')
       }
-      
+
       // Map the data to match expected structure
       const mapPosts = (data) => data.map(p => {
         console.log('🔍 Processing trending post:', p);
         console.log('🔍 uploadedBy object:', p.uploadedBy);
         console.log('🔍 Profile picture value:', p.uploadedBy?.profilePicture);
-        
+
         const mappedPost = {
           ...p,
           _id: p.id || p._id,
@@ -86,19 +86,19 @@ export default function Trending() {
           comments: p.comments || [],
           engagementScore: p.engagementScore || 0
         };
-        
+
         console.log('🔍 Mapped trending post result:', mappedPost);
         console.log('🔍 Username found:', mappedPost.uploader.username);
         console.log('🔍 Uploader ID:', mappedPost.uploader._id);
         console.log('🔍 Final profile picture:', mappedPost.uploader.profilePicture);
         return mappedPost;
       });
-      
+
       const mappedPosts = mapPosts(postsData);
-      
+
       // Set posts
       setPosts(mappedPosts);
-      
+
       // Initialize following status for all users in the trending feed
       const allUsers = mappedPosts
         .map(p => {
@@ -108,9 +108,9 @@ export default function Trending() {
         })
         .filter(id => id && id !== 'undefined' && id !== null)
         .filter((id, index, arr) => arr.indexOf(id) === index);
-      
+
       console.log('🔍 All users for follow status:', allUsers);
-      
+
       // Check follow status for each user
       const followStatus = {};
       for (const userId of allUsers) {
@@ -124,7 +124,7 @@ export default function Trending() {
         }
       }
       setFollowingStatus(followStatus);
-      
+
     } catch (e) {
       console.error('Error fetching trending posts:', e)
       setPosts([]) // Set empty array on error
@@ -140,21 +140,21 @@ export default function Trending() {
   const like = async (id) => {
     try {
       console.log('🔍 Liking trending post:', id);
-      
+
       // Set loading state
       setInteractingPosts(prev => ({ ...prev, [`like-${id}`]: true }));
-      
+
       const response = await api(`/like/${id}`, { method: 'POST' })
-      
+
       console.log('✅ Like response:', response);
-      
+
       // Update posts with new like status
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
         ...p,
         __liked: response.isLiked,
         __likesCount: response.likesCount
       }) : p)
-      
+
       setPosts(ps => updatePosts(ps))
     } catch (error) {
       console.error('Error liking trending post:', error)
@@ -167,23 +167,23 @@ export default function Trending() {
   const comment = async (id, text) => {
     try {
       console.log('🔍 Commenting on trending post:', id, 'Text:', text);
-      
+
       // Set loading state
       setInteractingPosts(prev => ({ ...prev, [`comment-${id}`]: true }));
-      
-      const response = await api(`/comment/${id}`, { 
-        method: 'POST', 
-        body: { text } 
+
+      const response = await api(`/comment/${id}`, {
+        method: 'POST',
+        body: { text }
       })
-      
+
       console.log('✅ Comment response:', response);
-      
+
       // Update posts with new comment
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
         ...p,
         comments: [...(p.comments || []), response.comment]
       }) : p)
-      
+
       setPosts(ps => updatePosts(ps))
     } catch (error) {
       console.error('Error commenting on trending post:', error)
@@ -196,14 +196,14 @@ export default function Trending() {
   const share = async (id, post) => {
     try {
       console.log('🔍 Sharing trending post:', id);
-      
+
       // Set loading state
       setInteractingPosts(prev => ({ ...prev, [`share-${id}`]: true }));
-      
+
       const response = await api(`/share/${id}`, { method: 'POST' })
-      
+
       console.log('✅ Share response:', response);
-      
+
       // Open share link in new tab
       if (response.shareUrl) {
         window.open(response.shareUrl, '_blank');
@@ -219,10 +219,10 @@ export default function Trending() {
   const downloadImage = async (postId, originalName) => {
     try {
       setInteractingPosts(prev => ({ ...prev, [`download-${postId}`]: true }))
-      
+
       const response = await fetch(`${config.API_BASE_URL}/api/images/${postId}`)
       const blob = await response.blob()
-      
+
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -231,7 +231,7 @@ export default function Trending() {
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
-      
+
       alert('Image downloaded successfully!')
     } catch (error) {
       console.error('Error downloading image:', error)
@@ -251,17 +251,17 @@ export default function Trending() {
   const follow = async (userId, username) => {
     try {
       console.log('🔍 Following user:', userId, username);
-      
+
       const response = await api(`/auth/follow/${userId}`, { method: 'POST' })
-      
+
       console.log('✅ Follow response:', response);
-      
+
       // Update following status
       setFollowingStatus(prev => ({
         ...prev,
         [userId]: response.isFollowing
       }));
-      
+
     } catch (error) {
       console.error('Error following user:', error)
     }
@@ -270,17 +270,17 @@ export default function Trending() {
   const deletePost = async (id) => {
     try {
       console.log('🔍 Deleting trending post:', id);
-      
+
       const response = await api(`/post/${id}`, { method: 'DELETE' })
-      
+
       console.log('✅ Delete response:', response);
-      
+
       // Remove post from list
       setPosts(ps => ps.filter(p => p._id !== id))
-      
+
       // Close kebab menu
       setShowKebabMenu(prev => ({ ...prev, [id]: false }))
-      
+
     } catch (error) {
       console.error('Error deleting trending post:', error)
     }
@@ -289,7 +289,7 @@ export default function Trending() {
   const formatTimeAgo = (date) => {
     // Handle different date formats
     let dateString = date
-    
+
     // If date is an object with timestamp property
     if (typeof date === 'object' && date !== null) {
       if (date.timestamp) {
@@ -303,25 +303,25 @@ export default function Trending() {
         dateString = date.toString()
       }
     }
-    
+
     // Ensure we have a valid date string
     if (!dateString) {
       return 'Just now'
     }
-    
+
     const now = new Date()
     const targetDate = new Date(dateString)
-    
+
     // Check if date is valid
     if (isNaN(targetDate.getTime())) {
       return 'Just now'
     }
-    
+
     const diff = now - targetDate
     const minutes = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
-    
+
     if (minutes < 1) return 'Just now'
     if (minutes < 60) return `${minutes}m ago`
     if (hours < 24) return `${hours}h ago`
@@ -362,7 +362,7 @@ export default function Trending() {
             </div>
           </div>
         </div>
-        
+
         {/* Filter Tabs */}
         <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
           {[
@@ -374,11 +374,10 @@ export default function Trending() {
             <button
               key={filter.key}
               onClick={() => setActiveFilter(filter.key)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                activeFilter === filter.key
+              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${activeFilter === filter.key
                   ? 'bg-white text-pink-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <span>{filter.icon}</span>
               <span>{filter.label}</span>
@@ -436,7 +435,7 @@ export default function Trending() {
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold text-gray-900">{post.uploader?.username}</h3>
+                        <h3 className="font-semibold text-gray-900">{safeRender(post.uploader?.username)}</h3>
                         {post.engagementScore > 100 && (
                           <span className="px-2 py-1 bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs font-bold rounded-full">
                             🔥 Hot
@@ -446,7 +445,7 @@ export default function Trending() {
                       <p className="text-sm text-gray-500">{safeFormatTimeAgo(post.uploadTime)}</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     {/* Engagement Score */}
                     <div className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-pink-50 to-purple-50 rounded-full">
@@ -455,9 +454,9 @@ export default function Trending() {
                         {formatEngagementScore(post.engagementScore)}
                       </span>
                     </div>
-                    
 
-                    
+
+
                     {/* Kebab Menu */}
                     {post.uploader?._id === currentUserId && (
                       <div className="relative kebab-menu">
@@ -469,7 +468,7 @@ export default function Trending() {
                             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                           </svg>
                         </button>
-                        
+
                         {showKebabMenu[post._id] && (
                           <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
                             <button
@@ -488,101 +487,101 @@ export default function Trending() {
 
               {/* Post Image */}
               <div className="relative">
-                                    <img
-                      src={`${config.API_BASE_URL}/api/images/${post._id}`}
-                      alt={post.caption}
-                      className="w-full h-auto object-cover"
-                      onError={(e) => {
-                        console.error('❌ Image failed to load:', e.target.src);
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                    
-                    {/* Overflow Menu at bottom of image */}
-                    <div className="absolute bottom-3 right-3 overflow-menu">
-                      <button 
-                        onClick={() => toggleOverflowMenu(post._id)}
-                        className="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/70 transition-all duration-200 transform hover:scale-110 shadow-lg"
+                <img
+                  src={`${config.API_BASE_URL}/api/images/${post._id}`}
+                  alt={post.caption}
+                  className="w-full h-auto object-cover"
+                  onError={(e) => {
+                    console.error('❌ Image failed to load:', e.target.src);
+                    e.target.style.display = 'none';
+                  }}
+                />
+
+                {/* Overflow Menu at bottom of image */}
+                <div className="absolute bottom-3 right-3 overflow-menu">
+                  <button
+                    onClick={() => toggleOverflowMenu(post._id)}
+                    className="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/70 transition-all duration-200 transform hover:scale-110 shadow-lg"
+                  >
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+
+                  {/* Overflow Menu Dropdown */}
+                  {overflowMenuOpen[post._id] && (
+                    <div className="absolute bottom-12 right-0 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+                      {/* Download Option */}
+                      <button
+                        onClick={() => {
+                          downloadImage(post._id, post.originalName)
+                          toggleOverflowMenu(post._id)
+                        }}
+                        disabled={interactingPosts[`download-${post._id}`]}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
                       >
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                        </svg>
+                        {interactingPosts[`download-${post._id}`] ? (
+                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        )}
+                        <span>Download</span>
                       </button>
-                      
-                      {/* Overflow Menu Dropdown */}
-                      {overflowMenuOpen[post._id] && (
-                        <div className="absolute bottom-12 right-0 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
-                          {/* Download Option */}
-                          <button 
+
+                      {/* Share Option */}
+                      <button
+                        onClick={() => {
+                          share(post._id, post)
+                          toggleOverflowMenu(post._id)
+                        }}
+                        disabled={interactingPosts[`share-${post._id}`]}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
+                      >
+                        {interactingPosts[`share-${post._id}`] ? (
+                          <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                          </svg>
+                        )}
+                        <span>Share</span>
+                      </button>
+
+                      {/* Delete Option - Only for post owner */}
+                      {currentUserId && post.uploader?._id === currentUserId && (
+                        <>
+                          <div className="border-t border-gray-100"></div>
+                          <button
                             onClick={() => {
-                              downloadImage(post._id, post.originalName)
+                              deletePost(post._id)
                               toggleOverflowMenu(post._id)
                             }}
-                            disabled={interactingPosts[`download-${post._id}`]}
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+                            disabled={interactingPosts[`delete-${post._id}`]}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
                           >
-                            {interactingPosts[`download-${post._id}`] ? (
-                              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            {interactingPosts[`delete-${post._id}`] ? (
+                              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                             ) : (
-                              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
                             )}
-                            <span>Download</span>
+                            <span>Delete</span>
                           </button>
-                          
-                          {/* Share Option */}
-                          <button 
-                            onClick={() => {
-                              share(post._id, post)
-                              toggleOverflowMenu(post._id)
-                            }}
-                            disabled={interactingPosts[`share-${post._id}`]}
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
-                          >
-                            {interactingPosts[`share-${post._id}`] ? (
-                              <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                              </svg>
-                            )}
-                            <span>Share</span>
-                          </button>
-                          
-                          {/* Delete Option - Only for post owner */}
-                          {currentUserId && post.uploader?._id === currentUserId && (
-                            <>
-                              <div className="border-t border-gray-100"></div>
-                              <button 
-                                onClick={() => {
-                                  deletePost(post._id)
-                                  toggleOverflowMenu(post._id)
-                                }}
-                                disabled={interactingPosts[`delete-${post._id}`]}
-                                className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
-                              >
-                                {interactingPosts[`delete-${post._id}`] ? (
-                                  <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                                ) : (
-                                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                )}
-                                <span>Delete</span>
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        </>
                       )}
                     </div>
+                  )}
+                </div>
               </div>
 
               {/* Post Actions */}
               <div className="p-6">
                 {/* Caption */}
                 {post.caption && (
-                  <p className="text-gray-900 mb-4 leading-relaxed">{post.caption}</p>
+                  <p className="text-gray-900 mb-4 leading-relaxed">{safeRender(post.caption)}</p>
                 )}
 
                 {/* Tags */}
@@ -606,11 +605,10 @@ export default function Trending() {
                     <button
                       onClick={() => like(post._id)}
                       disabled={interactingPosts[`like-${post._id}`]}
-                      className={`flex items-center space-x-2 transition-all duration-200 ${
-                        post.__liked
+                      className={`flex items-center space-x-2 transition-all duration-200 ${post.__liked
                           ? 'text-red-500 hover:text-red-600'
                           : 'text-gray-400 hover:text-red-500'
-                      }`}
+                        }`}
                     >
                       <svg className="w-6 h-6" fill={post.__liked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -631,7 +629,7 @@ export default function Trending() {
 
                     {/* Overflow Menu Button */}
                     <div className="relative overflow-menu">
-                      <button 
+                      <button
                         onClick={() => toggleOverflowMenu(post._id)}
                         className="flex items-center space-x-2 text-gray-400 hover:text-gray-600 transition-colors"
                       >
@@ -639,12 +637,12 @@ export default function Trending() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                         </svg>
                       </button>
-                      
+
                       {/* Overflow Menu Dropdown */}
                       {overflowMenuOpen[post._id] && (
                         <div className="absolute right-0 top-8 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
                           {/* Download Option */}
-                          <button 
+                          <button
                             onClick={() => {
                               downloadImage(post._id, post.originalName)
                               toggleOverflowMenu(post._id)
@@ -661,9 +659,9 @@ export default function Trending() {
                             )}
                             <span>Download</span>
                           </button>
-                          
+
                           {/* Share Option */}
-                          <button 
+                          <button
                             onClick={() => {
                               share(post._id, post)
                               toggleOverflowMenu(post._id)
@@ -680,12 +678,12 @@ export default function Trending() {
                             )}
                             <span>Share</span>
                           </button>
-                          
+
                           {/* Delete Option - Only for post owner */}
                           {currentUserId && post.uploader?._id === currentUserId && (
                             <>
                               <div className="border-t border-gray-100"></div>
-                              <button 
+                              <button
                                 onClick={() => {
                                   deletePost(post._id)
                                   toggleOverflowMenu(post._id)
@@ -765,7 +763,7 @@ export default function Trending() {
                           <div className="flex-1">
                             <div className="bg-gray-50 rounded-lg p-3">
                               <div className="flex items-center space-x-2 mb-1">
-                                <span className="font-semibold text-gray-900">{comment.user?.username}</span>
+                                <span className="font-semibold text-gray-900">{safeRender(comment.user?.username)}</span>
                                 <span className="text-xs text-gray-500">{safeFormatTimeAgo(comment.createdAt)}</span>
                               </div>
                               <p className="text-gray-700">{safeObjectToString(comment.text)}</p>

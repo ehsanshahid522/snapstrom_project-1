@@ -47,11 +47,11 @@ export default function Feed() {
 
   // Removed search functionality - using header search only
 
-    // Function to fetch posts
+  // Function to fetch posts
   const fetchPosts = useCallback(async () => {
     try {
       setLoading(true)
-      
+
       // Get current user info
       const username = localStorage.getItem('username')
       if (username) {
@@ -60,14 +60,14 @@ export default function Feed() {
 
       // Fetch feed data
       const response = await api('/feed')
-      
+
       // Handle both direct array response and wrapped response
       const postsData = response.success ? response.data : (Array.isArray(response) ? response : []);
-      
+
       if (!postsData || !Array.isArray(postsData)) {
         throw new Error('Failed to fetch feed data')
       }
-      
+
       // Map the data to match expected structure
       const mapPosts = (data) => data.map(p => {
         const mappedPost = {
@@ -83,15 +83,15 @@ export default function Feed() {
           __likesCount: p.likeCount || p.likes?.length || 0,
           comments: p.comments || []
         };
-        
+
         return mappedPost;
       });
-      
+
       const mappedPosts = mapPosts(postsData);
-      
+
       // Set posts
       setPosts(mappedPosts);
-      
+
       // Initialize following status for all users in the feed
       const allUsers = mappedPosts
         .map(p => {
@@ -101,7 +101,7 @@ export default function Feed() {
         })
         .filter(id => id && id !== 'undefined' && id !== null)
         .filter((id, index, arr) => arr.indexOf(id) === index);
-      
+
       // Check follow status for each user
       const followStatus = {};
       for (const userId of allUsers) {
@@ -113,7 +113,7 @@ export default function Feed() {
         }
       }
       setFollowingStatus(followStatus);
-      
+
     } catch (e) {
       console.error('Error fetching feed:', e)
       setPosts([]) // Set empty array on error
@@ -130,16 +130,16 @@ export default function Feed() {
     try {
       // Set loading state
       setInteractingPosts(prev => ({ ...prev, [`like-${id}`]: true }));
-      
+
       const response = await api(`/like/${id}`, { method: 'POST' })
-      
+
       // Update posts with new like status
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
         ...p,
         __liked: response.isLiked,
         __likesCount: response.likesCount
       }) : p)
-      
+
       setPosts(ps => updatePosts(ps))
     } catch (error) {
       console.error('Error liking post:', error)
@@ -153,18 +153,18 @@ export default function Feed() {
     try {
       // Set loading state
       setInteractingPosts(prev => ({ ...prev, [`comment-${id}`]: true }));
-      
-      const response = await api(`/comment/${id}`, { 
-        method: 'POST', 
-        body: { text } 
+
+      const response = await api(`/comment/${id}`, {
+        method: 'POST',
+        body: { text }
       })
-      
+
       // Update posts with new comment
       const updatePosts = (postList) => postList.map(p => p._id === id ? ({
         ...p,
         comments: [...(p.comments || []), response.comment]
       }) : p)
-      
+
       setPosts(ps => updatePosts(ps))
     } catch (error) {
       console.error('Error commenting on post:', error)
@@ -178,14 +178,14 @@ export default function Feed() {
     try {
       // Set loading state
       setInteractingPosts(prev => ({ ...prev, [`share-${id}`]: true }));
-      
+
       const response = await api(`/share/${id}`, { method: 'POST' })
-      
+
       if (response.shareUrl) {
         // Create share options modal
         showShareOptions(response.shareUrl, post);
       }
-      
+
       return response.shareUrl;
     } catch (error) {
       console.error('Error sharing post:', error)
@@ -203,12 +203,12 @@ export default function Feed() {
       link.href = `${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${post.image}`;
       link.download = `snapstrom-post-${post._id}.jpg`;
       link.target = '_blank';
-      
+
       // Trigger download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Show success message
       window.showToast('Post downloaded successfully! 📥', 'success');
     } catch (error) {
@@ -220,10 +220,10 @@ export default function Feed() {
   const downloadImage = useCallback(async (postId, originalName) => {
     try {
       setInteractingPosts(prev => ({ ...prev, [`download-${postId}`]: true }))
-      
+
       const response = await fetch(`${config.API_BASE_URL}/api/images/${postId}`)
       const blob = await response.blob()
-      
+
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -232,7 +232,7 @@ export default function Feed() {
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
-      
+
       alert('Image downloaded successfully!')
     } catch (error) {
       console.error('Error downloading image:', error)
@@ -254,7 +254,7 @@ export default function Feed() {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
     modal.id = 'share-modal';
-    
+
     const modalContent = `
       <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl animate-slide-up">
         <div class="flex items-center justify-between mb-6">
@@ -321,10 +321,10 @@ export default function Feed() {
         </div>
       </div>
     `;
-    
+
     modal.innerHTML = modalContent;
     document.body.appendChild(modal);
-    
+
     // Add global functions for sharing
     window.closeShareModal = () => {
       const modal = document.getElementById('share-modal');
@@ -332,7 +332,7 @@ export default function Feed() {
         modal.remove();
       }
     };
-    
+
     window.copyToClipboard = async (text) => {
       try {
         await navigator.clipboard.writeText(text);
@@ -341,37 +341,37 @@ export default function Feed() {
         showToast('❌ Failed to copy link', 'error');
       }
     };
-    
+
     window.shareOnWhatsApp = (url, text) => {
       const message = encodeURIComponent(`${text}\n\n${url}`);
       window.open(`https://wa.me/?text=${message}`, '_blank');
       closeShareModal();
     };
-    
+
     window.shareOnTwitter = (url, text) => {
       const message = encodeURIComponent(`${text}\n\n${url}`);
       window.open(`https://twitter.com/intent/tweet?text=${message}`, '_blank');
       closeShareModal();
     };
-    
+
     window.shareOnFacebook = (url) => {
       window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
       closeShareModal();
     };
-    
+
     window.shareOnLinkedIn = (url, text) => {
       const message = encodeURIComponent(`${text}\n\n${url}`);
       window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
       closeShareModal();
     };
-    
+
     window.shareViaEmail = (url, text) => {
       const subject = encodeURIComponent('Check out this post on SnapStream!');
       const body = encodeURIComponent(`${text}\n\n${url}`);
       window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
       closeShareModal();
     };
-    
+
     window.downloadImage = async (imageUrl, filename) => {
       try {
         const response = await fetch(imageUrl);
@@ -390,13 +390,13 @@ export default function Feed() {
       }
       closeShareModal();
     };
-    
+
     window.generateQRCode = (url) => {
       // Create QR code modal
       const qrModal = document.createElement('div');
       qrModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
       qrModal.id = 'qr-modal';
-      
+
       const qrContent = `
         <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl">
           <div class="text-center">
@@ -414,10 +414,10 @@ export default function Feed() {
           </div>
         </div>
       `;
-      
+
       qrModal.innerHTML = qrContent;
       document.body.appendChild(qrModal);
-      
+
       window.closeQRModal = () => {
         const modal = document.getElementById('qr-modal');
         if (modal) {
@@ -425,17 +425,16 @@ export default function Feed() {
         }
       };
     };
-    
+
     // Toast notification function
     window.showToast = (message, type = 'info') => {
       const toast = document.createElement('div');
-      toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-xl text-white font-semibold shadow-2xl transform transition-all duration-300 ${
-        type === 'success' ? 'bg-green-500' : 
-        type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-      }`;
+      toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-xl text-white font-semibold shadow-2xl transform transition-all duration-300 ${type === 'success' ? 'bg-green-500' :
+          type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+        }`;
       toast.textContent = message;
       document.body.appendChild(toast);
-      
+
       setTimeout(() => {
         toast.remove();
       }, 3000);
@@ -449,25 +448,25 @@ export default function Feed() {
         '⚠️ WARNING: This will permanently delete ALL posts from the database!\n\n' +
         'This action cannot be undone. Are you absolutely sure you want to continue?'
       );
-      
+
       if (!confirmed) return;
-      
+
       // Second confirmation
       const finalConfirmed = window.confirm(
         '🚨 FINAL WARNING: You are about to delete ALL posts!\n\n' +
         'Type "YES" to confirm:'
       );
-      
+
       if (!finalConfirmed) return;
-      
+
       console.log('🗑️  Deleting all posts...');
-      
+
       const response = await api('/admin/delete-all-posts', { method: 'DELETE' });
-      
+
       console.log('✅ All posts deleted:', response);
-      
+
       alert(`Successfully deleted ${response.deletedCount} posts!`);
-      
+
       // Refresh the posts list
       fetchPosts();
     } catch (error) {
@@ -479,13 +478,13 @@ export default function Feed() {
   const fixPostOwnership = useCallback(async (id) => {
     try {
       console.log('🔧 Attempting to fix post ownership:', id);
-      
+
       const response = await api(`/fix-post-ownership/${id}`, { method: 'POST' });
-      
+
       console.log('✅ Post ownership fixed:', response);
-      
+
       alert('Post ownership has been fixed! You can now delete this post.');
-      
+
       // Refresh the posts to show updated data
       fetchPosts();
     } catch (error) {
@@ -497,21 +496,21 @@ export default function Feed() {
   const deletePost = useCallback(async (id) => {
     try {
       console.log('🔍 Deleting post:', id);
-      
+
       // Confirm deletion
       const confirmed = window.confirm('Are you sure you want to delete this post? This action cannot be undone.');
       if (!confirmed) return;
-      
+
       // Set loading state
       setInteractingPosts(prev => ({ ...prev, [`delete-${id}`]: true }));
-      
+
       const response = await api(`/post/${id}`, { method: 'DELETE' })
-      
+
       console.log('✅ Delete response:', response);
-      
+
       // Remove post from state
       setPosts(prev => prev.filter(p => p._id !== id));
-      
+
       alert('Post deleted successfully!');
     } catch (error) {
       console.error('Error deleting post:', error)
@@ -520,13 +519,13 @@ export default function Feed() {
         message: error.message,
         body: error.body
       });
-      
+
       let errorMessage = 'Failed to delete post. Please try again.';
       let shouldFix = false;
-      
+
       if (error.status === 403) {
         errorMessage = 'You can only delete your own posts. This post may have been created before the recent fix. Would you like to fix the ownership?';
-        
+
         // Ask user if they want to fix ownership
         shouldFix = window.confirm(errorMessage);
         if (shouldFix) {
@@ -538,7 +537,7 @@ export default function Feed() {
       } else if (error.body && error.body.debug) {
         console.log('Debug info:', error.body.debug);
       }
-      
+
       if (!shouldFix) {
         alert(errorMessage);
       }
@@ -552,22 +551,22 @@ export default function Feed() {
     try {
       // Ensure userId is a string
       const userIdString = typeof userId === 'object' ? userId._id || userId.id : userId;
-      
+
       if (!userIdString || userIdString === 'undefined' || userIdString === null) {
         console.error('Invalid userId:', userIdString)
         return
       }
-      
+
       console.log('🔍 Following user:', userIdString, username);
-      
+
       const response = await api(`/follow/${userIdString}`, { method: 'POST' })
-      
+
       // Update following status
       setFollowingStatus(prev => ({
         ...prev,
         [userIdString]: response.isFollowing
       }))
-      
+
       console.log('✅ Follow status updated:', response.isFollowing)
     } catch (error) {
       console.error('Error toggling follow:', error)
@@ -589,19 +588,19 @@ export default function Feed() {
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
         {/* Rainbow Progress Bar */}
         <div className="fixed top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 via-purple-500 via-yellow-500 via-green-500 to-blue-500 animate-pulse"></div>
-        
+
         <div className="text-center">
           <div className="relative">
             <div className="w-24 h-24 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full mx-auto mb-6 animate-spin"></div>
-            <div className="absolute inset-0 w-24 h-24 bg-gradient-to-r from-yellow-400 via-green-400 to-cyan-400 rounded-full mx-auto animate-spin" style={{animationDirection: 'reverse'}}></div>
+            <div className="absolute inset-0 w-24 h-24 bg-gradient-to-r from-yellow-400 via-green-400 to-cyan-400 rounded-full mx-auto animate-spin" style={{ animationDirection: 'reverse' }}></div>
           </div>
           <p className="text-slate-700 text-xl font-semibold mb-4">Loading your feed...</p>
           <div className="flex space-x-3 justify-center">
             <div className="w-3 h-3 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full animate-bounce"></div>
-            <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-            <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-            <div className="w-3 h-3 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full animate-bounce" style={{animationDelay: '0.6s'}}></div>
-            <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-yellow-500 rounded-full animate-bounce" style={{animationDelay: '0.8s'}}></div>
+            <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+            <div className="w-3 h-3 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full animate-bounce" style={{ animationDelay: '0.6s' }}></div>
+            <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '0.8s' }}></div>
           </div>
         </div>
       </div>
@@ -653,8 +652,8 @@ export default function Feed() {
 
         <div className="space-y-6 sm:space-y-8">
           {currentPosts.map((p, index) => (
-            <div 
-              key={p._id} 
+            <div
+              key={p._id}
               className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden"
             >
               {/* Post Header */}
@@ -663,14 +662,14 @@ export default function Feed() {
                   {/* Left Side - Username and Profile Info */}
                   <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                     {/* Clickable Profile Picture */}
-                    <a 
+                    <a
                       href={createProfileUrl(p.uploader?.username)}
                       className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200 hover:ring-pink-300 transition-all duration-200 transform hover:scale-105 cursor-pointer flex-shrink-0"
                     >
                       {p.uploader?.profilePicture ? (
-                        <img 
-                          src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${p.uploader.profilePicture}`} 
-                          alt="" 
+                        <img
+                          src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${p.uploader.profilePicture}`}
+                          alt=""
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -679,16 +678,16 @@ export default function Feed() {
                         </div>
                       )}
                     </a>
-                    
+
                     {/* Clickable Username and Info */}
                     <div className="flex-1 min-w-0">
-                      <a 
+                      <a
                         href={createProfileUrl(p.uploader?.username)}
                         className="block hover:opacity-80 transition-opacity duration-200"
                       >
-                        <div className="font-bold text-gray-900 text-sm sm:text-lg hover:text-pink-600 transition-colors duration-200 truncate">
-                          {p.uploader?.username || 'Unknown User'}
-                        </div>
+                        <span className="font-bold text-gray-900 group-hover:text-pink-600 transition-colors duration-300 truncate max-w-[120px] sm:max-w-none">
+                          {safeRender(p.uploader?.username) || 'Unknown User'}
+                        </span>
                         <div className="text-xs sm:text-sm text-gray-500 flex items-center">
                           <span className="mr-1 sm:mr-2">🕐</span>
                           {safeFormatTimeAgo(p.uploadTime)}
@@ -696,7 +695,7 @@ export default function Feed() {
                       </a>
                     </div>
                   </div>
-                  
+
                   {/* Right Side - Badges Only */}
                   <div className="flex items-center space-x-2 sm:space-x-3">
                     {/* Private Badge */}
@@ -705,7 +704,7 @@ export default function Feed() {
                         🔒 Private
                       </div>
                     )}
-                    
+
                     {/* Your Post Badge */}
                     {currentUserId && p.uploader?._id === currentUserId && (
                       <div className="px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full">
@@ -713,7 +712,7 @@ export default function Feed() {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Right Side - Badges and Follow Button */}
                   <div className="flex items-center space-x-3">
                     {/* Private Badge */}
@@ -722,23 +721,22 @@ export default function Feed() {
                         🔒 Private
                       </div>
                     )}
-                    
+
                     {/* Your Post Badge */}
                     {currentUserId && p.uploader?._id === currentUserId && (
                       <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full">
                         ✨ Your Post
                       </div>
                     )}
-                    
+
                     {/* Follow Button */}
                     {p.uploader?._id && p.uploader?._id !== currentUserId && (
                       <button
                         onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
-                        className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
-                          followingStatus[p.uploader._id]
+                        className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${followingStatus[p.uploader._id]
                             ? 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-600'
                             : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-lg'
-                        }`}
+                          }`}
                       >
                         {followingStatus[p.uploader._id] ? (
                           <span className="flex items-center space-x-1">
@@ -757,125 +755,125 @@ export default function Feed() {
                 </div>
               </div>
 
-                             {/* Post Image */}
-               <div className="relative group">
-                 <img 
-                   src={`${config.API_BASE_URL}/api/images/${p._id}`} 
-                   alt={p.originalName || ''} 
-                   className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                   onError={(e) => {
-                     console.error('❌ Image failed to load:', e.target.src);
-                     e.target.style.display = 'none';
-                   }}
-                 />
-                 {/* Image overlay with gradient */}
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                 
-                 {/* Floating action buttons for user's own posts - Only delete */}
-                 {currentUserId && p.uploader?._id === currentUserId && (
-                   <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                     <button 
-                       onClick={() => deletePost(p._id)}
-                       disabled={interactingPosts[`delete-${p._id}`]}
-                       className="w-10 h-10 bg-red-500/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 transition-all duration-200 transform hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                       title="Delete post"
-                     >
-                       {interactingPosts[`delete-${p._id}`] ? (
-                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                       ) : (
-                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                         </svg>
-                       )}
-                     </button>
-                   </div>
-                 )}
-                 
-                 {/* Overflow Menu at bottom of image */}
-                 <div className="absolute bottom-3 right-3 overflow-menu">
-                   <button 
-                     onClick={() => toggleOverflowMenu(p._id)}
-                     className="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/70 transition-all duration-200 transform hover:scale-110 shadow-lg"
-                   >
-                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                     </svg>
-                   </button>
-                   
-                   {/* Overflow Menu Dropdown */}
-                   {overflowMenuOpen[p._id] && (
-                     <div className="absolute bottom-12 right-0 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
-                       {/* Download Option */}
-                       <button 
-                         onClick={() => {
-                           downloadImage(p._id, p.originalName)
-                           toggleOverflowMenu(p._id)
-                         }}
-                         disabled={interactingPosts[`download-${p._id}`]}
-                         className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
-                       >
-                         {interactingPosts[`download-${p._id}`] ? (
-                           <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                         ) : (
-                           <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                           </svg>
-                         )}
-                         <span>Download</span>
-                       </button>
-                       
-                       {/* Share Option */}
-                       <button 
-                         onClick={() => {
-                           share(p._id, p)
-                           toggleOverflowMenu(p._id)
-                         }}
-                         disabled={interactingPosts[`share-${p._id}`]}
-                         className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
-                       >
-                         {interactingPosts[`share-${p._id}`] ? (
-                           <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                         ) : (
-                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                           </svg>
-                         )}
-                         <span>Share</span>
-                       </button>
-                       
-                       {/* Delete Option - Only for post owner */}
-                       {currentUserId && p.uploader?._id === currentUserId && (
-                         <>
-                           <div className="border-t border-gray-100"></div>
-                           <button 
-                             onClick={() => {
-                               deletePost(p._id)
-                               toggleOverflowMenu(p._id)
-                             }}
-                             disabled={interactingPosts[`delete-${p._id}`]}
-                             className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
-                           >
-                             {interactingPosts[`delete-${p._id}`] ? (
-                               <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                             ) : (
-                               <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                               </svg>
-                             )}
-                             <span>Delete</span>
-                           </button>
-                         </>
-                       )}
-                     </div>
-                   )}
-                 </div>
-               </div>
+              {/* Post Image */}
+              <div className="relative group">
+                <img
+                  src={`${config.API_BASE_URL}/api/images/${p._id}`}
+                  alt={p.originalName || ''}
+                  className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                  onError={(e) => {
+                    console.error('❌ Image failed to load:', e.target.src);
+                    e.target.style.display = 'none';
+                  }}
+                />
+                {/* Image overlay with gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                {/* Floating action buttons for user's own posts - Only delete */}
+                {currentUserId && p.uploader?._id === currentUserId && (
+                  <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <button
+                      onClick={() => deletePost(p._id)}
+                      disabled={interactingPosts[`delete-${p._id}`]}
+                      className="w-10 h-10 bg-red-500/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 transition-all duration-200 transform hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Delete post"
+                    >
+                      {interactingPosts[`delete-${p._id}`] ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* Overflow Menu at bottom of image */}
+                <div className="absolute bottom-3 right-3 overflow-menu">
+                  <button
+                    onClick={() => toggleOverflowMenu(p._id)}
+                    className="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/70 transition-all duration-200 transform hover:scale-110 shadow-lg"
+                  >
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+
+                  {/* Overflow Menu Dropdown */}
+                  {overflowMenuOpen[p._id] && (
+                    <div className="absolute bottom-12 right-0 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+                      {/* Download Option */}
+                      <button
+                        onClick={() => {
+                          downloadImage(p._id, p.originalName)
+                          toggleOverflowMenu(p._id)
+                        }}
+                        disabled={interactingPosts[`download-${p._id}`]}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+                      >
+                        {interactingPosts[`download-${p._id}`] ? (
+                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        )}
+                        <span>Download</span>
+                      </button>
+
+                      {/* Share Option */}
+                      <button
+                        onClick={() => {
+                          share(p._id, p)
+                          toggleOverflowMenu(p._id)
+                        }}
+                        disabled={interactingPosts[`share-${p._id}`]}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
+                      >
+                        {interactingPosts[`share-${p._id}`] ? (
+                          <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                          </svg>
+                        )}
+                        <span>Share</span>
+                      </button>
+
+                      {/* Delete Option - Only for post owner */}
+                      {currentUserId && p.uploader?._id === currentUserId && (
+                        <>
+                          <div className="border-t border-gray-100"></div>
+                          <button
+                            onClick={() => {
+                              deletePost(p._id)
+                              toggleOverflowMenu(p._id)
+                            }}
+                            disabled={interactingPosts[`delete-${p._id}`]}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
+                          >
+                            {interactingPosts[`delete-${p._id}`] ? (
+                              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            )}
+                            <span>Delete</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Caption - Now below image */}
               {p.caption && (
                 <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
                   <p className="text-gray-800 text-sm sm:text-base leading-relaxed">
-                    {p.caption}
+                    {safeRender(p.caption)}
                   </p>
                 </div>
               )}
@@ -884,7 +882,7 @@ export default function Feed() {
               <div className="p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4 sm:space-x-6">
-                    <button 
+                    <button
                       onClick={() => like(p._id)}
                       disabled={interactingPosts[`like-${p._id}`]}
                       className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
@@ -896,7 +894,7 @@ export default function Feed() {
                       ) : p.__liked ? (
                         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors shadow-lg">
                           <svg className="w-6 h-6 sm:w-7 sm:h-7 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                           </svg>
                         </div>
                       ) : (
@@ -908,8 +906,8 @@ export default function Feed() {
                       )}
                       <span className="font-bold text-lg sm:text-xl">{p.__likesCount || 0}</span>
                     </button>
-                    
-                    <button 
+
+                    <button
                       onClick={() => toggleComments(p._id)}
                       disabled={interactingPosts[`comment-${p._id}`]}
                       className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-blue-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
@@ -940,7 +938,7 @@ export default function Feed() {
                     {p.comments.slice(0, 5).map((c, i) => (
                       <div key={i} className="text-sm p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
                         <span className="font-bold text-gray-900 mr-2">
-                          {c.username || c.user?.username || 'User'}:
+                          {safeRender(c.username || c.user?.username) || 'User'}:
                         </span>
                         <span className="text-gray-700">{safeObjectToString(c.text)}</span>
                       </div>
@@ -954,7 +952,7 @@ export default function Feed() {
                 )}
 
                 {/* Add Comment Form */}
-                <form 
+                <form
                   onSubmit={(e) => {
                     e.preventDefault()
                     const text = e.currentTarget[`comment-${p._id}`].value.trim()
@@ -964,14 +962,14 @@ export default function Feed() {
                   }}
                   className="flex space-x-3 mt-4"
                 >
-                  <input 
+                  <input
                     name={`comment-${p._id}`}
-                    placeholder="💭 Add a comment..." 
+                    placeholder="💭 Add a comment..."
                     disabled={interactingPosts[`comment-${p._id}`]}
                     className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
                   />
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={interactingPosts[`comment-${p._id}`]}
                     className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-2xl hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >

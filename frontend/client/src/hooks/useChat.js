@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { io } from 'socket.io-client'
+import { config } from '../config'
 import { api } from '../lib/api'
 
 export const useChat = (conversationId) => {
@@ -9,74 +11,109 @@ export const useChat = (conversationId) => {
   const [typingUsers, setTypingUsers] = useState([])
   const wsRef = useRef(null)
 
-  // Use polling mode only - WebSocket completely disabled
+  // Socket.io integration
   const connect = useCallback(() => {
-    setIsConnected(false)
-    
-    // Start polling for new messages every 5 seconds
-    if (conversationId) {
-      const pollInterval = setInterval(async () => {
-        try {
-          const response = await api(`/api/chat/messages/${conversationId}`)
-          if (response.messages) {
-            setMessages(response.messages)
-          }
-        } catch (error) {
-          // Silent error handling
+    if (!conversationId) return;
+
+    // Connect to Socket.io
+    const socket = io(config.API_BASE_URL || window.location.origin, {
+      auth: {
+        token: localStorage.getItem('token')
+      }
+    });
+
+    wsRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('🔌 Socket connected');
+      setIsConnected(true);
+      socket.emit('join_room', conversationId);
+    });
+
+    socket.on('new_message', (message) => {
+      console.log('📩 New message received via socket:', message);
+      setMessages(prev => {
+        // Prevent duplicate messages if the message was already added via REST response
+        if (prev.some(m => m.id === message.id || m._id === message._id)) {
+          return prev;
         }
-      }, 5000)
-      
-      // Store interval reference for cleanup
-      wsRef.current = { pollInterval }
-    }
-  }, [conversationId])
+        return [...prev, message];
+      });
+    });
+
+    socket.on('user_typing', (data) => {
+      if (data.isTyping) {
+        setTypingUsers(prev => [...new Set([...prev, data.username])]);
+      } else {
+        setTypingUsers(prev => prev.filter(u => u !== data.username));
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('🔌 Socket disconnected');
+      setIsConnected(false);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('🔌 Socket connection error:', error);
+      setIsConnected(false);
+    });
+  }, [conversationId]);
 
   // Disconnect and cleanup
   const disconnect = useCallback(() => {
     if (wsRef.current) {
-      if (wsRef.current.pollInterval) {
-        clearInterval(wsRef.current.pollInterval)
-      }
-      wsRef.current = null
+      wsRef.current.disconnect();
+      wsRef.current = null;
     }
-    setIsConnected(false)
-  }, [])
+    setIsConnected(false);
+    setTypingUsers([]);
+  }, []);
 
-  // Send message via API
-  const sendMessage = useCallback(async (message) => {
+  // Send message via API and emit via socket
+  const sendMessageHandler = useCallback(async (messageContent) => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      const response = await api(`/api/chat/messages/${conversationId}`, {
+      setLoading(true);
+      setError(null);
+
+      const response = await api('/api/chat/send-message', {
         method: 'POST',
-        body: { content: message }
-      })
-      
-      if (response.message) {
-        setMessages(prev => [...prev, response.message])
+        body: { conversationId, content: messageContent }
+      });
+
+      if (response.success && response.message) {
+        // Add to local state immediately
+        setMessages(prev => [...prev, response.message]);
+
+        // Emit via socket for others
+        if (wsRef.current && wsRef.current.connected) {
+          wsRef.current.emit('send_message', {
+            conversationId,
+            message: response.message
+          });
+        }
       }
-      
-      return response
+
+      return response;
     } catch (err) {
-      setError(err.message)
-      throw err
+      setError(err.message);
+      throw err;
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [conversationId])
+  }, [conversationId]);
 
   // Fetch messages
   const fetchMessages = useCallback(async () => {
     if (!conversationId) return
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const response = await api(`/api/chat/messages/${conversationId}`)
       setMessages(response.messages || [])
-      
+
       return response
     } catch (err) {
       setError(err.message)
@@ -89,7 +126,7 @@ export const useChat = (conversationId) => {
   // Mark messages as read
   const markAsRead = useCallback(async () => {
     if (!conversationId) return
-    
+
     try {
       await api(`/api/chat/mark-read/${conversationId}`, {
         method: 'POST'
@@ -104,16 +141,16 @@ export const useChat = (conversationId) => {
     try {
       setLoading(true)
       setError(null)
-      
+
       if (!username || typeof username !== 'string' || username.trim() === '') {
         throw new Error('Username is required and must be a non-empty string')
       }
-      
+
       const response = await api('/api/chat/start-conversation', {
         method: 'POST',
         body: { username: username.trim() }
       })
-      
+
       if (response.conversation) {
         return response.conversation
       } else {
@@ -135,7 +172,7 @@ export const useChat = (conversationId) => {
     } else {
       disconnect()
     }
-    
+
     return () => {
       disconnect()
     }
@@ -147,7 +184,7 @@ export const useChat = (conversationId) => {
     error,
     isConnected,
     typingUsers,
-    sendMessage,
+    sendMessage: sendMessageHandler,
     fetchMessages,
     markAsRead,
     startConversation

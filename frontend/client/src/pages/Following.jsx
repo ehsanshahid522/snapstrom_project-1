@@ -14,7 +14,7 @@ export default function Following() {
   const [currentUserId, setCurrentUserId] = useState(null)
   const [expandedComments, setExpandedComments] = useState({})
   const [overflowMenuOpen, setOverflowMenuOpen] = useState({}) // Track which posts have overflow menu open
-  
+
   // New state for followers/following lists
   const [activeTab, setActiveTab] = useState('posts') // 'posts', 'followers', 'following'
   const [followers, setFollowers] = useState([])
@@ -26,7 +26,7 @@ export default function Following() {
   const fetchFollowingPosts = async () => {
     try {
       setLoading(true)
-      
+
       // Get current user info
       const username = localStorage.getItem('username')
       if (username) {
@@ -44,27 +44,27 @@ export default function Following() {
           return null
         }
       })()
-      
+
       setCurrentUserId(currentUserId)
 
       // Fetch following feed data
       const response = await api('/feed/following')
-      
+
       console.log('🔍 Following feed response:', response);
-      
+
       // Handle both direct array response and wrapped response
       const postsData = response.success ? response.data : (Array.isArray(response) ? response : []);
-      
+
       console.log('🔍 Following posts data:', postsData);
-      
+
       if (!postsData || !Array.isArray(postsData)) {
         throw new Error('Failed to fetch following feed data')
       }
-      
+
       // Map the data to match expected structure
       const mapPosts = (data) => data.map(p => {
         console.log('🔍 Processing following post:', p);
-        
+
         const mappedPost = {
           ...p,
           _id: p.id || p._id,
@@ -78,13 +78,13 @@ export default function Following() {
           __likesCount: p.likeCount || p.likes?.length || 0,
           comments: p.comments || []
         };
-        
+
         return mappedPost;
       });
-      
+
       const mappedPosts = mapPosts(postsData);
       setPosts(mappedPosts);
-      
+
       // Initialize following status for all users in the feed
       const allUsers = mappedPosts
         .map(p => {
@@ -93,7 +93,7 @@ export default function Following() {
         })
         .filter(id => id && id !== 'undefined' && id !== null)
         .filter((id, index, arr) => arr.indexOf(id) === index);
-      
+
       // Check follow status for each user
       const followStatus = {};
       for (const userId of allUsers) {
@@ -105,9 +105,9 @@ export default function Following() {
           followStatus[userId] = false
         }
       }
-      
+
       setFollowingStatus(followStatus)
-      
+
     } catch (error) {
       console.error('Error fetching following posts:', error)
       setPosts([])
@@ -181,11 +181,11 @@ export default function Following() {
   useEffect(() => {
     const tab = searchParams.get('tab')
     const userId = searchParams.get('userId')
-    
+
     if (tab) {
       setActiveTab(tab)
     }
-    
+
     if (userId) {
       setTargetUserId(userId)
     }
@@ -208,9 +208,9 @@ export default function Following() {
   const like = async (id) => {
     try {
       setInteractingPosts(prev => ({ ...prev, [`like-${id}`]: true }))
-      
+
       const response = await api(`/post/${id}/like`, { method: 'POST' })
-      
+
       setPosts(prev => prev.map(p => {
         if (p._id === id) {
           return {
@@ -231,13 +231,13 @@ export default function Following() {
   const comment = async (id, text) => {
     try {
       setInteractingPosts(prev => ({ ...prev, [`comment-${id}`]: true }))
-      
+
       const response = await api(`/post/${id}/comment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
       })
-      
+
       setPosts(prev => prev.map(p => {
         if (p._id === id) {
           return {
@@ -257,18 +257,18 @@ export default function Following() {
   const deletePost = async (id) => {
     try {
       console.log('🔍 Deleting post:', id)
-      
+
       const confirmed = window.confirm('Are you sure you want to delete this post? This action cannot be undone.')
       if (!confirmed) return
-      
+
       setInteractingPosts(prev => ({ ...prev, [`delete-${id}`]: true }))
-      
+
       const response = await api(`/post/${id}`, { method: 'DELETE' })
-      
+
       console.log('✅ Delete response:', response)
-      
+
       setPosts(prev => prev.filter(p => p._id !== id))
-      
+
       alert('Post deleted successfully!')
     } catch (error) {
       console.error('Error deleting post:', error)
@@ -287,7 +287,7 @@ export default function Following() {
 
   const share = (postId, post) => {
     const shareUrl = `${window.location.origin}/post/${postId}`
-    
+
     if (navigator.share) {
       navigator.share({
         title: 'Check out this post on Snapstream',
@@ -303,10 +303,10 @@ export default function Following() {
   const downloadImage = async (postId, originalName) => {
     try {
       setInteractingPosts(prev => ({ ...prev, [`download-${postId}`]: true }))
-      
+
       const response = await fetch(`${config.API_BASE_URL}/api/images/${postId}`)
       const blob = await response.blob()
-      
+
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -315,7 +315,7 @@ export default function Following() {
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
-      
+
       alert('Image downloaded successfully!')
     } catch (error) {
       console.error('Error downloading image:', error)
@@ -358,7 +358,7 @@ export default function Following() {
               You're not following anyone yet, or the people you follow haven't posted anything.
             </p>
             <div className="space-y-3">
-              <a 
+              <a
                 href="/"
                 className="block w-full px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-2xl"
               >
@@ -379,31 +379,28 @@ export default function Following() {
           <div className="flex space-x-1 bg-gray-100 rounded-xl p-1">
             <button
               onClick={() => handleTabChange('posts')}
-              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === 'posts'
+              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${activeTab === 'posts'
                   ? 'bg-white text-pink-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               📱 Posts
             </button>
             <button
               onClick={() => handleTabChange('followers')}
-              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === 'followers'
+              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${activeTab === 'followers'
                   ? 'bg-white text-pink-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               👥 Followers
             </button>
             <button
               onClick={() => handleTabChange('following')}
-              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === 'following'
+              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${activeTab === 'following'
                   ? 'bg-white text-pink-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               ➕ Following
             </button>
@@ -424,295 +421,295 @@ export default function Following() {
         {activeTab === 'posts' && (
           <div className="space-y-6 sm:space-y-8">
             {posts.map((p, index) => (
-            <div 
-              key={p._id} 
-              className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden"
-            >
-              {/* Post Header */}
-              <div className="p-4 sm:p-6 pb-4">
-                <div className="flex items-center justify-between">
-                  {/* Left Side - Username and Profile Info */}
-                  <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                    {/* Profile Picture */}
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200 flex-shrink-0">
-                      {p.uploader?.profilePicture ? (
-                        <img 
-                          src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${p.uploader.profilePicture}`} 
-                          alt="" 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                          <span className="text-pink-600 font-bold text-sm sm:text-lg">
-                            {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
-                          </span>
+              <div
+                key={p._id}
+                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden"
+              >
+                {/* Post Header */}
+                <div className="p-4 sm:p-6 pb-4">
+                  <div className="flex items-center justify-between">
+                    {/* Left Side - Username and Profile Info */}
+                    <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                      {/* Profile Picture */}
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200 flex-shrink-0">
+                        {p.uploader?.profilePicture ? (
+                          <img
+                            src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${p.uploader.profilePicture}`}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
+                            <span className="text-pink-600 font-bold text-sm sm:text-lg">
+                              {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Username and Time */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                          {safeRender(p.uploader?.username) || 'Unknown User'}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-500">
+                          {safeFormatTimeAgo(p.uploadTime)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right Side - Badges and Actions */}
+                    <div className="flex items-center space-x-2">
+                      {/* Private Badge */}
+                      {p.isPrivate && (
+                        <div className="px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold rounded-full">
+                          🔒 Private
+                        </div>
+                      )}
+
+                      {/* Your Post Badge */}
+                      {currentUserId && p.uploader?._id === currentUserId && (
+                        <div className="px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full">
+                          ✨ Your Post
                         </div>
                       )}
                     </div>
-                    
-                    {/* Username and Time */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                        {p.uploader?.username || 'Unknown User'}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-500">
-                        {safeFormatTimeAgo(p.uploadTime)}
-                      </p>
+                  </div>
+                </div>
+
+                {/* Post Image */}
+                <div className="relative group">
+                  <img
+                    src={`${config.API_BASE_URL}/api/images/${p._id}`}
+                    alt={p.originalName || ''}
+                    className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                    onError={(e) => {
+                      console.error('❌ Image failed to load:', e.target.src);
+                      // Replace with a placeholder image
+                      e.target.src = 'https://via.placeholder.com/400x400/6366f1/ffffff?text=Image+Not+Found';
+                      e.target.style.opacity = '0.7';
+                    }}
+                  />
+                  {/* Image overlay with gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                  {/* Floating action buttons for user's own posts - Only delete */}
+                  {currentUserId && p.uploader?._id === currentUserId && (
+                    <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <button
+                        onClick={() => deletePost(p._id)}
+                        disabled={interactingPosts[`delete-${p._id}`]}
+                        className="w-10 h-10 bg-red-500/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 transition-all duration-200 transform hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Delete post"
+                      >
+                        {interactingPosts[`delete-${p._id}`] ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        )}
+                      </button>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Right Side - Badges and Actions */}
-                  <div className="flex items-center space-x-2">
-                    {/* Private Badge */}
-                    {p.isPrivate && (
-                      <div className="px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold rounded-full">
-                        🔒 Private
-                      </div>
-                    )}
-                    
-                    {/* Your Post Badge */}
-                    {currentUserId && p.uploader?._id === currentUserId && (
-                      <div className="px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full">
-                        ✨ Your Post
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-                             {/* Post Image */}
-               <div className="relative group">
-                 <img 
-                   src={`${config.API_BASE_URL}/api/images/${p._id}`} 
-                   alt={p.originalName || ''} 
-                   className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                   onError={(e) => {
-                     console.error('❌ Image failed to load:', e.target.src);
-                     // Replace with a placeholder image
-                     e.target.src = 'https://via.placeholder.com/400x400/6366f1/ffffff?text=Image+Not+Found';
-                     e.target.style.opacity = '0.7';
-                   }}
-                 />
-                 {/* Image overlay with gradient */}
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                 
-                 {/* Floating action buttons for user's own posts - Only delete */}
-                 {currentUserId && p.uploader?._id === currentUserId && (
-                   <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                     <button 
-                       onClick={() => deletePost(p._id)}
-                       disabled={interactingPosts[`delete-${p._id}`]}
-                       className="w-10 h-10 bg-red-500/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 transition-all duration-200 transform hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                       title="Delete post"
-                     >
-                       {interactingPosts[`delete-${p._id}`] ? (
-                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                       ) : (
-                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                         </svg>
-                       )}
-                     </button>
-                   </div>
-                 )}
-                 
-                 {/* Overflow Menu at bottom of image */}
-                 <div className="absolute bottom-3 right-3 overflow-menu">
-                   <button 
-                     onClick={() => toggleOverflowMenu(p._id)}
-                     className="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/70 transition-all duration-200 transform hover:scale-110 shadow-lg"
-                   >
-                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                     </svg>
-                   </button>
-                   
-                   {/* Overflow Menu Dropdown */}
-                   {overflowMenuOpen[p._id] && (
-                     <div className="absolute bottom-12 right-0 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
-                       {/* Download Option */}
-                       <button 
-                         onClick={() => {
-                           downloadImage(p._id, p.originalName)
-                           toggleOverflowMenu(p._id)
-                         }}
-                         disabled={interactingPosts[`download-${p._id}`]}
-                         className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
-                       >
-                         {interactingPosts[`download-${p._id}`] ? (
-                           <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                         ) : (
-                           <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                           </svg>
-                         )}
-                         <span>Download</span>
-                       </button>
-                       
-                       {/* Share Option */}
-                       <button 
-                         onClick={() => {
-                           share(p._id, p)
-                           toggleOverflowMenu(p._id)
-                         }}
-                         disabled={interactingPosts[`share-${p._id}`]}
-                         className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
-                       >
-                         {interactingPosts[`share-${p._id}`] ? (
-                           <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                         ) : (
-                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                           </svg>
-                         )}
-                         <span>Share</span>
-                       </button>
-                       
-                       {/* Delete Option - Only for post owner */}
-                       {currentUserId && p.uploader?._id === currentUserId && (
-                         <>
-                           <div className="border-t border-gray-100"></div>
-                           <button 
-                             onClick={() => {
-                               deletePost(p._id)
-                               toggleOverflowMenu(p._id)
-                             }}
-                             disabled={interactingPosts[`delete-${p._id}`]}
-                             className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
-                           >
-                             {interactingPosts[`delete-${p._id}`] ? (
-                               <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                             ) : (
-                               <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                               </svg>
-                             )}
-                             <span>Delete</span>
-                           </button>
-                         </>
-                       )}
-                     </div>
-                   )}
-                 </div>
-               </div>
-
-              {/* Caption - Now below image */}
-              {p.caption && (
-                <div className="px-6 py-4 border-b border-gray-100">
-                  <p className="text-gray-800 text-base leading-relaxed">
-                    {p.caption}
-                  </p>
-                </div>
-              )}
-
-              {/* Post Actions */}
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-6">
-                    <button 
-                      onClick={() => like(p._id)}
-                      disabled={interactingPosts[`like-${p._id}`]}
-                      className="flex items-center space-x-3 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
+                  {/* Overflow Menu at bottom of image */}
+                  <div className="absolute bottom-3 right-3 overflow-menu">
+                    <button
+                      onClick={() => toggleOverflowMenu(p._id)}
+                      className="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/70 transition-all duration-200 transform hover:scale-110 shadow-lg"
                     >
-                      {interactingPosts[`like-${p._id}`] ? (
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                          <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      ) : p.__liked ? (
-                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors shadow-lg">
-                          <svg className="w-7 h-7 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                          </svg>
-                        </div>
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors shadow-lg">
-                          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                          </svg>
-                        </div>
-                      )}
-                      <span className="font-bold text-xl">{p.__likesCount || 0}</span>
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                      </svg>
                     </button>
-                    
-                    <button 
-                      onClick={() => toggleComments(p._id)}
-                      disabled={interactingPosts[`comment-${p._id}`]}
-                      className="flex items-center space-x-3 text-gray-700 hover:text-blue-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {interactingPosts[`comment-${p._id}`] ? (
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      ) : (
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors shadow-lg">
-                          <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                          </svg>
-                        </div>
-                      )}
-                      <span className="font-bold text-xl">{p.comments?.length || 0}</span>
-                    </button>
+
+                    {/* Overflow Menu Dropdown */}
+                    {overflowMenuOpen[p._id] && (
+                      <div className="absolute bottom-12 right-0 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+                        {/* Download Option */}
+                        <button
+                          onClick={() => {
+                            downloadImage(p._id, p.originalName)
+                            toggleOverflowMenu(p._id)
+                          }}
+                          disabled={interactingPosts[`download-${p._id}`]}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+                        >
+                          {interactingPosts[`download-${p._id}`] ? (
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          )}
+                          <span>Download</span>
+                        </button>
+
+                        {/* Share Option */}
+                        <button
+                          onClick={() => {
+                            share(p._id, p)
+                            toggleOverflowMenu(p._id)
+                          }}
+                          disabled={interactingPosts[`share-${p._id}`]}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
+                        >
+                          {interactingPosts[`share-${p._id}`] ? (
+                            <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                            </svg>
+                          )}
+                          <span>Share</span>
+                        </button>
+
+                        {/* Delete Option - Only for post owner */}
+                        {currentUserId && p.uploader?._id === currentUserId && (
+                          <>
+                            <div className="border-t border-gray-100"></div>
+                            <button
+                              onClick={() => {
+                                deletePost(p._id)
+                                toggleOverflowMenu(p._id)
+                              }}
+                              disabled={interactingPosts[`delete-${p._id}`]}
+                              className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-200"
+                            >
+                              {interactingPosts[`delete-${p._id}`] ? (
+                                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              )}
+                              <span>Delete</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Comments - Only show when expanded */}
-                {p.comments && p.comments.length > 0 && expandedComments[p._id] && (
-                  <div className="space-y-3 mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl animate-slide-up border border-blue-100">
-                    <h4 className="font-semibold text-gray-900 text-sm mb-3 flex items-center">
-                      <span className="mr-2">💬</span>
-                      Comments ({p.comments.length})
-                    </h4>
-                    {p.comments.slice(0, 5).map((c, i) => (
-                      <div key={i} className="text-sm p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
-                        <span className="font-bold text-gray-900 mr-2">
-                          {c.username || c.user?.username || 'User'}:
-                        </span>
-                        <span className="text-gray-700">{safeObjectToString(c.text)}</span>
-                      </div>
-                    ))}
-                    {p.comments.length > 5 && (
-                      <p className="text-xs text-gray-500 mt-2 text-center">
-                        +{p.comments.length - 5} more comments
-                      </p>
-                    )}
+                {/* Caption - Now below image */}
+                {p.caption && (
+                  <div className="px-6 py-4 border-b border-gray-100">
+                    <p className="text-gray-800 text-base leading-relaxed">
+                      {safeRender(p.caption)}
+                    </p>
                   </div>
                 )}
 
-                {/* Add Comment Form */}
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    const text = e.currentTarget[`comment-${p._id}`].value.trim()
-                    if (!text) return
-                    comment(p._id, text)
-                    e.currentTarget.reset()
-                  }}
-                  className="flex space-x-3 mt-4"
-                >
-                  <input 
-                    name={`comment-${p._id}`}
-                    placeholder="💭 Add a comment..." 
-                    disabled={interactingPosts[`comment-${p._id}`]}
-                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                  />
-                  <button 
-                    type="submit" 
-                    disabled={interactingPosts[`comment-${p._id}`]}
-                    className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-2xl hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                {/* Post Actions */}
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-6">
+                      <button
+                        onClick={() => like(p._id)}
+                        disabled={interactingPosts[`like-${p._id}`]}
+                        className="flex items-center space-x-3 text-gray-700 hover:text-red-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {interactingPosts[`like-${p._id}`] ? (
+                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        ) : p.__liked ? (
+                          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors shadow-lg">
+                            <svg className="w-7 h-7 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                            </svg>
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-red-100 transition-colors shadow-lg">
+                            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                          </div>
+                        )}
+                        <span className="font-bold text-xl">{p.__likesCount || 0}</span>
+                      </button>
+
+                      <button
+                        onClick={() => toggleComments(p._id)}
+                        disabled={interactingPosts[`comment-${p._id}`]}
+                        className="flex items-center space-x-3 text-gray-700 hover:text-blue-500 transition-all duration-300 transform hover:scale-110 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {interactingPosts[`comment-${p._id}`] ? (
+                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors shadow-lg">
+                            <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                          </div>
+                        )}
+                        <span className="font-bold text-xl">{p.comments?.length || 0}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Comments - Only show when expanded */}
+                  {p.comments && p.comments.length > 0 && expandedComments[p._id] && (
+                    <div className="space-y-3 mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl animate-slide-up border border-blue-100">
+                      <h4 className="font-semibold text-gray-900 text-sm mb-3 flex items-center">
+                        <span className="mr-2">💬</span>
+                        Comments ({p.comments.length})
+                      </h4>
+                      {p.comments.slice(0, 5).map((c, i) => (
+                        <div key={i} className="text-sm p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                          <span className="font-bold text-gray-900 mr-2">
+                            {safeRender(c.username || c.user?.username) || 'User'}:
+                          </span>
+                          <span className="text-gray-700">{safeObjectToString(c.text)}</span>
+                        </div>
+                      ))}
+                      {p.comments.length > 5 && (
+                        <p className="text-xs text-gray-500 mt-2 text-center">
+                          +{p.comments.length - 5} more comments
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Add Comment Form */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      const text = e.currentTarget[`comment-${p._id}`].value.trim()
+                      if (!text) return
+                      comment(p._id, text)
+                      e.currentTarget.reset()
+                    }}
+                    className="flex space-x-3 mt-4"
                   >
-                    {interactingPosts[`comment-${p._id}`] ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Posting...</span>
-                      </div>
-                    ) : (
-                      'Post'
-                    )}
-                  </button>
-                </form>
+                    <input
+                      name={`comment-${p._id}`}
+                      placeholder="💭 Add a comment..."
+                      disabled={interactingPosts[`comment-${p._id}`]}
+                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                    />
+                    <button
+                      type="submit"
+                      disabled={interactingPosts[`comment-${p._id}`]}
+                      className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-2xl hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    >
+                      {interactingPosts[`comment-${p._id}`] ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Posting...</span>
+                        </div>
+                      ) : (
+                        'Post'
+                      )}
+                    </button>
+                  </form>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
         )}
 
@@ -742,9 +739,9 @@ export default function Following() {
                       {/* Profile Picture */}
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
                         {user.profilePicture ? (
-                          <img 
-                            src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${user.profilePicture}`} 
-                            alt="" 
+                          <img
+                            src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${user.profilePicture}`}
+                            alt=""
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.target.style.display = 'none';
@@ -758,7 +755,7 @@ export default function Following() {
                           </span>
                         </div>
                       </div>
-                      
+
                       {/* User Info */}
                       <div>
                         <h3 className="font-semibold text-gray-900">{user.username}</h3>
@@ -809,7 +806,7 @@ export default function Following() {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Not Following Anyone</h2>
                 <p className="text-gray-600 mb-6">Start following people to see their posts in your feed!</p>
-                <a 
+                <a
                   href="/"
                   className="inline-block px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-2xl"
                 >
@@ -824,9 +821,9 @@ export default function Following() {
                       {/* Profile Picture */}
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 ring-2 ring-pink-200">
                         {user.profilePicture ? (
-                          <img 
-                            src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${user.profilePicture}`} 
-                            alt="" 
+                          <img
+                            src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${user.profilePicture}`}
+                            alt=""
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.target.style.display = 'none';
@@ -840,7 +837,7 @@ export default function Following() {
                           </span>
                         </div>
                       </div>
-                      
+
                       {/* User Info */}
                       <div>
                         <h3 className="font-semibold text-gray-900">{user.username}</h3>
