@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import useLocalStorage from './useLocalStorage';
-import { api } from '../lib/api';
+import useLocalStorage from './useLocalStorage.js';
+import { api } from '../lib/api.js';
 
 export default function useAuth() {
   const [user, setUser] = useState(null);
@@ -76,7 +76,7 @@ export default function useAuth() {
         method: 'PUT',
         body: profileData
       });
-      
+
       setUser(response.user);
       return { success: true, user: response.user };
     } catch (error) {

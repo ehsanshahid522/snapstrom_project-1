@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { api } from '../lib/api.js';
-import { performanceMonitor } from './performance.js';
+import { performanceMonitor } from '../utils/performance.js';
 
 // Custom hook for optimized API calls with caching
 export const useOptimizedApi = () => {
@@ -10,7 +10,7 @@ export const useOptimizedApi = () => {
 
   const makeRequest = useCallback(async (endpoint, options = {}, useCache = true) => {
     const cacheKey = `${endpoint}_${JSON.stringify(options)}`;
-    
+
     // Check cache first
     if (useCache && cacheRef.current.has(cacheKey)) {
       const cached = cacheRef.current.get(cacheKey);
@@ -116,16 +116,16 @@ export const useDebouncedSearch = (callback, delay = 300) => {
 // Custom hook for virtual scrolling optimization
 export const useVirtualScroll = (items, itemHeight, containerHeight) => {
   const [scrollTop, setScrollTop] = useState(0);
-  
+
   const visibleStart = Math.floor(scrollTop / itemHeight);
   const visibleEnd = Math.min(
     visibleStart + Math.ceil(containerHeight / itemHeight) + 1,
     items.length
   );
-  
+
   const visibleItems = items.slice(visibleStart, visibleEnd);
   const offsetY = visibleStart * itemHeight;
-  
+
   return {
     visibleItems,
     offsetY,
