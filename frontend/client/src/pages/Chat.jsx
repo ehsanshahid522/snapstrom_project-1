@@ -28,7 +28,7 @@ export default function Chat() {
     fetchMessages,
     markAsRead,
     startConversation
-  } = useChat(selectedConversation?.id)
+  } = useChat(selectedConversation?.id || selectedConversation?._id)
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -122,9 +122,10 @@ export default function Chat() {
       setNewMessage('')
 
       // Update conversation last message
+      const conversationId = selectedConversation.id || selectedConversation._id
       setConversations(prev =>
         prev.map(conv =>
-          conv.id === selectedConversation.id
+          (conv.id || conv._id) === conversationId
             ? {
               ...conv,
               lastMessage: newMessage.trim(),
@@ -149,9 +150,8 @@ export default function Chat() {
     }
   }, [handleSendMessage])
 
-  // Format message time - Enhanced with bulletproof object handling
+  // Format message time
   const formatMessageTime = useCallback((timestamp) => {
-    // Use safeRender to ensure no objects are passed
     const safeTimestamp = safeRender(timestamp)
 
     if (!safeTimestamp || safeTimestamp === '[Object]' || safeTimestamp === '') {
@@ -160,11 +160,7 @@ export default function Chat() {
 
     try {
       const date = new Date(safeTimestamp)
-
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        return ''
-      }
+      if (isNaN(date.getTime())) return ''
 
       const now = new Date()
       const diffInHours = (now - date) / (1000 * 60 * 60)
@@ -244,12 +240,8 @@ export default function Chat() {
 
             {/* Sidebar */}
             <div className="w-1/3 border-r border-gray-200 flex flex-col">
-
-              {/* Header */}
               <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
                 <h1 className="text-2xl font-bold mb-4">Messages</h1>
-
-                {/* Search and New Chat */}
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowUserSearch(!showUserSearch)}
@@ -260,7 +252,6 @@ export default function Chat() {
                   </button>
                 </div>
 
-                {/* User Search */}
                 {showUserSearch && (
                   <div className="mt-4">
                     <input
@@ -273,13 +264,11 @@ export default function Chat() {
                       }}
                       className="w-full px-3 py-2 rounded-lg bg-white/20 backdrop-blur-sm text-white placeholder-white/70 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50"
                     />
-
-                    {/* Search Results */}
                     {searchResults.length > 0 && (
                       <div className="mt-2 max-h-40 overflow-y-auto bg-white/10 backdrop-blur-sm rounded-lg">
                         {searchResults.map((user) => (
                           <div
-                            key={user.id}
+                            key={user.id || user._id}
                             onClick={() => startNewConversation(user)}
                             className="p-3 hover:bg-white/20 cursor-pointer transition-colors flex items-center gap-3"
                           >
@@ -287,8 +276,8 @@ export default function Chat() {
                               {safeRender(user.username).charAt(0).toUpperCase() || '?'}
                             </div>
                             <div>
-                              <div className="font-medium">{user.username}</div>
-                              {user.bio && <div className="text-sm opacity-75">{user.bio}</div>}
+                              <div className="font-medium">{safeRender(user.username)}</div>
+                              {user.bio && <div className="text-sm opacity-75">{safeRender(user.bio)}</div>}
                             </div>
                           </div>
                         ))}
@@ -298,7 +287,6 @@ export default function Chat() {
                 )}
               </div>
 
-              {/* Conversations List */}
               <div className="flex-1 overflow-y-auto">
                 {conversations.length === 0 ? (
                   <div className="p-6 text-center text-gray-500">
@@ -309,18 +297,15 @@ export default function Chat() {
                 ) : (
                   conversations.map((conversation) => {
                     const partner = getConversationPartner(conversation)
-                    const isSelected = selectedConversation?.id === conversation.id || selectedConversation?._id === conversation._id
+                    const isSelected = selectedConversation?.id === (conversation.id || conversation._id) || selectedConversation?._id === (conversation.id || conversation._id)
 
-                    if (!conversation || !partner || !partner.username) {
-                      return null
-                    }
+                    if (!conversation || !partner || !partner.username) return null
 
                     return (
                       <div
                         key={conversation.id || conversation._id}
                         onClick={() => handleSelectConversation(conversation)}
-                        className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${isSelected ? 'bg-purple-50 border-purple-200' : 'hover:bg-gray-50'
-                          }`}
+                        className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${isSelected ? 'bg-purple-50 border-purple-200' : 'hover:bg-gray-50'}`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-medium">
@@ -351,7 +336,6 @@ export default function Chat() {
             <div className="flex-1 flex flex-col">
               {selectedConversation ? (
                 <>
-                  {/* Chat Header */}
                   <div className="p-6 border-b border-gray-200 bg-white">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-medium">
@@ -364,50 +348,40 @@ export default function Chat() {
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-gray-400'}`}></div>
                           <span>{isConnected ? 'Online' : 'Offline'}</span>
+                          {typingUsers.length > 0 && typingUsers.includes(getConversationPartner(selectedConversation)?.username) && (
+                            <span className="italic text-purple-600 animate-pulse ml-2 text-xs">typing...</span>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Messages */}
                   <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {messages.map((message) => {
-                      if (!message?.id || !message?.content) {
-                        return null
-                      }
+                      if (!message?.id && !message?._id) return null
+                      if (!message?.content) return null
 
                       const isSender = message.senderUsername === currentUser
 
                       return (
                         <div
-                          key={message.id}
+                          key={message.id || message._id}
                           className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-4 px-4 animate-fade-in`}
                         >
                           <div className={`flex items-end gap-2 max-w-xs lg:max-w-md ${isSender ? 'flex-row-reverse' : 'flex-row'}`}>
-                            {/* Avatar */}
                             {!isSender && (
                               <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                                 {safeRender(message.senderUsername).charAt(0).toUpperCase() || '?'}
                               </div>
                             )}
-
-                            {/* Message Bubble */}
-                            <div
-                              className={`px-4 py-3 rounded-2xl ${isSender
-                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                                : 'bg-gray-100 text-gray-900'
-                                }`}
-                            >
+                            <div className={`px-4 py-3 rounded-2xl ${isSender ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
                               <div className="text-sm leading-relaxed break-words">
                                 {safeRender(message.content)}
                               </div>
-                              <div className={`text-xs mt-1 ${isSender ? 'text-purple-100' : 'text-gray-500'
-                                }`}>
+                              <div className={`text-xs mt-1 ${isSender ? 'text-purple-100' : 'text-gray-500'}`}>
                                 {formatMessageTime(message.timestamp)}
                               </div>
                             </div>
-
-                            {/* Sender Avatar */}
                             {isSender && (
                               <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                                 {safeRender(message.senderUsername).charAt(0).toUpperCase() || '?'}
@@ -420,7 +394,6 @@ export default function Chat() {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  {/* Message Input */}
                   <div className="p-6 border-t border-gray-200 bg-white">
                     <div className="flex gap-3">
                       <input
