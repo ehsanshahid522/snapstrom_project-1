@@ -18,16 +18,16 @@ export default function Chat() {
   const currentUser = useMemo(() => localStorage.getItem('username'), [])
 
   // Use custom hooks
-  const { 
-    messages, 
-    loading: chatLoading, 
-    error: chatError, 
-    isConnected, 
-    typingUsers, 
-    sendMessage, 
-    fetchMessages, 
-    markAsRead, 
-    startConversation 
+  const {
+    messages,
+    loading: chatLoading,
+    error: chatError,
+    isConnected,
+    typingUsers,
+    sendMessage,
+    fetchMessages,
+    markAsRead,
+    startConversation
   } = useChat(selectedConversation?.id)
 
   // Auto-scroll to bottom when new messages arrive
@@ -72,20 +72,20 @@ export default function Chat() {
     try {
       setLoading(true)
       setError(null)
-      
+
       const conversation = await startConversation(user.username)
-      
+
       if (conversation) {
         setSelectedConversation(conversation)
         setSearchQuery('')
         setSearchResults([])
         setShowUserSearch(false)
-        
+
         const conversationId = conversation.id || conversation._id
         if (conversationId) {
           fetchMessages()
         }
-        
+
         // Refresh conversations list
         fetchConversations()
       }
@@ -103,12 +103,12 @@ export default function Chat() {
     setSearchQuery('')
     setSearchResults([])
     setShowUserSearch(false)
-    
+
     const conversationId = conversation.id || conversation._id
     if (conversationId) {
       fetchMessages()
     }
-    
+
     // Refresh conversations list
     fetchConversations()
   }, [fetchMessages, fetchConversations])
@@ -120,16 +120,16 @@ export default function Chat() {
     try {
       await sendMessage(newMessage.trim())
       setNewMessage('')
-      
+
       // Update conversation last message
-      setConversations(prev => 
-        prev.map(conv => 
-          conv.id === selectedConversation.id 
-            ? { 
-                ...conv, 
-                lastMessage: newMessage.trim(), 
-                lastMessageAt: new Date().toISOString()
-              }
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === selectedConversation.id
+            ? {
+              ...conv,
+              lastMessage: newMessage.trim(),
+              lastMessageAt: new Date().toISOString()
+            }
             : conv
         )
       )
@@ -153,22 +153,22 @@ export default function Chat() {
   const formatMessageTime = useCallback((timestamp) => {
     // Use safeRender to ensure no objects are passed
     const safeTimestamp = safeRender(timestamp)
-    
+
     if (!safeTimestamp || safeTimestamp === '[Object]' || safeTimestamp === '') {
       return ''
     }
-    
+
     try {
       const date = new Date(safeTimestamp)
-      
+
       // Check if date is valid
       if (isNaN(date.getTime())) {
         return ''
       }
-      
+
       const now = new Date()
       const diffInHours = (now - date) / (1000 * 60 * 60)
-      
+
       if (diffInHours < 24) {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       } else {
@@ -184,8 +184,8 @@ export default function Chat() {
     if (!conversation?.participants || !Array.isArray(conversation.participants)) {
       return null
     }
-    
-    return conversation.participants.find(p => 
+
+    return conversation.participants.find(p =>
       p?.username && p.username !== currentUser
     )
   }, [currentUser])
@@ -225,8 +225,8 @@ export default function Chat() {
         <div className="text-center">
           <div className="text-red-500 text-xl mb-4">⚠️</div>
           <p className="text-gray-600 mb-4">Error loading chat: {chatError}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
           >
             Retry
@@ -241,14 +241,14 @@ export default function Chat() {
       <div className="max-w-7xl mx-auto p-4">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="flex h-[calc(100vh-2rem)]">
-            
+
             {/* Sidebar */}
             <div className="w-1/3 border-r border-gray-200 flex flex-col">
-              
+
               {/* Header */}
               <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
                 <h1 className="text-2xl font-bold mb-4">Messages</h1>
-                
+
                 {/* Search and New Chat */}
                 <div className="flex gap-2">
                   <button
@@ -259,7 +259,7 @@ export default function Chat() {
                     <span>New Chat</span>
                   </button>
                 </div>
-                
+
                 {/* User Search */}
                 {showUserSearch && (
                   <div className="mt-4">
@@ -273,7 +273,7 @@ export default function Chat() {
                       }}
                       className="w-full px-3 py-2 rounded-lg bg-white/20 backdrop-blur-sm text-white placeholder-white/70 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50"
                     />
-                    
+
                     {/* Search Results */}
                     {searchResults.length > 0 && (
                       <div className="mt-2 max-h-40 overflow-y-auto bg-white/10 backdrop-blur-sm rounded-lg">
@@ -310,26 +310,25 @@ export default function Chat() {
                   conversations.map((conversation) => {
                     const partner = getConversationPartner(conversation)
                     const isSelected = selectedConversation?.id === conversation.id || selectedConversation?._id === conversation._id
-                    
+
                     if (!conversation || !partner || !partner.username) {
                       return null
                     }
-                    
+
                     return (
                       <div
                         key={conversation.id || conversation._id}
                         onClick={() => handleSelectConversation(conversation)}
-                        className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${
-                          isSelected ? 'bg-purple-50 border-purple-200' : 'hover:bg-gray-50'
-                        }`}
+                        className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${isSelected ? 'bg-purple-50 border-purple-200' : 'hover:bg-gray-50'
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-medium">
-                            {partner.username.charAt(0).toUpperCase()}
+                            {safeRender(partner.username).charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-gray-900 truncate">
-                              {partner.username}
+                              {safeRender(partner.username)}
                             </div>
                             <div className="text-sm text-gray-500 truncate">
                               {safeRender(conversation.lastMessage) || 'No messages yet'}
@@ -359,8 +358,8 @@ export default function Chat() {
                         {getConversationPartner(selectedConversation)?.username?.charAt(0)?.toUpperCase() || '?'}
                       </div>
                       <div>
-                        <h2 className="font-semibold text-gray-900">
-                          {getConversationPartner(selectedConversation)?.username || 'Unknown User'}
+                        <h2 className="font-bold text-gray-900 truncate">
+                          {safeRender(getConversationPartner(selectedConversation)?.username) || 'Chat'}
                         </h2>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-gray-400'}`}></div>
@@ -376,9 +375,9 @@ export default function Chat() {
                       if (!message?.id || !message?.content) {
                         return null
                       }
-                      
+
                       const isSender = message.senderUsername === currentUser
-                      
+
                       return (
                         <div
                           key={message.id}
@@ -391,25 +390,23 @@ export default function Chat() {
                                 {message.senderUsername?.charAt(0)?.toUpperCase() || '?'}
                               </div>
                             )}
-                            
+
                             {/* Message Bubble */}
                             <div
-                              className={`px-4 py-3 rounded-2xl ${
-                                isSender
+                              className={`px-4 py-3 rounded-2xl ${isSender
                                   ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                                   : 'bg-gray-100 text-gray-900'
-                              }`}
+                                }`}
                             >
                               <div className="text-sm leading-relaxed break-words">
                                 {safeRender(message.content)}
                               </div>
-                              <div className={`text-xs mt-1 ${
-                                isSender ? 'text-purple-100' : 'text-gray-500'
-                              }`}>
+                              <div className={`text-xs mt-1 ${isSender ? 'text-purple-100' : 'text-gray-500'
+                                }`}>
                                 {formatMessageTime(message.timestamp)}
                               </div>
                             </div>
-                            
+
                             {/* Sender Avatar */}
                             {isSender && (
                               <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">

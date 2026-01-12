@@ -22,28 +22,43 @@ export function safeRender(value) {
   if (typeof value === 'object') {
     // Handle arrays
     if (Array.isArray(value)) {
-      return value.map(item => safeRender(item)).join(', ');
+      try {
+        return value.map(item => safeRender(item)).join(', ');
+      } catch (e) {
+        return '[Array]';
+      }
     }
 
     // Handle timestamp objects specifically
-    if (value.timestamp || value.createdAt || value.lastMessageAt || value.uploadTime) {
+    if (value.timestamp || value.createdAt || value.lastMessageAt || value.uploadTime || value.date || value.time || value.$date) {
       return safeTimestampToString(value);
     }
 
     // Handle objects with common string properties
-    if (value.content !== undefined) return safeRender(value.content);
-    if (value.text !== undefined) return safeRender(value.text);
-    if (value.message !== undefined) return safeRender(value.message);
-    if (value.value !== undefined) return safeRender(value.value);
-    if (value.name !== undefined) return safeRender(value.name);
-    if (value.title !== undefined) return safeRender(value.title);
-    if (value.username !== undefined) return safeRender(value.username);
-    if (value.caption !== undefined) return safeRender(value.caption);
+    if (value.content !== undefined && value.content !== null) return safeRender(value.content);
+    if (value.text !== undefined && value.text !== null) return safeRender(value.text);
+    if (value.message !== undefined && value.message !== null) return safeRender(value.message);
+    if (value.value !== undefined && value.value !== null) return safeRender(value.value);
+    if (value.name !== undefined && value.name !== null) return safeRender(value.name);
+    if (value.title !== undefined && value.title !== null) return safeRender(value.title);
+    if (value.username !== undefined && value.username !== null) return safeRender(value.username);
+    if (value.caption !== undefined && value.caption !== null) return safeRender(value.caption);
+    if (value.bio !== undefined && value.bio !== null) return safeRender(value.bio);
+    if (value.text !== undefined && value.text !== null) return safeRender(value.text);
+
+    // Check if it's a Mongoose ObjectId or similar
+    if (typeof value.toString === 'function') {
+      const str = value.toString();
+      if (str !== '[object Object]') return str;
+    }
 
     // Try JSON stringify as last resort
     try {
       const stringified = JSON.stringify(value);
-      return stringified === '{}' ? '[Object]' : stringified;
+      if (stringified === '{}') return '[Object]';
+      // If the stringified version is still short, return it
+      if (stringified.length < 100) return stringified;
+      return '[Object Data]';
     } catch (error) {
       return '[Object]';
     }

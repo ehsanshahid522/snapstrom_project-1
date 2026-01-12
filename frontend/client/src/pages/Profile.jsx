@@ -17,23 +17,23 @@ export default function Profile() {
   const [followLoading, setFollowLoading] = useState(false)
   const [uploadingProfilePic, setUploadingProfilePic] = useState(false)
 
-  useEffect(()=>{
-    (async()=>{
+  useEffect(() => {
+    (async () => {
       setMsg('')
       setLoading(true)
-      try{
+      try {
         const res = await api(`/api/profile/${encodeURIComponent(username)}`)
-        
+
         // Check if res has the expected structure
         if (!res || !res.posts || !Array.isArray(res.posts)) {
           setMsg('Invalid data format received');
           return;
         }
-        
+
         setData({ posts: res.posts, username, user: res.user })
         setFollowersCount(res.user?.followersCount || 0)
         setFollowingCount(res.user?.followingCount || 0)
-        
+
         // Check if current user is following this user
         if (!isOwnProfile) {
           // Get current user ID from token
@@ -47,16 +47,16 @@ export default function Profile() {
               return null
             }
           })()
-          
+
           // Check if current user is in the target user's followers list
-          const isFollowingUser = res.user?.followers?.some(follower => 
+          const isFollowingUser = res.user?.followers?.some(follower =>
             (typeof follower === 'string' ? follower : follower._id) === currentUserId
           )
           setIsFollowing(isFollowingUser)
         }
-      }catch(e){ 
+      } catch (e) {
         console.error('Error fetching profile:', e)
-        
+
         // Handle specific error cases
         if (e.status === 404) {
           setMsg(`User "@${username}" not found. This user may not exist or may have changed their username.`)
@@ -68,25 +68,25 @@ export default function Profile() {
           setMsg(e.message || 'Failed to load profile. Please try again later.')
         }
       }
-      finally{ setLoading(false) }
+      finally { setLoading(false) }
     })()
-  },[username])
+  }, [username])
 
   // Check if this is the user's own profile
   const currentUsername = localStorage.getItem('username')
   const isOwnProfile = currentUsername === username
-  
+
   // Memoized post filtering
   const { publicPosts, privatePosts, allPosts, displayPosts } = useMemo(() => {
     const publicPosts = data?.posts?.filter(post => !post.isPrivate) || []
     const privatePosts = data?.posts?.filter(post => post.isPrivate) || []
     const allPosts = data?.posts || []
-    
+
     // Get posts based on active tab and profile ownership
-    const displayPosts = isOwnProfile 
+    const displayPosts = isOwnProfile
       ? (activeTab === 'public' ? publicPosts : privatePosts)
       : publicPosts
-    
+
     return { publicPosts, privatePosts, allPosts, displayPosts }
   }, [data?.posts, activeTab, isOwnProfile])
 
@@ -166,11 +166,11 @@ export default function Profile() {
 
   const handleFollow = useCallback(async () => {
     if (followLoading || !data?.user?.id) return
-    
+
     setFollowLoading(true)
     try {
       const response = await api(`/api/auth/follow/${data.user.id}`, { method: 'POST' })
-      
+
       if (response.success) {
         setIsFollowing(!isFollowing)
         setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1)
@@ -187,19 +187,19 @@ export default function Profile() {
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
         {/* Rainbow Progress Bar */}
         <div className="fixed top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 via-purple-500 via-yellow-500 via-green-500 to-blue-500 animate-pulse"></div>
-        
+
         <div className="text-center">
           <div className="relative">
             <div className="w-24 h-24 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full mx-auto mb-6 animate-spin"></div>
-            <div className="absolute inset-0 w-24 h-24 bg-gradient-to-r from-yellow-400 via-green-400 to-cyan-400 rounded-full mx-auto animate-spin" style={{animationDirection: 'reverse'}}></div>
+            <div className="absolute inset-0 w-24 h-24 bg-gradient-to-r from-yellow-400 via-green-400 to-cyan-400 rounded-full mx-auto animate-spin" style={{ animationDirection: 'reverse' }}></div>
           </div>
           <p className="text-slate-700 text-xl font-semibold mb-4">Loading profile...</p>
           <div className="flex space-x-3 justify-center">
             <div className="w-3 h-3 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full animate-bounce"></div>
-            <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-            <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-            <div className="w-3 h-3 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full animate-bounce" style={{animationDelay: '0.6s'}}></div>
-            <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-yellow-500 rounded-full animate-bounce" style={{animationDelay: '0.8s'}}></div>
+            <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+            <div className="w-3 h-3 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full animate-bounce" style={{ animationDelay: '0.6s' }}></div>
+            <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '0.8s' }}></div>
           </div>
         </div>
       </div>
@@ -208,7 +208,7 @@ export default function Profile() {
 
   if (msg) {
     const is404Error = msg.includes('not found')
-    
+
     return (
       <div className={`min-h-screen bg-gradient-to-br ${is404Error ? 'from-blue-50 via-indigo-50 to-purple-50' : 'from-red-50 via-pink-50 to-purple-50'} flex items-center justify-center`}>
         <div className="text-center max-w-lg mx-auto px-4">
@@ -223,13 +223,13 @@ export default function Profile() {
               </svg>
             )}
           </div>
-          
+
           <h3 className={`text-2xl font-bold mb-3 ${is404Error ? 'text-slate-800' : 'text-slate-800'}`}>
             {is404Error ? 'User Not Found 👤' : 'Oops! Something went wrong'}
           </h3>
-          
+
           <p className="text-slate-600 mb-8 text-lg">{msg}</p>
-          
+
           {is404Error && (
             <div className="mb-8 p-4 bg-blue-50 rounded-xl border border-blue-200">
               <h4 className="font-semibold text-blue-800 mb-2">💡 Suggestions:</h4>
@@ -241,7 +241,7 @@ export default function Profile() {
               </ul>
             </div>
           )}
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="/" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-xl">
               <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,7 +249,7 @@ export default function Profile() {
               </svg>
               Back to Feed 🏠
             </a>
-            
+
             {is404Error && (
               <a href="/following" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:from-green-600 hover:via-emerald-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-xl">
                 <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,7 +273,7 @@ export default function Profile() {
         <div className="absolute bottom-32 left-32 w-28 h-28 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-20 w-20 h-20 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full blur-3xl"></div>
       </div>
-      
+
       {/* Profile Header */}
       <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-lg border-b border-purple-300">
         <div className="max-w-6xl mx-auto px-4 py-8">
@@ -282,9 +282,9 @@ export default function Profile() {
             <div className="relative group">
               <div className="w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 flex-shrink-0 shadow-2xl ring-4 ring-white ring-opacity-50 transform group-hover:scale-110 transition-all duration-300">
                 {data?.user?.profilePicture ? (
-                  <img 
-                    src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${data.user.profilePicture}`} 
-                    alt="Profile" 
+                  <img
+                    src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${data.user.profilePicture}`}
+                    alt="Profile"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       e.target.style.display = 'none'
@@ -298,7 +298,7 @@ export default function Profile() {
                   </span>
                 </div>
               </div>
-              
+
               {/* Upload Button - Only for own profile */}
               {isOwnProfile && (
                 <>
@@ -323,7 +323,7 @@ export default function Profile() {
                       </div>
                     </label>
                   </div>
-                  
+
                   {/* Hover overlay with instructions */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/50 rounded-full">
                     <div className="text-center text-white">
@@ -338,20 +338,20 @@ export default function Profile() {
                   </div>
                 </>
               )}
-              
+
               {/* Online indicator with pulse animation */}
               <div className="absolute bottom-2 left-2 w-6 h-6 bg-emerald-500 border-4 border-white rounded-full shadow-lg animate-pulse"></div>
               {/* Decorative elements */}
               <div className="absolute -top-2 -left-2 w-4 h-4 bg-pink-400 rounded-full opacity-70 animate-bounce"></div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full opacity-70 animate-bounce" style={{animationDelay: '0.5s'}}></div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full opacity-70 animate-bounce" style={{ animationDelay: '0.5s' }}></div>
             </div>
 
             {/* Profile Info */}
             <div className="text-center md:text-left flex-1">
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 drop-shadow-lg">
-                @{username}
+                @{safeRender(username)}
               </h1>
-              
+
               {/* Main Stats Row - Posts, Following, Followers */}
               <div className="flex justify-center md:justify-start space-x-8 mb-6">
                 <div className="text-center group cursor-pointer transform hover:scale-110 transition-all duration-300 relative">
@@ -365,11 +365,11 @@ export default function Profile() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="text-center group cursor-pointer transform hover:scale-110 transition-all duration-300 relative" onClick={() => handleFollowersClick()}>
                   <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-purple-400/20 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                   <div className="relative">
-                    <div className="text-5xl font-bold text-white mb-2 group-hover:text-pink-300 transition-colors drop-shadow-lg animate-pulse" style={{animationDelay: '0.5s'}}>
+                    <div className="text-5xl font-bold text-white mb-2 group-hover:text-pink-300 transition-colors drop-shadow-lg animate-pulse" style={{ animationDelay: '0.5s' }}>
                       {followingCount}
                     </div>
                     <div className="text-sm text-pink-200 font-medium uppercase tracking-wider group-hover:text-pink-100">
@@ -377,11 +377,11 @@ export default function Profile() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="text-center group cursor-pointer transform hover:scale-110 transition-all duration-300 relative" onClick={() => handleFollowingClick()}>
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                   <div className="relative">
-                    <div className="text-5xl font-bold text-white mb-2 group-hover:text-cyan-300 transition-colors drop-shadow-lg animate-pulse" style={{animationDelay: '1s'}}>
+                    <div className="text-5xl font-bold text-white mb-2 group-hover:text-cyan-300 transition-colors drop-shadow-lg animate-pulse" style={{ animationDelay: '1s' }}>
                       {followersCount}
                     </div>
                     <div className="text-sm text-cyan-200 font-medium uppercase tracking-wider group-hover:text-cyan-100">
@@ -390,7 +390,7 @@ export default function Profile() {
                   </div>
                 </div>
               </div>
-              
+
               <p className="text-white max-w-md text-lg drop-shadow-md">
                 {isOwnProfile ? (
                   <>Welcome to <span className="font-semibold text-yellow-300">your</span> creative space on Snapstream ✨</>
@@ -400,7 +400,7 @@ export default function Profile() {
               </p>
               {data?.user?.bio && (
                 <p className="text-white/90 max-w-md text-base drop-shadow-md mt-3 italic">
-                  "{data.user.bio}"
+                  "{safeRender(data.user.bio)}"
                 </p>
               )}
               {!isOwnProfile && (
@@ -418,15 +418,14 @@ export default function Profile() {
                     <span>💬</span>
                     <span>Message</span>
                   </button>
-                  
+
                   <button
                     onClick={handleFollow}
                     disabled={followLoading}
-                    className={`px-6 py-3 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 ${
-                      isFollowing
+                    className={`px-6 py-3 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 ${isFollowing
                         ? 'bg-gray-600 text-white hover:bg-gray-700'
                         : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
-                    } disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2`}
+                      } disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2`}
                   >
                     {followLoading ? (
                       <div className="flex items-center space-x-2">
@@ -472,9 +471,9 @@ export default function Profile() {
       <div className="max-w-6xl mx-auto px-4 py-8 relative">
         {/* Decorative Background Elements */}
         <div className="absolute top-20 left-10 w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-20 animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-16 h-16 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute bottom-40 left-20 w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
-        
+        <div className="absolute top-40 right-20 w-16 h-16 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-40 left-20 w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
+
         {/* Tab Navigation - Only for own profile */}
         {isOwnProfile && (
           <div className="flex justify-center mb-8">
@@ -487,11 +486,10 @@ export default function Profile() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-3 transform hover:scale-105 ${
-                      activeTab === tab.id
+                    className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-3 transform hover:scale-105 ${activeTab === tab.id
                         ? `bg-gradient-to-r from-${tab.color}-400 to-${tab.color}-600 text-white shadow-lg scale-105`
                         : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                    }`}
+                      }`}
                   >
                     <span className="text-lg">{tab.icon}</span>
                     <span>{tab.label}</span>
@@ -504,7 +502,7 @@ export default function Profile() {
             </div>
           </div>
         )}
-        
+
         {/* Posts Display */}
         {displayPosts.length > 0 ? (
           <>
@@ -522,7 +520,7 @@ export default function Profile() {
               <p className="text-lg text-slate-700 font-medium">
                 {isOwnProfile ? (
                   activeTab === 'public' ? `🌍 Showing ${publicPosts.length} public posts` :
-                  `🔒 Showing ${privatePosts.length} private posts`
+                    `🔒 Showing ${privatePosts.length} private posts`
                 ) : (
                   `🌍 Showing ${publicPosts.length} public posts from @${username}`
                 )}
@@ -538,21 +536,21 @@ export default function Profile() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 relative">
               {/* Grid Decorative Elements */}
               <div className="absolute -top-4 -left-4 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-60 animate-bounce"></div>
-              <div className="absolute -top-4 -right-4 w-6 h-6 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full opacity-60 animate-bounce" style={{animationDelay: '0.5s'}}></div>
-              <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full opacity-60 animate-bounce" style={{animationDelay: '1s'}}></div>
-              <div className="absolute -bottom-4 -right-4 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full opacity-60 animate-bounce" style={{animationDelay: '1.5s'}}></div>
-              
+              <div className="absolute -top-4 -right-4 w-6 h-6 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+              <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '1s' }}></div>
+              <div className="absolute -bottom-4 -right-4 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '1.5s' }}></div>
+
               {displayPosts.map(post => (
-                <div 
-                  key={post.id || post._id || `post-${Math.random()}`} 
+                <div
+                  key={post.id || post._id || `post-${Math.random()}`}
                   className="group relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-pink-100 to-purple-100 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:rotate-1 cursor-pointer border-2 border-transparent hover:border-pink-300"
                   onMouseEnter={() => setHoveredPost(post.id || post._id)}
                   onMouseLeave={() => setHoveredPost(null)}
                 >
                   {/* Post Image */}
-                  <img 
-                    src={post.imageUrl || `/api/images/${post.id}`} 
-                    alt={post.originalName || post.caption || 'Post image'} 
+                  <img
+                    src={post.imageUrl || `/api/images/${post.id}`}
+                    alt={post.originalName || post.caption || 'Post image'}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     onError={(e) => {
                       console.error('❌ Post image failed to load:', e.target.src);
@@ -560,32 +558,30 @@ export default function Profile() {
                       e.target.style.opacity = '0.7';
                     }}
                   />
-                  
+
                   {/* Privacy Badge */}
-                  <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg ${
-                    post.isPrivate 
-                      ? 'bg-gradient-to-r from-violet-500 to-purple-600' 
+                  <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg ${post.isPrivate
+                      ? 'bg-gradient-to-r from-violet-500 to-purple-600'
                       : 'bg-gradient-to-r from-emerald-500 to-green-600'
-                  }`}>
+                    }`}>
                     {post.isPrivate ? '🔒 Private' : '🌍 Public'}
                   </div>
-                  
+
                   {/* Hover Overlay */}
-                  <div className={`absolute inset-0 bg-gradient-to-t from-pink-600/90 via-purple-500/50 to-transparent transition-opacity duration-500 ${
-                    hoveredPost === post._id ? 'opacity-100' : 'opacity-0'
-                  }`}>
+                  <div className={`absolute inset-0 bg-gradient-to-t from-pink-600/90 via-purple-500/50 to-transparent transition-opacity duration-500 ${hoveredPost === post._id ? 'opacity-100' : 'opacity-0'
+                    }`}>
                     <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                       {/* Caption */}
                       {post.caption && (
-                        <p className="text-sm font-medium mb-3 line-clamp-2 text-pink-100">{post.caption}</p>
+                        <p className="text-sm font-medium mb-3 line-clamp-2 text-pink-100">{safeRender(post.caption)}</p>
                       )}
-                      
+
                       {/* Engagement Stats */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           <div className="flex items-center space-x-1 bg-red-500/80 px-2 py-1 rounded-full">
                             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                             </svg>
                             <span className="text-xs font-bold">{post.likes?.length || 0}</span>
                           </div>
@@ -596,7 +592,7 @@ export default function Profile() {
                             <span className="text-xs font-bold">{post.comments?.length || 0}</span>
                           </div>
                         </div>
-                        
+
                         {/* Upload Time */}
                         <div className="text-xs text-pink-200 bg-black/30 px-2 py-1 rounded-full">
                           {safeFormatTimeAgo(post.uploadTime || post.createdAt)}
@@ -619,7 +615,7 @@ export default function Profile() {
             <p className="text-slate-600 mb-8 text-lg">
               {isOwnProfile ? (
                 activeTab === 'public' ? `@${username} doesn't have any public posts yet. 🌍` :
-                `@${username} doesn't have any private posts yet. 🔒`
+                  `@${username} doesn't have any private posts yet. 🔒`
               ) : (
                 `@${username} doesn't have any public posts yet. 🌍`
               )}

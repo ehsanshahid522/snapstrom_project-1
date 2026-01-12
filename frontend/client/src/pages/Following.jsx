@@ -758,9 +758,9 @@ export default function Following() {
 
                       {/* User Info */}
                       <div>
-                        <h3 className="font-semibold text-gray-900">{user.username}</h3>
+                        <h3 className="font-semibold text-gray-900">{safeRender(user.username)}</h3>
                         {user.bio && (
-                          <p className="text-sm text-gray-600 mt-1">{user.bio}</p>
+                          <p className="text-sm text-gray-600 mt-1">{safeRender(user.bio)}</p>
                         )}
                         <div className="flex items-center space-x-2 mt-1">
                           {user.isOnline ? (
@@ -840,9 +840,9 @@ export default function Following() {
 
                       {/* User Info */}
                       <div>
-                        <h3 className="font-semibold text-gray-900">{user.username}</h3>
+                        <h3 className="font-semibold text-gray-900">{safeRender(user.username)}</h3>
                         {user.bio && (
-                          <p className="text-sm text-gray-600 mt-1">{user.bio}</p>
+                          <p className="text-sm text-gray-600 mt-1">{safeRender(user.bio)}</p>
                         )}
                         <div className="flex items-center space-x-2 mt-1">
                           {user.isOnline ? (

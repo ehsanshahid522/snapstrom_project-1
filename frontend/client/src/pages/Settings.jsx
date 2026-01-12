@@ -9,7 +9,7 @@ export default function Settings() {
   const [changingPassword, setChangingPassword] = useState(false)
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState('success') // 'success' or 'error'
-  
+
   // User data
   const [userData, setUserData] = useState({
     username: '',
@@ -18,7 +18,7 @@ export default function Settings() {
     isPrivateAccount: false,
     profilePicture: null
   })
-  
+
   // Form states
   const [bio, setBio] = useState('')
   const [isPrivateAccount, setIsPrivateAccount] = useState(false)
@@ -237,11 +237,10 @@ export default function Settings() {
 
         {/* Message Display */}
         {msg && (
-          <div className={`mb-6 p-4 rounded-xl border-2 shadow-lg ${
-            msgType === 'success' 
-              ? 'bg-green-50 border-green-200 text-green-800' 
+          <div className={`mb-6 p-4 rounded-xl border-2 shadow-lg ${msgType === 'success'
+              ? 'bg-green-50 border-green-200 text-green-800'
               : 'bg-red-50 border-red-200 text-red-800'
-          }`}>
+            }`}>
             <div className="flex items-center">
               <span className="text-xl mr-3">
                 {msgType === 'success' ? '✅' : '❌'}
@@ -255,15 +254,16 @@ export default function Settings() {
           {/* Profile Picture Section */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/50">
             <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 truncate">@{safeRender(userData.username)}</h2>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">📸 Profile Picture</h2>
-              
+
               {/* Current Profile Picture */}
               <div className="relative group mb-6">
                 <div className="w-32 h-32 mx-auto rounded-full overflow-hidden bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 shadow-2xl ring-4 ring-white ring-opacity-50">
                   {userData.profilePicture ? (
-                    <img 
-                      src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${userData.profilePicture}`} 
-                      alt="Profile" 
+                    <img
+                      src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${userData.profilePicture}`}
+                      alt="Profile"
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.style.display = 'none'
@@ -277,7 +277,7 @@ export default function Settings() {
                     </span>
                   </div>
                 </div>
-                
+
                 {/* Upload Overlay */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <label className="cursor-pointer">
@@ -304,7 +304,7 @@ export default function Settings() {
               <p className="text-gray-600 mb-4">
                 Hover over your profile picture to upload a new one
               </p>
-              
+
               <div className="text-sm text-gray-500">
                 <p>• Supported formats: JPG, PNG, GIF</p>
                 <p>• Maximum size: 5MB</p>
@@ -316,7 +316,7 @@ export default function Settings() {
           {/* Account Settings Section */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/50">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">👤 Account Settings</h2>
-            
+
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -377,7 +377,7 @@ export default function Settings() {
           {/* Password Change Section */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/50 lg:col-span-2">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">🔐 Change Password</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -391,7 +391,7 @@ export default function Settings() {
                   placeholder="Enter current password"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   New Password
@@ -404,7 +404,7 @@ export default function Settings() {
                   placeholder="Enter new password"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Confirm New Password
@@ -445,7 +445,7 @@ export default function Settings() {
           {/* Account Actions Section */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/50 lg:col-span-2">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">⚠️ Account Actions</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 onClick={handleLogout}
@@ -453,7 +453,7 @@ export default function Settings() {
               >
                 🚪 Logout
               </button>
-              
+
               <button
                 onClick={() => navigate('/')}
                 className="bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold py-3 px-6 rounded-xl hover:from-gray-700 hover:to-gray-800 transform hover:scale-105 transition-all duration-200 shadow-lg"
