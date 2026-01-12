@@ -375,8 +375,8 @@ export default function Trending() {
               key={filter.key}
               onClick={() => setActiveFilter(filter.key)}
               className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${activeFilter === filter.key
-                  ? 'bg-white text-pink-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-pink-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               <span>{filter.icon}</span>
@@ -423,7 +423,7 @@ export default function Trending() {
                             className="w-12 h-12 rounded-full object-cover"
                           />
                         ) : (
-                          post.uploader?.username?.charAt(0).toUpperCase() || 'U'
+                          safeRender(post.uploader?.username).charAt(0).toUpperCase() || '?'
                         )}
                       </div>
                       {/* Trending badge for top posts */}
@@ -606,8 +606,8 @@ export default function Trending() {
                       onClick={() => like(post._id)}
                       disabled={interactingPosts[`like-${post._id}`]}
                       className={`flex items-center space-x-2 transition-all duration-200 ${post.__liked
-                          ? 'text-red-500 hover:text-red-600'
-                          : 'text-gray-400 hover:text-red-500'
+                        ? 'text-red-500 hover:text-red-600'
+                        : 'text-gray-400 hover:text-red-500'
                         }`}
                     >
                       <svg className="w-6 h-6" fill={post.__liked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
@@ -721,7 +721,7 @@ export default function Trending() {
                     {/* Comment Input */}
                     <div className="flex space-x-3 mb-4">
                       <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                        {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
+                        {safeRender(currentUser?.username).charAt(0).toUpperCase() || '?'}
                       </div>
                       <div className="flex-1">
                         <form
@@ -758,7 +758,7 @@ export default function Trending() {
                       {post.comments?.map((comment, index) => (
                         <div key={comment.id || index} className="flex space-x-3">
                           <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                            {comment.user?.username?.charAt(0).toUpperCase() || 'U'}
+                            {safeRender(comment.user?.username).charAt(0).toUpperCase() || '?'}
                           </div>
                           <div className="flex-1">
                             <div className="bg-gray-50 rounded-lg p-3">

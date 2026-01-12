@@ -294,7 +294,7 @@ export default function Profile() {
                 ) : null}
                 <div className={`w-full h-full bg-gradient-to-br from-yellow-100 via-orange-100 to-red-100 flex items-center justify-center ${data?.user?.profilePicture ? 'hidden' : ''}`}>
                   <span className="text-orange-600 font-bold text-3xl md:text-4xl drop-shadow-lg">
-                    {username?.charAt(0).toUpperCase()}
+                    {safeRender(username).charAt(0).toUpperCase() || '?'}
                   </span>
                 </div>
               </div>
@@ -395,7 +395,7 @@ export default function Profile() {
                 {isOwnProfile ? (
                   <>Welcome to <span className="font-semibold text-yellow-300">your</span> creative space on Snapstream ✨</>
                 ) : (
-                  <>Welcome to <span className="font-semibold text-yellow-300">@{username}</span>'s creative space on Snapstream ✨</>
+                  <>Welcome to <span className="font-semibold text-yellow-300">@{safeRender(username)}</span>'s creative space on Snapstream ✨</>
                 )}
               </p>
               {data?.user?.bio && (
@@ -423,8 +423,8 @@ export default function Profile() {
                     onClick={handleFollow}
                     disabled={followLoading}
                     className={`px-6 py-3 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 ${isFollowing
-                        ? 'bg-gray-600 text-white hover:bg-gray-700'
-                        : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
+                      ? 'bg-gray-600 text-white hover:bg-gray-700'
+                      : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-xl'
                       } disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2`}
                   >
                     {followLoading ? (
@@ -487,8 +487,8 @@ export default function Profile() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-3 transform hover:scale-105 ${activeTab === tab.id
-                        ? `bg-gradient-to-r from-${tab.color}-400 to-${tab.color}-600 text-white shadow-lg scale-105`
-                        : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                      ? `bg-gradient-to-r from-${tab.color}-400 to-${tab.color}-600 text-white shadow-lg scale-105`
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700'
                       }`}
                   >
                     <span className="text-lg">{tab.icon}</span>
@@ -561,8 +561,8 @@ export default function Profile() {
 
                   {/* Privacy Badge */}
                   <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg ${post.isPrivate
-                      ? 'bg-gradient-to-r from-violet-500 to-purple-600'
-                      : 'bg-gradient-to-r from-emerald-500 to-green-600'
+                    ? 'bg-gradient-to-r from-violet-500 to-purple-600'
+                    : 'bg-gradient-to-r from-emerald-500 to-green-600'
                     }`}>
                     {post.isPrivate ? '🔒 Private' : '🌍 Public'}
                   </div>

@@ -430,7 +430,7 @@ export default function Feed() {
     window.showToast = (message, type = 'info') => {
       const toast = document.createElement('div');
       toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-xl text-white font-semibold shadow-2xl transform transition-all duration-300 ${type === 'success' ? 'bg-green-500' :
-          type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+        type === 'error' ? 'bg-red-500' : 'bg-blue-500'
         }`;
       toast.textContent = message;
       document.body.appendChild(toast);
@@ -674,7 +674,7 @@ export default function Feed() {
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
-                          {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
+                          {safeRender(p.uploader?.username).charAt(0).toUpperCase() || '?'}
                         </div>
                       )}
                     </a>
@@ -734,8 +734,8 @@ export default function Feed() {
                       <button
                         onClick={() => toggleFollow(p.uploader._id, p.uploader.username)}
                         className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${followingStatus[p.uploader._id]
-                            ? 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-600'
-                            : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-lg'
+                          ? 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-600'
+                          : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 shadow-lg'
                           }`}
                       >
                         {followingStatus[p.uploader._id] ? (

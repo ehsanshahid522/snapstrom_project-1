@@ -238,8 +238,8 @@ export default function Settings() {
         {/* Message Display */}
         {msg && (
           <div className={`mb-6 p-4 rounded-xl border-2 shadow-lg ${msgType === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+            ? 'bg-green-50 border-green-200 text-green-800'
+            : 'bg-red-50 border-red-200 text-red-800'
             }`}>
             <div className="flex items-center">
               <span className="text-xl mr-3">
@@ -273,7 +273,7 @@ export default function Settings() {
                   ) : null}
                   <div className={`w-full h-full bg-gradient-to-br from-yellow-100 via-orange-100 to-red-100 flex items-center justify-center ${userData.profilePicture ? 'hidden' : ''}`}>
                     <span className="text-orange-600 font-bold text-4xl drop-shadow-lg">
-                      {userData.username?.charAt(0).toUpperCase()}
+                      {safeRender(userData.username).charAt(0).toUpperCase() || '?'}
                     </span>
                   </div>
                 </div>

@@ -380,8 +380,8 @@ export default function Following() {
             <button
               onClick={() => handleTabChange('posts')}
               className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${activeTab === 'posts'
-                  ? 'bg-white text-pink-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-pink-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               📱 Posts
@@ -389,8 +389,8 @@ export default function Following() {
             <button
               onClick={() => handleTabChange('followers')}
               className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${activeTab === 'followers'
-                  ? 'bg-white text-pink-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-pink-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               👥 Followers
@@ -398,8 +398,8 @@ export default function Following() {
             <button
               onClick={() => handleTabChange('following')}
               className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${activeTab === 'following'
-                  ? 'bg-white text-pink-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-pink-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               ➕ Following
@@ -441,7 +441,7 @@ export default function Following() {
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
                             <span className="text-pink-600 font-bold text-sm sm:text-lg">
-                              {p.uploader?.username?.charAt(0).toUpperCase() || 'U'}
+                              {safeRender(p.uploader?.username).charAt(0).toUpperCase() || '?'}
                             </span>
                           </div>
                         )}
@@ -751,7 +751,7 @@ export default function Following() {
                         ) : null}
                         <div className={`w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center ${user.profilePicture ? 'hidden' : ''}`}>
                           <span className="text-pink-600 font-bold text-lg">
-                            {user.username?.charAt(0).toUpperCase() || 'U'}
+                            {safeRender(user.username).charAt(0).toUpperCase() || '?'}
                           </span>
                         </div>
                       </div>
@@ -833,7 +833,7 @@ export default function Following() {
                         ) : null}
                         <div className={`w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center ${user.profilePicture ? 'hidden' : ''}`}>
                           <span className="text-pink-600 font-bold text-lg">
-                            {user.username?.charAt(0).toUpperCase() || 'U'}
+                            {safeRender(user.username).charAt(0).toUpperCase() || '?'}
                           </span>
                         </div>
                       </div>

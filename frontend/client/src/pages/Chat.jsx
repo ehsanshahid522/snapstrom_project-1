@@ -284,7 +284,7 @@ export default function Chat() {
                             className="p-3 hover:bg-white/20 cursor-pointer transition-colors flex items-center gap-3"
                           >
                             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm font-medium">
-                              {user.username?.charAt(0)?.toUpperCase() || '?'}
+                              {safeRender(user.username).charAt(0).toUpperCase() || '?'}
                             </div>
                             <div>
                               <div className="font-medium">{user.username}</div>
@@ -324,7 +324,7 @@ export default function Chat() {
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-medium">
-                            {safeRender(partner.username).charAt(0).toUpperCase()}
+                            {safeRender(partner.username).charAt(0).toUpperCase() || '?'}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-gray-900 truncate">
@@ -355,7 +355,7 @@ export default function Chat() {
                   <div className="p-6 border-b border-gray-200 bg-white">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-medium">
-                        {getConversationPartner(selectedConversation)?.username?.charAt(0)?.toUpperCase() || '?'}
+                        {safeRender(getConversationPartner(selectedConversation)?.username).charAt(0).toUpperCase() || '?'}
                       </div>
                       <div>
                         <h2 className="font-bold text-gray-900 truncate">
@@ -387,15 +387,15 @@ export default function Chat() {
                             {/* Avatar */}
                             {!isSender && (
                               <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                                {message.senderUsername?.charAt(0)?.toUpperCase() || '?'}
+                                {safeRender(message.senderUsername).charAt(0).toUpperCase() || '?'}
                               </div>
                             )}
 
                             {/* Message Bubble */}
                             <div
                               className={`px-4 py-3 rounded-2xl ${isSender
-                                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                                  : 'bg-gray-100 text-gray-900'
+                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                                : 'bg-gray-100 text-gray-900'
                                 }`}
                             >
                               <div className="text-sm leading-relaxed break-words">
@@ -410,7 +410,7 @@ export default function Chat() {
                             {/* Sender Avatar */}
                             {isSender && (
                               <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                                {message.senderUsername?.charAt(0)?.toUpperCase() || '?'}
+                                {safeRender(message.senderUsername).charAt(0).toUpperCase() || '?'}
                               </div>
                             )}
                           </div>
