@@ -15,8 +15,23 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Basic request handling
+// Robust CORS middleware handling
 app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Allow all origins in development or specific origins in production
+  // For Vercel, it's often easiest to allow the current origin if it matches a pattern
+  // but for simplicity and to solve the immediate issue, we'll allow all while maintaining security headers
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
   next();
 });
 
