@@ -35,21 +35,28 @@ export function safeRender(value) {
     }
 
     // Handle objects with common string properties
-    if (value.content !== undefined && value.content !== null) return safeRender(value.content);
-    if (value.text !== undefined && value.text !== null) return safeRender(value.text);
-    if (value.message !== undefined && value.message !== null) return safeRender(value.message);
-    if (value.value !== undefined && value.value !== null) return safeRender(value.value);
-    if (value.name !== undefined && value.name !== null) return safeRender(value.name);
-    if (value.title !== undefined && value.title !== null) return safeRender(value.title);
-    if (value.username !== undefined && value.username !== null) return safeRender(value.username);
-    if (value.caption !== undefined && value.caption !== null) return safeRender(value.caption);
-    if (value.bio !== undefined && value.bio !== null) return safeRender(value.bio);
-    if (value.text !== undefined && value.text !== null) return safeRender(value.text);
+    if (value.content !== undefined && value.content !== null && typeof value.content !== 'object') return String(value.content);
+    if (value.text !== undefined && value.text !== null && typeof value.text !== 'object') return String(value.text);
+    if (value.message !== undefined && value.message !== null && typeof value.message !== 'object') return String(value.message);
+    if (value.value !== undefined && value.value !== null && typeof value.value !== 'object') return String(value.value);
+    if (value.name !== undefined && value.name !== null && typeof value.name !== 'object') return String(value.name);
+    if (value.title !== undefined && value.title !== null && typeof value.title !== 'object') return String(value.title);
+    if (value.username !== undefined && value.username !== null && typeof value.username !== 'object') return String(value.username);
+    if (value.caption !== undefined && value.caption !== null && typeof value.caption !== 'object') return String(value.caption);
+    if (value.bio !== undefined && value.bio !== null && typeof value.bio !== 'object') return String(value.bio);
+    if (value.label !== undefined && value.label !== null && typeof value.label !== 'object') return String(value.label);
+
+    // Check if it's an Error object
+    if (value instanceof Error) return value.message;
 
     // Check if it's a Mongoose ObjectId or similar
     if (typeof value.toString === 'function') {
-      const str = value.toString();
-      if (str !== '[object Object]') return str;
+      try {
+        const str = value.toString();
+        if (str !== '[object Object]') return str;
+      } catch (e) {
+        // Ignore error
+      }
     }
 
     // Try JSON stringify as last resort
