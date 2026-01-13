@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { safeRender } from '../utils/safeRender.js';
 
 const Toast = ({ message, type = 'info', duration = 5000, onClose }) => {
   const [isVisible, setIsVisible] = useState(true);
@@ -14,11 +15,11 @@ const Toast = ({ message, type = 'info', duration = 5000, onClose }) => {
 
   const getToastStyles = () => {
     const baseStyles = "fixed top-4 right-4 z-50 max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 p-4 transform transition-all duration-300";
-    
+
     if (!isVisible) {
       return `${baseStyles} translate-x-full opacity-0`;
     }
-    
+
     return `${baseStyles} translate-x-0 opacity-100`;
   };
 
@@ -67,7 +68,7 @@ const Toast = ({ message, type = 'info', duration = 5000, onClose }) => {
           {getIcon()}
         </div>
         <div className="ml-3 flex-1">
-          <p className="text-sm font-medium text-gray-900">{message}</p>
+          <p className="text-sm font-medium text-gray-900">{safeRender(message)}</p>
         </div>
         <div className="ml-4 flex-shrink-0 flex">
           <button

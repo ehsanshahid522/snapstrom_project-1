@@ -8,15 +8,15 @@ export default function Share() {
   const [post, setPost] = useState(null)
   const [msg, setMsg] = useState('Loading…')
 
-  useEffect(()=>{
-    (async()=>{
-      try{
+  useEffect(() => {
+    (async () => {
+      try {
         const data = await api(`/api/share/${encodeURIComponent(id)}`, { auth: false })
         setPost(data)
         setMsg('')
-      }catch(e){ setMsg(e.message) }
+      } catch (e) { setMsg(e.message) }
     })()
-  },[id])
+  }, [id])
 
   if (msg && !post) {
     return (
@@ -54,9 +54,9 @@ export default function Share() {
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
                   {post.uploader?.profilePicture ? (
-                    <img 
-                      src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${post.uploader.profilePicture}`} 
-                      alt="" 
+                    <img
+                      src={`${import.meta.env.VITE_API_URL || 'https://snapstrom-project-1.vercel.app'}/api/images/${post.uploader.profilePicture}`}
+                      alt=""
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -88,9 +88,9 @@ export default function Share() {
 
             {/* Post Image */}
             <div className="relative">
-              <img 
-                src={`/api/images/${post._id}`} 
-                alt={post.originalName || ''} 
+              <img
+                src={`/api/images/${post._id}`}
+                alt={post.originalName || ''}
                 className="w-full h-auto object-cover"
               />
             </div>
@@ -100,7 +100,7 @@ export default function Share() {
               {post.caption && (
                 <div className="mb-6">
                   <p className="text-gray-700 text-lg leading-relaxed">
-                    {post.caption}
+                    {safeRender(post.caption)}
                   </p>
                 </div>
               )}

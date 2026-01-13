@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api.js'
+import { safeRender } from '../utils/safeRender.js'
 
 export default function HealthCheck() {
   const [status, setStatus] = useState('checking')
@@ -28,17 +29,16 @@ export default function HealthCheck() {
       <div className="space-y-2">
         <div>
           <span className="font-semibold">Status: </span>
-          <span className={`px-2 py-1 rounded text-sm ${
-            status === 'healthy' ? 'bg-green-100 text-green-800' :
-            status === 'unhealthy' ? 'bg-red-100 text-red-800' :
-            'bg-yellow-100 text-yellow-800'
-          }`}>
+          <span className={`px-2 py-1 rounded text-sm ${status === 'healthy' ? 'bg-green-100 text-green-800' :
+              status === 'unhealthy' ? 'bg-red-100 text-red-800' :
+                'bg-yellow-100 text-yellow-800'
+            }`}>
             {status}
           </span>
         </div>
         {error && (
           <div className="text-red-600 text-sm">
-            Error: {error}
+            Error: {safeRender(error)}
           </div>
         )}
       </div>

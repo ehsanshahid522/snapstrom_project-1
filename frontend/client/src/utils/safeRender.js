@@ -34,6 +34,13 @@ export function safeRender(value) {
       return safeTimestampToString(value);
     }
 
+    // Recursively check for timestamp keys if it's an object (AGGRESSIVE MODE)
+    const keys = Object.keys(value);
+    const timestampKey = keys.find(k => k.toLowerCase().includes('timestamp') || k === '$date' || k === 'createdAt');
+    if (timestampKey && value[timestampKey]) {
+      return safeTimestampToString(value[timestampKey]);
+    }
+
     // Handle objects with common string properties
     if (value.content !== undefined && value.content !== null && typeof value.content !== 'object') return String(value.content);
     if (value.text !== undefined && value.text !== null && typeof value.text !== 'object') return String(value.text);
