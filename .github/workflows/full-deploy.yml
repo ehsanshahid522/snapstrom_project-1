@@ -42,26 +42,28 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        if: secrets.VERCEL_TOKEN != ''
+        if: env.VERCEL_TOKEN != ''
         uses: actions/setup-node@v4
         with:
           node-version: "18"
           cache: "npm"
 
       - name: Install dependencies
-        if: secrets.VERCEL_TOKEN != ''
+        if: env.VERCEL_TOKEN != ''
         run: |
           npm ci
           cd frontend/client && npm ci
 
       - name: Build frontend
-        if: secrets.VERCEL_TOKEN != ''
+        if: env.VERCEL_TOKEN != ''
         run: |
           cd frontend/client
           npm run build
@@ -69,26 +71,26 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Deploy Frontend to Vercel
-        if: secrets.VERCEL_TOKEN != ''
+        if: env.VERCEL_TOKEN != ''
         uses: amondnet/vercel-action@v25
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-token: ${{ env.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: ./frontend/client
           vercel-args: "--prod"
 
       - name: Deploy Backend to Vercel
-        if: secrets.VERCEL_TOKEN != ''
+        if: env.VERCEL_TOKEN != ''
         uses: amondnet/vercel-action@v25
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-token: ${{ env.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
           working-directory: ./
           vercel-args: "--prod"
 
       - name: No Vercel Token Found
-        if: secrets.VERCEL_TOKEN == ''
+        if: env.VERCEL_TOKEN == ''
         run: |
           echo "::warning title=Deployment Skipped::VERCEL_TOKEN not found in GitHub Secrets. Please add it to your repository settings to enable automated deployment."
