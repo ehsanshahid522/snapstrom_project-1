@@ -152,10 +152,22 @@ const FileSchema = new mongoose.Schema({
 
 const File = mongoose.model('File', FileSchema);
 
+function getMongoUri() {
+  return process.env.MONGO_URI || process.env.MONGODB_URI || '';
+}
+
+function hasMongoUriConfigured() {
+  return Boolean(getMongoUri());
+}
+
+function isPlaceholderMongoUri(uri) {
+  return !uri || uri.includes('username:password@cluster.mongodb.net');
+}
+
 // Simplified database connection function
 async function connectDB() {
   try {
-    const mongoURI = process.env.MONGO_URI;
+    const mongoURI = getMongoUri();
 
     if (!mongoURI) {
       console.error('❌ MONGO_URI environment variable is not set');
@@ -163,6 +175,11 @@ async function connectDB() {
         console.log('⚠️ Running in development mode without database');
         return true;
       }
+      return false;
+    }
+
+    if (isPlaceholderMongoUri(mongoURI)) {
+      console.error('MongoDB URI is still using the example placeholder value. Update .env with a real connection string.');
       return false;
     }
 
@@ -228,7 +245,7 @@ app.get('/health', async (req, res) => {
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       version: process.version,
-      hasMongoUri: !!process.env.MONGO_URI,
+      hasMongoUri: hasMongoUriConfigured(),
       hasJwtSecret: !!process.env.JWT_SECRET
     });
   } catch (error) {
@@ -249,7 +266,7 @@ app.get('/api/health', (req, res) => {
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     uptime: process.uptime(),
     version: process.version,
-    hasMongoUri: !!process.env.MONGO_URI,
+    hasMongoUri: hasMongoUriConfigured(),
     hasJwtSecret: !!process.env.JWT_SECRET
   });
 });
@@ -259,7 +276,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/test-db', async (req, res) => {
   try {
     console.log('🧪 Testing database connection...');
-    console.log('🔍 MONGO_URI status:', process.env.MONGO_URI ? 'Set' : 'Not set');
+    console.log('🔍 MONGO_URI status:', hasMongoUriConfigured() ? 'Set' : 'Not set');
     console.log('🔍 Current connection state:', mongoose.connection.readyState);
     console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
 
@@ -276,7 +293,7 @@ app.get('/api/test-db', async (req, res) => {
         message: 'Database connection successful',
         userCount: userCount,
         connectionState: mongoose.connection.readyState,
-        mongoUri: process.env.MONGO_URI ? 'Set' : 'Not set',
+        mongoUri: hasMongoUriConfigured() ? 'Set' : 'Not set',
         nodeEnv: process.env.NODE_ENV,
         timestamp: new Date().toISOString()
       });
@@ -285,7 +302,7 @@ app.get('/api/test-db', async (req, res) => {
         success: false,
         message: 'Database connection failed',
         connectionState: mongoose.connection.readyState,
-        mongoUri: process.env.MONGO_URI ? 'Set' : 'Not set',
+        mongoUri: hasMongoUriConfigured() ? 'Set' : 'Not set',
         nodeEnv: process.env.NODE_ENV,
         timestamp: new Date().toISOString()
       });
@@ -297,7 +314,7 @@ app.get('/api/test-db', async (req, res) => {
       message: 'Database test error',
       error: error.message,
       connectionState: mongoose.connection.readyState,
-      mongoUri: process.env.MONGO_URI ? 'Set' : 'Not set',
+      mongoUri: hasMongoUriConfigured() ? 'Set' : 'Not set',
       nodeEnv: process.env.NODE_ENV,
       timestamp: new Date().toISOString()
     });
@@ -807,7 +824,7 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    if (!process.env.MONGO_URI) {
+    if (!hasMongoUriConfigured()) {
       console.error('❌ MONGO_URI not set');
       return res.status(500).json({ message: 'Database not configured' });
     }
@@ -902,7 +919,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    if (!process.env.MONGO_URI) {
+    if (!hasMongoUriConfigured()) {
       console.error('❌ MONGO_URI not set');
       return res.status(500).json({ message: 'Database not configured' });
     }
@@ -973,7 +990,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     env: {
-      hasMongoUri: !!process.env.MONGO_URI,
+      hasMongoUri: hasMongoUriConfigured(),
       hasJwtSecret: !!process.env.JWT_SECRET,
       nodeEnv: process.env.NODE_ENV
     }
@@ -1074,11 +1091,11 @@ app.post('/api/upload', async (req, res) => {
     console.log('✅ User found:', user.username);
 
     // Check if MONGO_URI is configured
-    if (!process.env.MONGO_URI) {
+    if (!hasMongoUriConfigured()) {
       console.error('❌ MONGO_URI not configured');
       return res.status(500).json({
-        message: 'Database not configured. Please set MONGO_URI environment variable in Vercel dashboard.',
-        error: 'Missing MONGO_URI'
+        message: 'Database not configured. Please set MONGO_URI or MONGODB_URI environment variable.',
+        error: 'Missing MongoDB URI'
       });
     }
 

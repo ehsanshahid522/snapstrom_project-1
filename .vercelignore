@@ -6,5 +6,3 @@ api/middleware/
 api/services/
 api/utils/
 api/README.md
-api/server-new.js
-api/test-backend.js
