@@ -12,11 +12,17 @@ class DatabaseService {
         return;
       }
 
-      const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/snapstream';
+      const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+      if (!mongoUri) {
+        throw new Error('MongoDB URI is missing. Set MONGO_URI or MONGODB_URI.');
+      }
+
+      if (mongoUri.includes('username:password@cluster.mongodb.net')) {
+        throw new Error('MongoDB URI is still using the example placeholder value.');
+      }
       
       await mongoose.connect(mongoUri, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
